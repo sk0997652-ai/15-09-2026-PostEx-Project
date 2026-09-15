@@ -1298,7 +1298,8 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
       }
 
       const app = Array.isArray(employee.applications) ? employee.applications[0] : employee.applications;
-      const cand = app?.candidates;
+      const candRaw = (app as any)?.candidates;
+      const cand: any = Array.isArray(candRaw) ? candRaw[0] : candRaw;
 
       // Try fetching from storage first
       if (employee.pdf_dossier_storage_path) {
