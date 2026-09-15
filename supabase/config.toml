@@ -1,0 +1,13 @@
+# Supabase Project Configuration for PostEx HR Onboarding Portal
+project_id = "postex-hr-onboarding"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+
+[auth]
+enabled = true
+
+[storage]
+enabled = true

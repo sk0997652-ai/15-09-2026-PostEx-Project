@@ -1,0 +1,6 @@
+{
+  "name": "PostEx HR Onboarding Portal",
+  "description": "Production-grade HR onboarding portal for PostEx with Supabase backend and React frontend.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
