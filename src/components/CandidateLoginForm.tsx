@@ -18,8 +18,10 @@ import {
   clearCandidateSession,
   CandidateSession,
 } from '../lib/candidateAuth';
+import { CandidatePortal } from './candidate/CandidatePortal';
+import { I18nProvider, LanguageSelector, useI18n } from '../lib/i18n';
 
-export const CandidateLoginForm: React.FC = () => {
+const CandidateLoginFormInner: React.FC = () => {
   // Step 1: Candidate Verification Inputs
   const [joiningId, setJoiningId] = useState('PEX-2026-001');
   const [cnic, setCnic] = useState('35201-1234567-1');
@@ -148,68 +150,9 @@ export const CandidateLoginForm: React.FC = () => {
     setSuccessMessage('Candidate signed out.');
   };
 
-  // 1. Authenticated Candidate View
+  // 1. Authenticated Candidate View -> Full Candidate Experience Portal
   if (session) {
-    return (
-      <div id="candidate-auth-session-card" className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs max-w-lg mx-auto">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-base">Candidate Authenticated</h3>
-              <span className="text-xs text-slate-500 font-mono">Scoped 8-Hour Session Active</span>
-            </div>
-          </div>
-          <button
-            id="candidate-logout-btn"
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-
-        <div className="mt-4 space-y-2.5 text-xs">
-          <div className="flex justify-between py-1.5 border-b border-slate-50">
-            <span className="text-slate-500 font-medium">Candidate Name</span>
-            <span className="text-slate-900 font-semibold">{session.candidate.full_name}</span>
-          </div>
-          <div className="flex justify-between py-1.5 border-b border-slate-50">
-            <span className="text-slate-500 font-medium">Joining ID</span>
-            <span className="text-slate-900 font-mono font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
-              {session.candidate.joining_id}
-            </span>
-          </div>
-          <div className="flex justify-between py-1.5 border-b border-slate-50">
-            <span className="text-slate-500 font-medium">CNIC</span>
-            <span className="text-slate-900 font-mono">{session.candidate.cnic}</span>
-          </div>
-          <div className="flex justify-between py-1.5 border-b border-slate-50">
-            <span className="text-slate-500 font-medium">Mobile Number</span>
-            <span className="text-slate-900 font-mono">{session.candidate.mobile}</span>
-          </div>
-          <div className="flex justify-between py-1.5">
-            <span className="text-slate-500 font-medium">Session Expires At</span>
-            <span className="text-slate-700 font-mono text-[11px]">
-              {new Date(session.expires_at).toLocaleTimeString()}
-            </span>
-          </div>
-        </div>
-
-        <div className="mt-5 p-3 rounded-lg bg-indigo-50/70 border border-indigo-200 text-indigo-900 text-xs">
-          <p className="font-semibold flex items-center gap-1.5">
-            <CheckCircle className="w-4 h-4 text-indigo-600" />
-            <span>Scoped Custom JWT Session Minted</span>
-          </p>
-          <p className="text-indigo-700 mt-0.5">
-            Issued via Edge Function. Candidate has scoped access restricted to their individual onboarding record.
-          </p>
-        </div>
-      </div>
-    );
+    return <CandidatePortal session={session} onSignOut={handleLogout} />;
   }
 
   // 2. Step 2: OTP Verification Screen
@@ -220,14 +163,17 @@ export const CandidateLoginForm: React.FC = () => {
 
     return (
       <div id="candidate-otp-entry-card" className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs max-w-lg mx-auto">
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-          <div className="w-10 h-10 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
-            <Key className="w-5 h-5" />
+        <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
+              <Key className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">Enter Verification OTP</h3>
+              <p className="text-xs text-slate-500">6-digit SMS code sent for Joining ID {joiningId}</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-bold text-slate-900 text-base">Enter Verification OTP</h3>
-            <p className="text-xs text-slate-500">6-digit SMS code sent for Joining ID {joiningId}</p>
-          </div>
+          <LanguageSelector />
         </div>
 
         {errorMessage && (
@@ -321,14 +267,17 @@ export const CandidateLoginForm: React.FC = () => {
   // 3. Step 1: Credentials Entry Screen
   return (
     <div id="candidate-login-card" className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs max-w-lg mx-auto">
-      <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-        <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-200">
-          <Smartphone className="w-5 h-5" />
+      <div className="flex items-center justify-between gap-3 pb-4 border-b border-slate-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-200">
+            <Smartphone className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-900 text-base">Candidate Portal Sign In</h3>
+            <p className="text-xs text-slate-500">OTP-based authentication for PostEx candidates</p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-bold text-slate-900 text-base">Candidate Portal Sign In</h3>
-          <p className="text-xs text-slate-500">OTP-based authentication for PostEx candidates</p>
-        </div>
+        <LanguageSelector />
       </div>
 
       {errorMessage && (
@@ -411,5 +360,13 @@ export const CandidateLoginForm: React.FC = () => {
         </button>
       </form>
     </div>
+  );
+};
+
+export const CandidateLoginForm: React.FC = () => {
+  return (
+    <I18nProvider>
+      <CandidateLoginFormInner />
+    </I18nProvider>
   );
 };

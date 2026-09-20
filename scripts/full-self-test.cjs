@@ -99,8 +99,14 @@ async function runFullSelfTest() {
   // Test 2.4: Regenerate Password endpoint
   const regenRes = await fetch(`${SERVER_URL}/api/staff/regenerate-password`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ target_staff_id: '7ffcc843-aa37-4484-a37a-171125380d05' })
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${goodAuth?.session?.access_token || ''}`,
+    },
+    body: JSON.stringify({
+      target_staff_id: '7ffcc843-aa37-4484-a37a-171125380d05',
+      requester_token: goodAuth?.session?.access_token,
+    })
   });
   const regenData = await regenRes.json();
   const passwordMeetsPolicy =

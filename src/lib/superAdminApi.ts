@@ -217,15 +217,10 @@ export const superAdminApi = {
   },
 
   async regenerateStaffPassword(target_staff_id: string): Promise<{ temporary_password: string }> {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token || '';
-    const res = await fetch('/api/staff/regenerate-password', {
+    const headers = await getAuthHeader();
+    const res = await fetch(`/api/admin/staff/${target_staff_id}/regenerate-password`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        target_staff_id,
-        requester_token: token,
-      }),
+      headers,
     });
     const data = await res.json();
     if (!res.ok || !data.success) {
@@ -237,12 +232,32 @@ export const superAdminApi = {
   async getPermissionOverrides(staffId: string): Promise<{
     overrides: PermissionOverrideItem[];
     allPermissions: Array<{ id: string; key: string; description: string | null }>;
+    roleDefaultPermissionKeys?: string[];
+    staffProfile?: any;
   }> {
     const headers = await getAuthHeader();
     const res = await fetch(`/api/admin/permission-overrides/${staffId}`, { headers });
     const data = await res.json();
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to fetch permission overrides');
+    }
+    return data;
+  },
+
+  async saveUserPermissions(payload: {
+    staff_profile_id: string;
+    permissionsState: Record<string, boolean>;
+    reason: string;
+  }): Promise<{ success: boolean; changesCount: number; message: string }> {
+    const headers = { 'Content-Type': 'application/json', ...(await getAuthHeader()) };
+    const res = await fetch('/api/admin/user-permissions/save', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to save user permissions');
     }
     return data;
   },
@@ -351,5 +366,25 @@ export const superAdminApi = {
       throw new Error(data.error || 'Failed to update organization settings');
     }
     return data.settings;
+  },
+
+  async runDataRetentionCleanup(): Promise<{
+    success: boolean;
+    countArchived: number;
+    thresholdDays: number;
+    cutoffDate: string;
+    archivedIds: string[];
+    message: string;
+  }> {
+    const headers = { 'Content-Type': 'application/json', ...(await getAuthHeader()) };
+    const res = await fetch('/api/admin/data-retention/run-cleanup', {
+      method: 'POST',
+      headers,
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to execute data retention cleanup');
+    }
+    return data;
   },
 };

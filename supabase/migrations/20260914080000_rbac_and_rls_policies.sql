@@ -7,7 +7,7 @@
 -- 2. zonal_hr_manager: Scoped to their assigned zone_id
 -- 3. central_hr: Scoped to their assigned zone's candidates
 -- 4. branch_manager: Scoped to their assigned branch_id
--- 5. candidate: Only their own application & documents (via custom candidate session / JWT)
+-- 5. candidate: Only their own application & documents
 --
 -- Overrides:
 -- Checked via user_permission_overrides (staff_profile_id, permission_id, granted, reason)
@@ -115,59 +115,161 @@ END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
 -- ------------------------------------------------------------------------------
--- 2. Drop "deny_all" Policies and Implement Role & Scope Policies
+-- 2. Drop "deny_all" Policies and Existing Policies
+-- ------------------------------------------------------------------------------
+
+-- Ensure RLS is enabled on all tables
+ALTER TABLE zones ENABLE ROW LEVEL SECURITY;
+ALTER TABLE branches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE designations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE permissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE role_permissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE staff_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_permission_overrides ENABLE ROW LEVEL SECURITY;
+ALTER TABLE candidates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE candidate_otps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE application_steps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE verification_remarks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE hr_decisions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+-- Drop all deny_all policies
+DROP POLICY IF EXISTS "deny_all" ON zones;
+DROP POLICY IF EXISTS "deny_all" ON branches;
+DROP POLICY IF EXISTS "deny_all" ON departments;
+DROP POLICY IF EXISTS "deny_all" ON designations;
+DROP POLICY IF EXISTS "deny_all" ON roles;
+DROP POLICY IF EXISTS "deny_all" ON permissions;
+DROP POLICY IF EXISTS "deny_all" ON role_permissions;
+DROP POLICY IF EXISTS "deny_all" ON staff_profiles;
+DROP POLICY IF EXISTS "deny_all" ON user_permission_overrides;
+DROP POLICY IF EXISTS "deny_all" ON candidates;
+DROP POLICY IF EXISTS "deny_all" ON candidate_otps;
+DROP POLICY IF EXISTS "deny_all" ON applications;
+DROP POLICY IF EXISTS "deny_all" ON application_steps;
+DROP POLICY IF EXISTS "deny_all" ON documents;
+DROP POLICY IF EXISTS "deny_all" ON verification_remarks;
+DROP POLICY IF EXISTS "deny_all" ON hr_decisions;
+DROP POLICY IF EXISTS "deny_all" ON employees;
+DROP POLICY IF EXISTS "deny_all" ON audit_logs;
+DROP POLICY IF EXISTS "deny_all" ON notifications;
+
+-- Drop any previous versions of custom policies
+DROP POLICY IF EXISTS "zones_read_all" ON zones;
+DROP POLICY IF EXISTS "zones_admin_all" ON zones;
+DROP POLICY IF EXISTS "branches_read_all" ON branches;
+DROP POLICY IF EXISTS "branches_admin_all" ON branches;
+DROP POLICY IF EXISTS "departments_read_all" ON departments;
+DROP POLICY IF EXISTS "departments_admin_all" ON departments;
+DROP POLICY IF EXISTS "designations_read_all" ON designations;
+DROP POLICY IF EXISTS "designations_admin_all" ON designations;
+DROP POLICY IF EXISTS "roles_read_all" ON roles;
+DROP POLICY IF EXISTS "roles_admin_all" ON roles;
+DROP POLICY IF EXISTS "permissions_read_all" ON permissions;
+DROP POLICY IF EXISTS "role_permissions_read_all" ON role_permissions;
+DROP POLICY IF EXISTS "staff_profiles_read" ON staff_profiles;
+DROP POLICY IF EXISTS "staff_profiles_update_own" ON staff_profiles;
+DROP POLICY IF EXISTS "staff_profiles_admin_all" ON staff_profiles;
+DROP POLICY IF EXISTS "overrides_super_admin" ON user_permission_overrides;
+DROP POLICY IF EXISTS "candidates_scoped_read" ON candidates;
+DROP POLICY IF EXISTS "candidates_scoped_insert" ON candidates;
+DROP POLICY IF EXISTS "candidates_scoped_update" ON candidates;
+DROP POLICY IF EXISTS "candidate_otps_admin" ON candidate_otps;
+DROP POLICY IF EXISTS "applications_scoped_read" ON applications;
+DROP POLICY IF EXISTS "applications_scoped_insert" ON applications;
+DROP POLICY IF EXISTS "applications_scoped_update" ON applications;
+DROP POLICY IF EXISTS "application_steps_scoped_read" ON application_steps;
+DROP POLICY IF EXISTS "application_steps_scoped_write" ON application_steps;
+DROP POLICY IF EXISTS "documents_scoped_read" ON documents;
+DROP POLICY IF EXISTS "documents_scoped_write" ON documents;
+DROP POLICY IF EXISTS "verification_remarks_scoped" ON verification_remarks;
+DROP POLICY IF EXISTS "hr_decisions_scoped" ON hr_decisions;
+DROP POLICY IF EXISTS "employees_scoped" ON employees;
+DROP POLICY IF EXISTS "audit_logs_read" ON audit_logs;
+DROP POLICY IF EXISTS "audit_logs_insert" ON audit_logs;
+DROP POLICY IF EXISTS "notifications_read" ON notifications;
+
+-- ------------------------------------------------------------------------------
+-- 3. Define Real Role & Scope RLS Policies
 -- ------------------------------------------------------------------------------
 
 -- Table: zones
-DROP POLICY IF EXISTS "deny_all" ON zones;
 CREATE POLICY "zones_read_all" ON zones
   FOR SELECT TO authenticated
   USING (true);
 
+CREATE POLICY "zones_admin_all" ON zones
+  FOR ALL TO authenticated
+  USING (is_super_admin())
+  WITH CHECK (is_super_admin());
+
 -- Table: branches
-DROP POLICY IF EXISTS "deny_all" ON branches;
 CREATE POLICY "branches_read_all" ON branches
   FOR SELECT TO authenticated
   USING (true);
 
+CREATE POLICY "branches_admin_all" ON branches
+  FOR ALL TO authenticated
+  USING (is_super_admin())
+  WITH CHECK (is_super_admin());
+
 -- Table: departments
-DROP POLICY IF EXISTS "deny_all" ON departments;
 CREATE POLICY "departments_read_all" ON departments
   FOR SELECT TO authenticated
   USING (true);
 
+CREATE POLICY "departments_admin_all" ON departments
+  FOR ALL TO authenticated
+  USING (is_super_admin())
+  WITH CHECK (is_super_admin());
+
 -- Table: designations
-DROP POLICY IF EXISTS "deny_all" ON designations;
 CREATE POLICY "designations_read_all" ON designations
   FOR SELECT TO authenticated
   USING (true);
 
+CREATE POLICY "designations_admin_all" ON designations
+  FOR ALL TO authenticated
+  USING (is_super_admin())
+  WITH CHECK (is_super_admin());
+
 -- Table: roles
-DROP POLICY IF EXISTS "deny_all" ON roles;
 CREATE POLICY "roles_read_all" ON roles
   FOR SELECT TO authenticated
   USING (true);
 
+CREATE POLICY "roles_admin_all" ON roles
+  FOR ALL TO authenticated
+  USING (is_super_admin())
+  WITH CHECK (is_super_admin());
+
 -- Table: permissions
-DROP POLICY IF EXISTS "deny_all" ON permissions;
 CREATE POLICY "permissions_read_all" ON permissions
   FOR SELECT TO authenticated
   USING (true);
 
 -- Table: role_permissions
-DROP POLICY IF EXISTS "deny_all" ON role_permissions;
 CREATE POLICY "role_permissions_read_all" ON role_permissions
   FOR SELECT TO authenticated
   USING (true);
 
 -- Table: staff_profiles
-DROP POLICY IF EXISTS "deny_all" ON staff_profiles;
 CREATE POLICY "staff_profiles_read" ON staff_profiles
   FOR SELECT TO authenticated
   USING (
     is_super_admin()
     OR id = auth.uid()
-    OR (is_zonal_hr_manager() AND (zone_id = staff_zone_id() OR zone_id IS NULL))
+    OR (
+      is_zonal_hr_manager() 
+      AND zone_id = staff_zone_id() 
+      AND role_id IN (SELECT id FROM roles WHERE name IN ('central_hr', 'branch_manager'))
+    )
   );
 
 CREATE POLICY "staff_profiles_update_own" ON staff_profiles
@@ -175,15 +277,18 @@ CREATE POLICY "staff_profiles_update_own" ON staff_profiles
   USING (id = auth.uid() OR is_super_admin())
   WITH CHECK (id = auth.uid() OR is_super_admin());
 
+CREATE POLICY "staff_profiles_admin_all" ON staff_profiles
+  FOR ALL TO authenticated
+  USING (is_super_admin())
+  WITH CHECK (is_super_admin());
+
 -- Table: user_permission_overrides
-DROP POLICY IF EXISTS "deny_all" ON user_permission_overrides;
 CREATE POLICY "overrides_super_admin" ON user_permission_overrides
   FOR ALL TO authenticated
   USING (is_super_admin() OR staff_profile_id = auth.uid())
   WITH CHECK (is_super_admin());
 
 -- Table: candidates (Scoped by Zone & Branch)
-DROP POLICY IF EXISTS "deny_all" ON candidates;
 CREATE POLICY "candidates_scoped_read" ON candidates
   FOR SELECT TO authenticated
   USING (
@@ -198,16 +303,25 @@ CREATE POLICY "candidates_scoped_insert" ON candidates
   WITH CHECK (
     is_super_admin()
     OR (is_zonal_hr_manager() AND zone_id = staff_zone_id())
+    OR (is_central_hr() AND zone_id = staff_zone_id())
   );
 
--- Table: candidate_otps (Only Edge Function / Service role or admin)
-DROP POLICY IF EXISTS "deny_all" ON candidate_otps;
+CREATE POLICY "candidates_scoped_update" ON candidates
+  FOR UPDATE TO authenticated
+  USING (
+    is_super_admin()
+    OR (is_zonal_hr_manager() AND zone_id = staff_zone_id())
+    OR (is_central_hr() AND zone_id = staff_zone_id())
+    OR (is_branch_manager() AND branch_id = staff_branch_id())
+  );
+
+-- Table: candidate_otps (Super admin or service role)
 CREATE POLICY "candidate_otps_admin" ON candidate_otps
   FOR ALL TO authenticated
-  USING (is_super_admin());
+  USING (is_super_admin())
+  WITH CHECK (is_super_admin());
 
 -- Table: applications (Scoped by Candidate Zone & Branch)
-DROP POLICY IF EXISTS "deny_all" ON applications;
 CREATE POLICY "applications_scoped_read" ON applications
   FOR SELECT TO authenticated
   USING (
@@ -223,8 +337,36 @@ CREATE POLICY "applications_scoped_read" ON applications
     )
   );
 
+CREATE POLICY "applications_scoped_insert" ON applications
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    is_super_admin()
+    OR EXISTS (
+      SELECT 1 FROM candidates c
+      WHERE c.id = applications.candidate_id
+        AND (
+          (is_zonal_hr_manager() AND c.zone_id = staff_zone_id())
+          OR (is_central_hr() AND c.zone_id = staff_zone_id())
+        )
+    )
+  );
+
+CREATE POLICY "applications_scoped_update" ON applications
+  FOR UPDATE TO authenticated
+  USING (
+    is_super_admin()
+    OR EXISTS (
+      SELECT 1 FROM candidates c
+      WHERE c.id = applications.candidate_id
+        AND (
+          (is_zonal_hr_manager() AND c.zone_id = staff_zone_id())
+          OR (is_central_hr() AND c.zone_id = staff_zone_id())
+          OR (is_branch_manager() AND c.branch_id = staff_branch_id())
+        )
+    )
+  );
+
 -- Table: application_steps
-DROP POLICY IF EXISTS "deny_all" ON application_steps;
 CREATE POLICY "application_steps_scoped_read" ON application_steps
   FOR SELECT TO authenticated
   USING (
@@ -241,8 +383,23 @@ CREATE POLICY "application_steps_scoped_read" ON application_steps
     )
   );
 
+CREATE POLICY "application_steps_scoped_write" ON application_steps
+  FOR ALL TO authenticated
+  USING (
+    is_super_admin()
+    OR EXISTS (
+      SELECT 1 FROM applications a
+      JOIN candidates c ON a.candidate_id = c.id
+      WHERE a.id = application_steps.application_id
+        AND (
+          (is_zonal_hr_manager() AND c.zone_id = staff_zone_id())
+          OR (is_central_hr() AND c.zone_id = staff_zone_id())
+          OR (is_branch_manager() AND c.branch_id = staff_branch_id())
+        )
+    )
+  );
+
 -- Table: documents
-DROP POLICY IF EXISTS "deny_all" ON documents;
 CREATE POLICY "documents_scoped_read" ON documents
   FOR SELECT TO authenticated
   USING (
@@ -259,8 +416,23 @@ CREATE POLICY "documents_scoped_read" ON documents
     )
   );
 
+CREATE POLICY "documents_scoped_write" ON documents
+  FOR ALL TO authenticated
+  USING (
+    is_super_admin()
+    OR EXISTS (
+      SELECT 1 FROM applications a
+      JOIN candidates c ON a.candidate_id = c.id
+      WHERE a.id = documents.application_id
+        AND (
+          (is_zonal_hr_manager() AND c.zone_id = staff_zone_id())
+          OR (is_central_hr() AND c.zone_id = staff_zone_id())
+          OR (is_branch_manager() AND c.branch_id = staff_branch_id())
+        )
+    )
+  );
+
 -- Table: verification_remarks
-DROP POLICY IF EXISTS "deny_all" ON verification_remarks;
 CREATE POLICY "verification_remarks_scoped" ON verification_remarks
   FOR ALL TO authenticated
   USING (
@@ -278,7 +450,6 @@ CREATE POLICY "verification_remarks_scoped" ON verification_remarks
   );
 
 -- Table: hr_decisions
-DROP POLICY IF EXISTS "deny_all" ON hr_decisions;
 CREATE POLICY "hr_decisions_scoped" ON hr_decisions
   FOR ALL TO authenticated
   USING (
@@ -290,10 +461,16 @@ CREATE POLICY "hr_decisions_scoped" ON hr_decisions
         WHERE a.id = hr_decisions.application_id AND c.zone_id = staff_zone_id()
       )
     )
+    OR (
+      is_central_hr() AND EXISTS (
+        SELECT 1 FROM applications a
+        JOIN candidates c ON a.candidate_id = c.id
+        WHERE a.id = hr_decisions.application_id AND c.zone_id = staff_zone_id()
+      )
+    )
   );
 
 -- Table: employees
-DROP POLICY IF EXISTS "deny_all" ON employees;
 CREATE POLICY "employees_scoped" ON employees
   FOR SELECT TO authenticated
   USING (
@@ -311,16 +488,19 @@ CREATE POLICY "employees_scoped" ON employees
   );
 
 -- Table: audit_logs
-DROP POLICY IF EXISTS "deny_all" ON audit_logs;
 CREATE POLICY "audit_logs_read" ON audit_logs
   FOR SELECT TO authenticated
   USING (is_super_admin() OR is_zonal_hr_manager());
 
+CREATE POLICY "audit_logs_insert" ON audit_logs
+  FOR INSERT TO authenticated
+  WITH CHECK (true);
+
 -- Table: notifications
-DROP POLICY IF EXISTS "deny_all" ON notifications;
 CREATE POLICY "notifications_read" ON notifications
   FOR SELECT TO authenticated
   USING (
     is_super_admin()
     OR (recipient_type = 'staff' AND recipient_id = auth.uid())
   );
+

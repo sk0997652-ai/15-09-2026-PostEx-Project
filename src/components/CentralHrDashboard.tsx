@@ -38,6 +38,7 @@ import {
   BadgeAlert,
   IdCard,
 } from 'lucide-react';
+import { VerificationStampSeal } from './common/VerificationStampSeal';
 
 interface CentralHrDashboardProps {
   currentUser: {
@@ -124,13 +125,24 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
   }>({ designations: [], branches: [] });
 
   // "Create New Joiner" State
-  const [joinerForm, setJoinerForm] = useState({
+  const [joinerForm, setJoinerForm] = useState<{
+    full_name: string;
+    cnic: string;
+    mobile: string;
+    email: string;
+    designation_id: string;
+    branch_id: string;
+    track: 'executive' | 'non_executive';
+    allow_duplicate_override: boolean;
+    override_reason: string;
+  }>({
     full_name: '',
     cnic: '',
     mobile: '',
     email: '',
     designation_id: '',
     branch_id: '',
+    track: 'executive',
     allow_duplicate_override: false,
     override_reason: '',
   });
@@ -151,6 +163,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
     candidate_name: string;
     mobile: string;
     email?: string;
+    track: string;
   } | null>(null);
 
   // Review Queue State
@@ -160,8 +173,28 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
   const [queueBranchFilter, setQueueBranchFilter] = useState('');
   const [queueSearch, setQueueSearch] = useState('');
 
+  // Memoized unique applications to prevent duplicate row rendering
+  const uniqueApplications = React.useMemo(() => {
+    const seen = new Set<string>();
+    return applications.filter((app) => {
+      if (!app?.id || seen.has(app.id)) return false;
+      seen.add(app.id);
+      return true;
+    });
+  }, [applications]);
+
   // Enrolled Employees State
   const [enrolledEmployees, setEnrolledEmployees] = useState<EnrolledEmployee[]>([]);
+
+  // Memoized unique enrolled employees
+  const uniqueEnrolledEmployees = React.useMemo(() => {
+    const seen = new Set<string>();
+    return enrolledEmployees.filter((emp) => {
+      if (!emp?.id || seen.has(emp.id)) return false;
+      seen.add(emp.id);
+      return true;
+    });
+  }, [enrolledEmployees]);
 
   // Dossier Modal State
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
@@ -401,6 +434,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
         candidate_name: joinerForm.full_name,
         mobile: joinerForm.mobile,
         email: joinerForm.email,
+        track: joinerForm.track,
       });
       setSuccessMessage(`Candidate successfully created! Assigned Joining ID: ${data.joining_id}`);
 
@@ -412,6 +446,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
         email: '',
         designation_id: '',
         branch_id: formOptions.branches[0]?.id || '',
+        track: 'executive',
         allow_duplicate_override: false,
         override_reason: '',
       });
@@ -720,16 +755,38 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
           </div>
         )}
 
+        {/* Persistent Role & Section Banner */}
+        <div className="mb-6 pb-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 text-[11px] font-bold uppercase tracking-wider mb-1">
+              Central HR Workstation &bull; {currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
+            </div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              {activeTab === 'overview' && 'Central HR — Operations Overview'}
+              {activeTab === 'create_joiner' && 'Central HR — Register Candidate Joiner'}
+              {activeTab === 'review_queue' && 'Central HR — Candidate Review Queue'}
+              {activeTab === 'enrolled_roster' && 'Central HR — Enrolled Corporate Employees'}
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {activeTab === 'overview' && 'Monitor zone joiner throughput, pending reviews, and recent enrollment actions.'}
+              {activeTab === 'create_joiner' && 'Register a new candidate joiner with automated Joining ID generation and validation.'}
+              {activeTab === 'review_queue' && 'Review branch-verified application dossiers, evaluate credentials, and make enrollment decisions.'}
+              {activeTab === 'enrolled_roster' && 'Access company roster of approved employees and download compiled onboarding dossiers.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-medium shadow-2xs">
+              Logged in as: <strong className="text-slate-900">{currentUser.name}</strong>
+            </span>
+          </div>
+        </div>
+
         {/* VIEW 1: OVERVIEW & PIPELINE METRICS */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-800 text-xs font-semibold mb-2">
-                  <Building2 className="w-3.5 h-3.5" />
-                  <span>Central HR Workstation</span> &bull; <span>{currentUser.zone_name || metrics?.zoneName}</span>
-                </div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight">Onboarding Operations Desk</h1>
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight">Operational Metrics Summary</h2>
                 <p className="text-xs text-slate-500 mt-1">
                   Manage joiner registrations, review branch-verified application dossiers, and enrol corporate employees.
                 </p>
@@ -876,7 +933,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>Step 1: Joiner Intake</span>
                 </div>
-                <h2 className="text-xl font-black text-slate-900">Register New Candidate Joiner</h2>
+                <h2 className="text-xl font-black text-slate-900">Register Candidate Joiner</h2>
                 <p className="text-xs text-slate-500 mt-1">
                   Enforce strict CNIC, mobile, and duplicate checking. On creation, a unique Joining ID (<code className="font-mono text-indigo-600">PX-YYYY-XXXXXX</code>) is auto-generated and dispatched via SMS/email.
                 </p>
@@ -897,6 +954,12 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
                   <div className="text-xs text-emerald-900 space-y-1 bg-white/70 p-3 rounded-xl border border-emerald-100 font-mono">
                     <p><strong>Candidate:</strong> {createdJoinerResult.candidate_name}</p>
                     <p><strong>Assigned Joining ID:</strong> {createdJoinerResult.joining_id}</p>
+                    <p>
+                      <strong>Assigned Track:</strong>{' '}
+                      <span className="capitalize font-bold text-indigo-700">
+                        {createdJoinerResult.track === 'non_executive' ? 'Non-Executive Track' : 'Executive Track'}
+                      </span>
+                    </p>
                     <p><strong>SMS Notification:</strong> Dispatched to {createdJoinerResult.mobile}</p>
                     {createdJoinerResult.email && <p><strong>Email Notification:</strong> Dispatched to {createdJoinerResult.email}</p>}
                   </div>
@@ -921,6 +984,73 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
               )}
 
               <form onSubmit={handleCreateJoiner} className="space-y-5">
+                {/* Track Selector [DECISION 1: Executive Track vs Non-Executive Track] */}
+                <div id="joiner-track-selection-container">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold text-slate-800">
+                      Onboarding Job Track <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[11px] text-indigo-600 font-semibold">
+                      Required — Candidate never chooses their own track
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label
+                      id="track-option-executive"
+                      className={`relative flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                        joinerForm.track === 'executive'
+                          ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-500/20'
+                          : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="job_track"
+                        value="executive"
+                        checked={joinerForm.track === 'executive'}
+                        onChange={() => setJoinerForm({ ...joinerForm, track: 'executive' })}
+                        className="mt-0.5 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <div>
+                        <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <span>Executive Track</span>
+                          <span className="px-1.5 py-0.5 rounded text-[10px] bg-indigo-100 text-indigo-700 font-bold">Standard Form</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1 leading-normal">
+                          For Corporate, Management, Operations Execs &amp; Office Staff. Includes Education, Employment, Benefits &amp; Referees.
+                        </p>
+                      </div>
+                    </label>
+
+                    <label
+                      id="track-option-non-executive"
+                      className={`relative flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                        joinerForm.track === 'non_executive'
+                          ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-500/20'
+                          : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="job_track"
+                        value="non_executive"
+                        checked={joinerForm.track === 'non_executive'}
+                        onChange={() => setJoinerForm({ ...joinerForm, track: 'non_executive' })}
+                        className="mt-0.5 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <div>
+                        <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <span>Non-Executive Track</span>
+                          <span className="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800 font-bold">Rider / Field Form</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1 leading-normal">
+                          For Operational Frontline &amp; Field Staff. 8 sections: Employee Info, Address &amp; Family, Experience, Academic, Employment Record, References, Current Job Info &amp; Declaration.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
                 {/* Full Name */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -1123,7 +1253,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
               <div>
-                <h2 className="text-xl font-black text-slate-900 tracking-tight">Onboarding Review Queue</h2>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">Candidate Verification Review Queue</h2>
                 <p className="text-xs text-slate-500 mt-1">
                   Applications from candidates in <strong>{currentUser.zone_name || metrics?.zoneName}</strong>. Inspect branch verifications and issue enrollment decisions.
                 </p>
@@ -1131,7 +1261,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
 
               {/* Filters */}
               <div className="flex flex-wrap items-center gap-3">
-                <div className="relative min-w-[200px]">
+                <div className="relative min-w-[220px]">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
                   <input
                     type="text"
@@ -1142,6 +1272,14 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
                     className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                   />
                 </div>
+
+                <button
+                  onClick={() => fetchApplications(1)}
+                  className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <span>Search</span>
+                </button>
 
                 <select
                   value={queueStatusFilter}
@@ -1168,10 +1306,23 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
                   ))}
                 </select>
 
+                {(queueSearch || queueStatusFilter !== 'all' || queueBranchFilter) && (
+                  <button
+                    onClick={() => {
+                      setQueueSearch('');
+                      setQueueStatusFilter('all');
+                      setQueueBranchFilter('');
+                    }}
+                    className="px-3 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-600 text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    Clear Filters
+                  </button>
+                )}
+
                 <button
                   onClick={() => fetchApplications(1)}
                   className="p-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
-                  title="Search &amp; Refresh"
+                  title="Refresh Queue"
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>
@@ -1201,7 +1352,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
                           <span>Loading applications in your assigned zone...</span>
                         </td>
                       </tr>
-                    ) : applications.length === 0 ? (
+                    ) : uniqueApplications.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="py-12 text-center text-slate-500">
                           <ClipboardList className="w-8 h-8 mx-auto text-slate-300 mb-2" />
@@ -1212,7 +1363,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
                         </td>
                       </tr>
                     ) : (
-                      applications.map((app) => (
+                      uniqueApplications.map((app) => (
                         <tr key={app.id} className="hover:bg-slate-50/60 transition-colors">
                           <td className="py-3.5 px-4 font-mono font-bold text-indigo-700">
                             {app.candidate?.joining_id || 'N/A'}
@@ -1300,7 +1451,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
               <div>
-                <h2 className="text-xl font-black text-slate-900 tracking-tight">Enrolled Corporate Employees</h2>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">Enrolled Employee Directory</h2>
                 <p className="text-xs text-slate-500 mt-1">
                   Approved candidates in <strong>{currentUser.zone_name || metrics?.zoneName}</strong> with formal Employee IDs and generated PDF Dossiers.
                 </p>
@@ -1335,7 +1486,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
                           <span>Loading enrolled employees...</span>
                         </td>
                       </tr>
-                    ) : enrolledEmployees.length === 0 ? (
+                    ) : uniqueEnrolledEmployees.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="py-12 text-center text-slate-500">
                           <UserCheck className="w-8 h-8 mx-auto text-slate-300 mb-2" />
@@ -1346,7 +1497,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
                         </td>
                       </tr>
                     ) : (
-                      enrolledEmployees.map((emp) => (
+                      uniqueEnrolledEmployees.map((emp) => (
                         <tr key={emp.id} className="hover:bg-slate-50/60 transition-colors">
                           <td className="py-3.5 px-4 font-mono font-bold text-emerald-700">
                             {emp.employee_id}
@@ -1475,6 +1626,42 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
                       </div>
                     )}
                   </div>
+
+                  {/* Verification Stamp Seal for Approved Candidates */}
+                  {dossierData.application.status === 'approved' && (
+                    <div className="p-5 bg-gradient-to-r from-emerald-50/60 via-white to-indigo-50/40 rounded-2xl border border-emerald-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-5">
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+                        <div className="shrink-0">
+                          <VerificationStampSeal
+                            stage="central_approval"
+                            signerName={currentUser.name || 'Central HR Executive'}
+                            code={dossierData.application.employee?.employee_id || `AUTH-${dossierData.application.id.slice(0, 8)}`}
+                            timestamp={dossierData.application.updated_at || new Date().toISOString()}
+                            size="md"
+                            showDetails={false}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Corporate Certified
+                          </span>
+                          <h4 className="text-sm font-black text-slate-900">
+                            Formal Employment Enrolment Approved
+                          </h4>
+                          <p className="text-xs text-slate-500 max-w-md">
+                            Official Central HR digital seal attached. Candidate dossier locked and enrolled in central HR database.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleOpenPdfDossier(dossierData)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer shrink-0"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>Print Official PDF Dossier</span>
+                      </button>
+                    </div>
+                  )}
 
                   {/* 1. Candidate Personal & Organizational Summary */}
                   <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">

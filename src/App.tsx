@@ -11,6 +11,7 @@ import { RbacTestingPanel } from './components/RbacTestingPanel';
 import { SuperAdminDashboard } from './components/SuperAdminDashboard';
 import { ZonalHrDashboard } from './components/ZonalHrDashboard';
 import { CentralHrDashboard } from './components/CentralHrDashboard';
+import { BranchManagerDashboard } from './components/BranchManagerDashboard';
 import { checkStaffSession, signOutStaff } from './lib/staffAuth';
 import { supabase } from './lib/supabase';
 import { Building2, Shield, Users, Smartphone, Activity, Lock, Wrench, ChevronDown, UserCheck, LogOut } from 'lucide-react';
@@ -227,6 +228,11 @@ export default function App() {
               currentUser={currentUser}
               onSignOut={handleSignOut}
             />
+          ) : currentUser && currentUser.role === 'branch_manager' ? (
+            <BranchManagerDashboard
+              currentUser={currentUser}
+              onSignOut={handleSignOut}
+            />
           ) : currentUser ? (
             <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
               <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-xs text-center space-y-4">
@@ -242,7 +248,7 @@ export default function App() {
                   {currentUser.zone_name && <span>&bull; {currentUser.zone_name}</span>}
                 </div>
                 <p className="text-xs text-slate-600 max-w-md mx-auto">
-                  You are authenticated with an active enterprise session. Specialized workspace modules for Central HR and Branch Managers will connect in upcoming milestones.
+                  You are authenticated with an active enterprise session. Your account does not have a designated workstation role assigned. Please contact the Super Admin for role assignment.
                 </p>
                 <div className="pt-4 border-t border-slate-100 flex justify-center">
                   <button
@@ -258,16 +264,43 @@ export default function App() {
           ) : (
             <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
               <div className="text-center max-w-xl mx-auto mb-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold mb-2">
-                  <span>Production Staff Portal</span> &bull; <span>Role-Based Access</span>
+                <div className="inline-flex p-1 bg-slate-200/80 rounded-xl border border-slate-300 mb-4">
+                  <button
+                    id="portal-toggle-candidate"
+                    onClick={() => setAuthPortalType('candidate')}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      authPortalType === 'candidate' ? 'bg-white text-indigo-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Smartphone className="w-4 h-4 text-indigo-600" />
+                    <span>Candidate Onboarding</span>
+                  </button>
+                  <button
+                    id="portal-toggle-staff"
+                    onClick={() => setAuthPortalType('staff')}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      authPortalType === 'staff' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Users className="w-4 h-4 text-emerald-600" />
+                    <span>Staff &amp; Admin Login</span>
+                  </button>
                 </div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Staff &amp; Super Admin Login</h2>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                  {authPortalType === 'candidate' ? 'Candidate Onboarding Portal' : 'Staff & Super Admin Login'}
+                </h2>
                 <p className="text-xs text-slate-600 mt-1">
-                  Log in with your PostEx staff credentials to access your administrative dashboard.
+                  {authPortalType === 'candidate'
+                    ? 'Log in with your Joining ID and Mobile Number to complete onboarding.'
+                    : 'Log in with your PostEx staff credentials to access your administrative dashboard.'}
                 </p>
               </div>
-              <div className="max-w-md mx-auto">
-                <StaffLoginForm onLoginSuccess={refreshSession} />
+              <div className={authPortalType === 'candidate' ? 'max-w-4xl mx-auto' : 'max-w-md mx-auto'}>
+                {authPortalType === 'candidate' ? (
+                  <CandidateLoginForm />
+                ) : (
+                  <StaffLoginForm onLoginSuccess={refreshSession} />
+                )}
               </div>
             </div>
           )

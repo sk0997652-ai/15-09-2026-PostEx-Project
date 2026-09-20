@@ -1,11 +1,17 @@
 import express from 'express';
 import path from 'path';
 import crypto from 'crypto';
+import multer from 'multer';
 import { createServer as createViteServer } from 'vite';
 import { createClient } from '@supabase/supabase-js';
 import { createSuperAdminRouter } from './src/server/superAdminRoutes';
 import { createZonalHrRouter } from './src/server/zonalHrRoutes';
 import { createCentralHrRouter } from './src/server/centralHrRoutes';
+import { createBranchManagerRouter } from './src/server/branchManagerRoutes';
+import { formTemplatesService } from './src/server/formTemplatesStore';
+import { validateStatusTransition } from './src/server/workflowStateMachine';
+import { notificationService } from './src/server/notificationService';
+import { dataRetentionService } from './src/server/dataRetentionStore';
 
 const app = express();
 const PORT = 3000;
@@ -216,14 +222,16 @@ app.post('/api/candidate-auth/request-otp', async (req, res) => {
 
     const cleanJoiningId = String(joining_id).trim();
     const cleanCnic = String(cnic).trim();
+    const cleanDigits = cleanCnic.replace(/\D/g, '');
+    const formattedCnic = cleanDigits.length === 13 ? `${cleanDigits.slice(0, 5)}-${cleanDigits.slice(5, 12)}-${cleanDigits.slice(12)}` : cleanCnic;
     const cleanMobile = String(mobile).trim();
 
     const { data: candidate, error: candError } = await supabaseAdmin
       .from('candidates')
       .select('id, full_name, cnic, mobile, joining_id')
       .eq('joining_id', cleanJoiningId)
-      .eq('cnic', cleanCnic)
-      .single();
+      .or(`cnic.eq.${cleanCnic},cnic.eq.${formattedCnic},cnic.eq.${cleanDigits}`)
+      .maybeSingle();
 
     if (candError || !candidate) {
       return res.status(401).json({
@@ -284,15 +292,8 @@ app.post('/api/candidate-auth/request-otp', async (req, res) => {
       return res.status(500).json({ success: false, error: 'Failed to generate OTP. Try again.' });
     }
 
-    await supabaseAdmin.from('notifications').insert({
-      recipient_type: 'candidate',
-      recipient_id: candidate.id,
-      channel: 'sms',
-      destination: candidate.mobile,
-      template_name: 'otp_verification',
-      status: 'sent',
-      metadata: { expires_at: expiresAt },
-    });
+    // Consolidated notification service dispatch
+    await notificationService.notifyCandidateOtp(supabaseAdmin, candidate.id, candidate.mobile, rawOtp);
 
     return res.json({
       success: true,
@@ -448,16 +449,23 @@ app.post('/api/staff/regenerate-password', async (req, res) => {
     }
 
     // Verify caller authorization
-    if (requester_token) {
-      const { data: authUser, error: authErr } = await supabaseAdmin.auth.getUser(requester_token);
-      if (authErr || !authUser.user) {
-        return res.status(401).json({ success: false, error: 'Unauthorized: Invalid staff token.' });
-      }
+    const rawAuth = req.headers.authorization || '';
+    const bearerToken = rawAuth.startsWith('Bearer ') ? rawAuth.slice(7).trim() : null;
+    const effectiveToken = requester_token || bearerToken;
 
-      const requesterCtx = await getStaffContext(authUser.user.id);
-      if (!requesterCtx) {
-        return res.status(403).json({ success: false, error: 'Requester staff profile not found or inactive.' });
-      }
+    if (!effectiveToken) {
+      return res.status(401).json({ success: false, error: 'Unauthorized: Authentication token is required.' });
+    }
+
+    const { data: authUser, error: authErr } = await supabaseAdmin.auth.getUser(effectiveToken);
+    if (authErr || !authUser.user) {
+      return res.status(401).json({ success: false, error: 'Unauthorized: Invalid staff token.' });
+    }
+
+    const requesterCtx = await getStaffContext(authUser.user.id);
+    if (!requesterCtx) {
+      return res.status(403).json({ success: false, error: 'Requester staff profile not found or inactive.' });
+    }
 
       // Privileged Action Check
       if (requesterCtx.role !== 'super_admin' && requesterCtx.role !== 'zonal_hr_manager') {
@@ -482,7 +490,6 @@ app.post('/api/staff/regenerate-password', async (req, res) => {
           });
         }
       }
-    }
 
     const newTempPassword = generateSecureTempPassword(14);
 
@@ -844,16 +851,829 @@ app.get('/api/candidate/application', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Candidate not found.' });
     }
 
+    // Resolve track: DB column or fallback store
+    const resolvedTrack = candidate.track || formTemplatesService.getCandidateTrack(candidateId) || 'executive';
+    candidate.track = resolvedTrack;
+
+    // Resolve candidate designation from audit logs or designations table
+    let designationTitle = (candidate as any).designation_title || (candidate as any).designation || null;
+    if (!designationTitle) {
+      try {
+        const { data: creationLogs } = await supabaseAdmin
+          .from('audit_logs')
+          .select('metadata')
+          .eq('entity_id', candidateId)
+          .eq('action', 'central_hr_created_candidate')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const creationLog = creationLogs?.[0];
+
+        if (creationLog?.metadata?.designation_id) {
+          const { data: desigRow } = await supabaseAdmin
+            .from('designations')
+            .select('name')
+            .eq('id', creationLog.metadata.designation_id)
+            .maybeSingle();
+          if (desigRow?.name) {
+            designationTitle = desigRow.name;
+          }
+        }
+      } catch {
+        // continue
+      }
+    }
+    if (!designationTitle) {
+      designationTitle = resolvedTrack === 'executive' ? 'Operations Executive' : 'Courier & Logistics Associate';
+    }
+    candidate.designation = designationTitle;
+
     const { data: application } = await supabaseAdmin
       .from('applications')
       .select('*, application_steps(*), documents(*)')
       .eq('candidate_id', candidateId)
       .maybeSingle();
 
+    if (application && application.track === undefined) {
+      application.track = resolvedTrack;
+    }
+
+    // Attach signed preview URLs to uploaded documents
+    if (application && Array.isArray(application.documents)) {
+      application.documents = await Promise.all(
+        application.documents.map(async (doc: any) => {
+          try {
+            const { data: signed } = await supabaseAdmin.storage
+              .from('candidate-documents')
+              .createSignedUrl(doc.storage_path, 3600);
+            return {
+              ...doc,
+              preview_url: signed?.signedUrl || `/api/documents/${doc.id}/view`,
+            };
+          } catch {
+            return {
+              ...doc,
+              preview_url: `/api/documents/${doc.id}/view`,
+            };
+          }
+        })
+      );
+    }
+
+    // Check if consent has been recorded (safe against multiple audit rows)
+    const { data: consentLogs } = await supabaseAdmin
+      .from('audit_logs')
+      .select('id, created_at')
+      .eq('actor_id', candidateId)
+      .eq('action', 'CONSENT_GRANTED')
+      .limit(1);
+
+    const consentGiven = Boolean(consentLogs && consentLogs.length > 0);
+
     return res.json({
       success: true,
       candidate,
       application: application || null,
+      consentGiven,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ success: false, error: message });
+  }
+});
+
+// Organization Settings Public Endpoint
+app.get('/api/organization-settings', async (req, res) => {
+  try {
+    const settings = await formTemplatesService.getOrgSettings(supabaseAdmin);
+    return res.json({ success: true, settings });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ success: false, error: msg });
+  }
+});
+
+// Organization Settings Update Endpoint (Admin/Staff)
+app.put('/api/admin/organization-settings', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, error: 'Staff authorization required.' });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: authUser } = await supabaseAdmin.auth.getUser(token);
+    const userId = authUser?.user?.id || 'admin';
+
+    const settings = await formTemplatesService.updateOrgSettings(req.body, userId, supabaseAdmin);
+    return res.json({ success: true, settings });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ success: false, error: msg });
+  }
+});
+
+// Form Template for candidate track (Executive or Non-Executive)
+app.get('/api/form-templates/:track', async (req, res) => {
+  try {
+    const track = req.params.track as 'executive' | 'non_executive';
+    if (track !== 'executive' && track !== 'non_executive') {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid track parameter. Must be "executive" or "non_executive".',
+      });
+    }
+    const template = await formTemplatesService.getActiveTemplate(track, supabaseAdmin);
+    return res.json({ success: true, template });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ success: false, error: msg });
+  }
+});
+
+// Candidate Log Consent Endpoint
+app.post('/api/candidate/consent', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, error: 'Candidate session token required.' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const verification = verifyCandidateSessionToken(token, serviceRoleKey);
+    if (!verification.valid || !verification.payload) {
+      return res.status(401).json({ success: false, error: verification.error });
+    }
+
+    const candidateId = verification.payload.sub;
+    const { terms_accepted, client_user_agent } = req.body;
+
+    if (!terms_accepted) {
+      return res.status(400).json({ success: false, error: 'Terms must be explicitly accepted.' });
+    }
+
+    // 1. Ensure Application row exists in draft status
+    let { data: application } = await supabaseAdmin
+      .from('applications')
+      .select('id, status, current_step')
+      .eq('candidate_id', candidateId)
+      .maybeSingle();
+
+    if (!application) {
+      const { data: newApp, error: appErr } = await supabaseAdmin
+        .from('applications')
+        .insert({
+          candidate_id: candidateId,
+          status: 'draft',
+          current_step: 1,
+          locked: false,
+        })
+        .select()
+        .single();
+
+      if (appErr) {
+        console.error('Failed to create application draft:', appErr);
+      } else {
+        application = newApp;
+      }
+    }
+
+    // 2. Record logged consent in audit_logs
+    await supabaseAdmin
+      .from('audit_logs')
+      .insert({
+        actor_id: candidateId,
+        actor_type: 'candidate',
+        action: 'CONSENT_GRANTED',
+        entity_type: 'application',
+        entity_id: application ? application.id : candidateId,
+        metadata: {
+          terms_version: '2026.1',
+          accepted_at: new Date().toISOString(),
+          ip_address: req.ip || req.socket.remoteAddress || '127.0.0.1',
+          user_agent: client_user_agent || req.headers['user-agent'] || 'PostEx Web Client',
+        },
+      });
+
+    return res.json({
+      success: true,
+      message: 'Candidate consent logged securely.',
+      application_id: application?.id,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ success: false, error: message });
+  }
+});
+
+// Candidate Autosave Step Data Endpoint
+app.post('/api/candidate/autosave', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, error: 'Candidate session token required.' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const verification = verifyCandidateSessionToken(token, serviceRoleKey);
+    if (!verification.valid || !verification.payload) {
+      return res.status(401).json({ success: false, error: verification.error });
+    }
+
+    const candidateId = verification.payload.sub;
+    const { step_number, step_name, data: stepData } = req.body;
+
+    if (!step_number || !step_name || !stepData) {
+      return res.status(400).json({ success: false, error: 'step_number, step_name, and data are required.' });
+    }
+
+    // Find or create application
+    let { data: application } = await supabaseAdmin
+      .from('applications')
+      .select('id, status, current_step')
+      .eq('candidate_id', candidateId)
+      .maybeSingle();
+
+    if (!application) {
+      const { data: newApp, error: appErr } = await supabaseAdmin
+        .from('applications')
+        .insert({
+          candidate_id: candidateId,
+          status: 'draft',
+          current_step: Number(step_number),
+          locked: false,
+        })
+        .select()
+        .single();
+
+      if (appErr) {
+        return res.status(500).json({ success: false, error: 'Failed to create application draft: ' + appErr.message });
+      }
+      application = newApp;
+    }
+
+    // Check if this step already has a row
+    const { data: existingStep } = await supabaseAdmin
+      .from('application_steps')
+      .select('id')
+      .eq('application_id', application.id)
+      .eq('step_number', step_number)
+      .maybeSingle();
+
+    if (existingStep) {
+      await supabaseAdmin
+        .from('application_steps')
+        .update({
+          step_name,
+          data: stepData,
+          completed: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingStep.id);
+    } else {
+      await supabaseAdmin
+        .from('application_steps')
+        .insert({
+          application_id: application.id,
+          step_number,
+          step_name,
+          data: stepData,
+          completed: true,
+        });
+    }
+
+    // Update application current step
+    const nextStep = Math.max(application.current_step || 1, Number(step_number));
+    await supabaseAdmin
+      .from('applications')
+      .update({
+        current_step: nextStep,
+      })
+      .eq('id', application.id);
+
+    return res.json({
+      success: true,
+      saved_at: new Date().toISOString(),
+      step_number,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ success: false, error: message });
+  }
+});
+
+// Candidate Document Upload Multer Configuration (Max 5MB, JPG/PNG/PDF only)
+const candidateDocUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.pdf'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedMimes.includes(file.mimetype) && allowedExts.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Invalid file type "${file.mimetype || ext}". Only JPG, PNG, and PDF files are accepted.`));
+    }
+  },
+});
+
+// Candidate Document Upload Endpoint
+app.post('/api/candidate/documents/upload', (req, res, next) => {
+  candidateDocUpload.single('file')(req, res, (err: any) => {
+    if (err) {
+      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          success: false,
+          error: 'File size exceeds 5MB limit. Please upload a file smaller than 5MB.',
+        });
+      }
+      return res.status(400).json({ success: false, error: err.message || 'File upload validation failed.' });
+    }
+    next();
+  });
+}, async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, error: 'Candidate session token required.' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const verification = verifyCandidateSessionToken(token, serviceRoleKey);
+    if (!verification.valid || !verification.payload) {
+      return res.status(401).json({ success: false, error: verification.error });
+    }
+
+    const candidateId = verification.payload.sub;
+    const docType = req.body.type;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ success: false, error: 'No file was provided for upload.' });
+    }
+    if (!docType) {
+      return res.status(400).json({ success: false, error: 'Document type is required.' });
+    }
+
+    // Secondary strict server-side validation check
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.pdf'];
+    const fileExt = path.extname(file.originalname).toLowerCase();
+    if (!allowedMimes.includes(file.mimetype) || !allowedExts.includes(fileExt)) {
+      return res.status(400).json({
+        success: false,
+        error: `Server rejected file: "${file.mimetype}". Only JPG, PNG, and PDF formats are permitted.`,
+      });
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      return res.status(400).json({
+        success: false,
+        error: `Server rejected file: size ${(file.size / (1024 * 1024)).toFixed(2)}MB exceeds 5MB limit.`,
+      });
+    }
+
+    // Find or create application
+    let { data: application } = await supabaseAdmin
+      .from('applications')
+      .select('id, status, locked')
+      .eq('candidate_id', candidateId)
+      .maybeSingle();
+
+    if (!application) {
+      const { data: newApp, error: appErr } = await supabaseAdmin
+        .from('applications')
+        .insert({
+          candidate_id: candidateId,
+          status: 'draft',
+          current_step: 1,
+          locked: false,
+        })
+        .select()
+        .single();
+      if (appErr) throw appErr;
+      application = newApp;
+    }
+
+    // If application is locked and not in needs_correction, disallow new uploads
+    if (application.locked && application.status !== 'needs_correction') {
+      return res.status(403).json({
+        success: false,
+        error: 'Application is locked and submitted. Document changes are only allowed during correction requests.',
+      });
+    }
+
+    // Ensure candidate-documents bucket exists
+    try {
+      await supabaseAdmin.storage.createBucket('candidate-documents', { public: false });
+    } catch {
+      // Bucket already exists
+    }
+
+    const cleanBaseName = path.basename(file.originalname, fileExt).replace(/[^a-zA-Z0-9_-]/g, '_');
+    const storagePath = `applications/${application.id}/${docType}-${Date.now()}-${cleanBaseName}${fileExt}`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('candidate-documents')
+      .upload(storagePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      return res.status(500).json({
+        success: false,
+        error: `Supabase Storage upload failed: ${uploadError.message}`,
+      });
+    }
+
+    // Check if a single document of this type already exists (for non-multiple types)
+    const isMultiple = docType === 'education_certificate' || docType === 'other';
+    if (!isMultiple) {
+      const { data: existingDoc } = await supabaseAdmin
+        .from('documents')
+        .select('id, storage_path')
+        .eq('application_id', application.id)
+        .eq('type', docType)
+        .maybeSingle();
+
+      if (existingDoc) {
+        // Delete old file from storage
+        try {
+          await supabaseAdmin.storage.from('candidate-documents').remove([existingDoc.storage_path]);
+        } catch {
+          // ignore cleanup errors
+        }
+        await supabaseAdmin.from('documents').delete().eq('id', existingDoc.id);
+      }
+    }
+
+    // Insert record in documents table
+    const { data: docRecord, error: insertError } = await supabaseAdmin
+      .from('documents')
+      .insert({
+        application_id: application.id,
+        type: docType,
+        storage_path: storagePath,
+        uploaded_at: new Date().toISOString(),
+        verification_status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    // Generate signed preview URL
+    const { data: signedData } = await supabaseAdmin.storage
+      .from('candidate-documents')
+      .createSignedUrl(storagePath, 3600);
+
+    // Audit log
+    await supabaseAdmin.from('audit_logs').insert({
+      actor_id: candidateId,
+      actor_type: 'candidate',
+      action: 'DOCUMENT_UPLOADED',
+      entity_type: 'document',
+      entity_id: docRecord.id,
+      metadata: {
+        type: docType,
+        filename: file.originalname,
+        size_bytes: file.size,
+        mime_type: file.mimetype,
+        storage_path: storagePath,
+      },
+    });
+
+    return res.json({
+      success: true,
+      document: {
+        ...docRecord,
+        file_name: file.originalname,
+        file_size: file.size,
+        preview_url: signedData?.signedUrl || `/api/documents/${docRecord.id}/view`,
+      },
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ success: false, error: msg });
+  }
+});
+
+// Candidate Fetch Documents Endpoint
+app.get('/api/candidate/documents', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, error: 'Candidate session token required.' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const verification = verifyCandidateSessionToken(token, serviceRoleKey);
+    if (!verification.valid || !verification.payload) {
+      return res.status(401).json({ success: false, error: verification.error });
+    }
+
+    const candidateId = verification.payload.sub;
+    const { data: application } = await supabaseAdmin
+      .from('applications')
+      .select('id')
+      .eq('candidate_id', candidateId)
+      .maybeSingle();
+
+    if (!application) {
+      return res.json({ success: true, documents: [] });
+    }
+
+    const { data: docs, error: docsErr } = await supabaseAdmin
+      .from('documents')
+      .select('*')
+      .eq('application_id', application.id)
+      .order('uploaded_at', { ascending: true });
+
+    if (docsErr) throw docsErr;
+
+    const documentsWithUrls = await Promise.all(
+      (docs || []).map(async (doc) => {
+        try {
+          const { data: signed } = await supabaseAdmin.storage
+            .from('candidate-documents')
+            .createSignedUrl(doc.storage_path, 3600);
+          return {
+            ...doc,
+            preview_url: signed?.signedUrl || `/api/documents/${doc.id}/view`,
+          };
+        } catch {
+          return {
+            ...doc,
+            preview_url: `/api/documents/${doc.id}/view`,
+          };
+        }
+      })
+    );
+
+    return res.json({ success: true, documents: documentsWithUrls });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ success: false, error: msg });
+  }
+});
+
+// Candidate Delete Document Endpoint
+app.delete('/api/candidate/documents/:docId', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, error: 'Candidate session token required.' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const verification = verifyCandidateSessionToken(token, serviceRoleKey);
+    if (!verification.valid || !verification.payload) {
+      return res.status(401).json({ success: false, error: verification.error });
+    }
+
+    const candidateId = verification.payload.sub;
+    const docId = req.params.docId;
+
+    const { data: application } = await supabaseAdmin
+      .from('applications')
+      .select('id, status, locked')
+      .eq('candidate_id', candidateId)
+      .maybeSingle();
+
+    if (!application) {
+      return res.status(404).json({ success: false, error: 'Application not found.' });
+    }
+
+    if (application.locked && application.status !== 'needs_correction') {
+      return res.status(403).json({
+        success: false,
+        error: 'Application is locked. Documents cannot be removed after final submission.',
+      });
+    }
+
+    const { data: doc } = await supabaseAdmin
+      .from('documents')
+      .select('id, storage_path, type')
+      .eq('id', docId)
+      .eq('application_id', application.id)
+      .maybeSingle();
+
+    if (!doc) {
+      return res.status(404).json({ success: false, error: 'Document not found or access denied.' });
+    }
+
+    // Remove from storage
+    try {
+      await supabaseAdmin.storage.from('candidate-documents').remove([doc.storage_path]);
+    } catch {
+      // continue
+    }
+
+    // Delete row
+    await supabaseAdmin.from('documents').delete().eq('id', docId);
+
+    // Audit log
+    await supabaseAdmin.from('audit_logs').insert({
+      actor_id: candidateId,
+      actor_type: 'candidate',
+      action: 'DOCUMENT_DELETED',
+      entity_type: 'document',
+      entity_id: docId,
+      metadata: { type: doc.type, storage_path: doc.storage_path },
+    });
+
+    return res.json({ success: true, message: 'Document removed successfully.' });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ success: false, error: msg });
+  }
+});
+
+// Secure Document View/Stream Endpoint (Supports candidate, BM, Central HR, Zonal HR, Super Admin)
+app.get('/api/documents/:docId/view', async (req, res) => {
+  try {
+    const docId = req.params.docId;
+    const { data: doc, error: docErr } = await supabaseAdmin
+      .from('documents')
+      .select('id, storage_path, type, application_id')
+      .eq('id', docId)
+      .maybeSingle();
+
+    if (docErr || !doc) {
+      return res.status(404).json({ success: false, error: 'Document not found.' });
+    }
+
+    // Generate signed URL from candidate-documents
+    const { data: signedData, error: signErr } = await supabaseAdmin.storage
+      .from('candidate-documents')
+      .createSignedUrl(doc.storage_path, 3600);
+
+    if (signedData?.signedUrl) {
+      return res.redirect(signedData.signedUrl);
+    }
+
+    // Fallback: download directly and stream
+    const { data: fileData, error: downloadErr } = await supabaseAdmin.storage
+      .from('candidate-documents')
+      .download(doc.storage_path);
+
+    if (downloadErr || !fileData) {
+      return res.status(500).json({ success: false, error: 'Unable to retrieve document.' });
+    }
+
+    const buffer = Buffer.from(await fileData.arrayBuffer());
+    const isPdf = doc.storage_path.toLowerCase().endsWith('.pdf');
+    const isPng = doc.storage_path.toLowerCase().endsWith('.png');
+    const contentType = isPdf ? 'application/pdf' : isPng ? 'image/png' : 'image/jpeg';
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', buffer.length);
+    return res.send(buffer);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ success: false, error: msg });
+  }
+});
+
+// Candidate Submit Application Endpoint
+app.post('/api/candidate/submit', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ success: false, error: 'Candidate session token required.' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const verification = verifyCandidateSessionToken(token, serviceRoleKey);
+    if (!verification.valid || !verification.payload) {
+      return res.status(401).json({ success: false, error: verification.error });
+    }
+
+    const candidateId = verification.payload.sub;
+    const { signatureDataUrl, typedSignature, signatureHash, thumbDataUrl } = req.body;
+
+    const { data: application } = await supabaseAdmin
+      .from('applications')
+      .select('id, status, candidate_id')
+      .eq('candidate_id', candidateId)
+      .maybeSingle();
+
+    if (!application) {
+      return res.status(404).json({ success: false, error: 'Application draft not found.' });
+    }
+
+    // [STATE MACHINE ENFORCEMENT] Validate transition to 'bm_verification'
+    const transitionCheck = validateStatusTransition(application.status, 'bm_verification');
+    if (!transitionCheck.valid) {
+      return res.status(400).json({
+        success: false,
+        error: transitionCheck.error,
+      });
+    }
+
+    const submittedAt = new Date().toISOString();
+
+    // 1. If Canvas Signature Data URL provided, persist to candidate-documents
+    if (signatureDataUrl && typeof signatureDataUrl === 'string' && signatureDataUrl.startsWith('data:image')) {
+      try {
+        const base64Data = signatureDataUrl.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const sigPath = `applications/${application.id}/signature-${Date.now()}.png`;
+
+        await supabaseAdmin.storage
+          .from('candidate-documents')
+          .upload(sigPath, buffer, { contentType: 'image/png', upsert: true });
+
+        await supabaseAdmin.from('documents').insert({
+          application_id: application.id,
+          type: 'digital_signature',
+          storage_path: sigPath,
+          uploaded_at: submittedAt,
+          verification_status: 'verified',
+        });
+      } catch (err) {
+        console.warn('Could not store signature canvas image:', err);
+      }
+    }
+
+    // 2. If Thumb Impression Data URL provided, persist to candidate-documents
+    if (thumbDataUrl && typeof thumbDataUrl === 'string' && thumbDataUrl.startsWith('data:image')) {
+      try {
+        const base64Thumb = thumbDataUrl.replace(/^data:image\/\w+;base64,/, '');
+        const thumbBuffer = Buffer.from(base64Thumb, 'base64');
+        const thumbPath = `applications/${application.id}/thumb-${Date.now()}.png`;
+
+        await supabaseAdmin.storage
+          .from('candidate-documents')
+          .upload(thumbPath, thumbBuffer, { contentType: 'image/png', upsert: true });
+
+        await supabaseAdmin.from('documents').insert({
+          application_id: application.id,
+          type: 'thumb_impression',
+          storage_path: thumbPath,
+          uploaded_at: submittedAt,
+          verification_status: 'pending',
+        });
+      } catch (err) {
+        console.warn('Could not store thumb image:', err);
+      }
+    }
+
+    // 3. Update application status: bm_verification, locked: true
+    const { error: updateErr } = await supabaseAdmin
+      .from('applications')
+      .update({
+        status: 'bm_verification',
+        submitted_at: submittedAt,
+        locked: true,
+      })
+      .eq('id', application.id);
+
+    if (updateErr) {
+      return res.status(500).json({ success: false, error: updateErr.message });
+    }
+
+    // 4. Audit log
+    await supabaseAdmin
+      .from('audit_logs')
+      .insert({
+        actor_id: candidateId,
+        actor_type: 'candidate',
+        action: 'APPLICATION_SUBMITTED',
+        entity_type: 'application',
+        entity_id: application.id,
+        metadata: {
+          submitted_at: submittedAt,
+          previous_status: application.status,
+          target_status: 'bm_verification',
+          typedSignature: typedSignature || null,
+          signatureHash: signatureHash || null,
+          hasSignatureCanvas: Boolean(signatureDataUrl),
+          hasThumbprint: Boolean(thumbDataUrl),
+        },
+      });
+
+    // 5. Consolidated Notification Dispatch
+    const { data: candInfo } = await supabaseAdmin
+      .from('candidates')
+      .select('id, full_name, mobile, joining_id, branches(name)')
+      .eq('id', candidateId)
+      .maybeSingle();
+
+    if (candInfo) {
+      await notificationService.notifyCandidateApplicationSubmitted(
+        supabaseAdmin,
+        candInfo,
+        (candInfo as any).branches?.name
+      );
+    }
+
+    return res.json({
+      success: true,
+      status: 'bm_verification',
+      submitted_at: submittedAt,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
@@ -904,12 +1724,13 @@ app.post('/api/rbac/verify-access', async (req, res) => {
 });
 
 // ==============================================================================
-// 4. API: SUPER ADMIN (Step 5), ZONAL HR (Step 6), & CENTRAL HR (Step 7)
+// 4. API: SUPER ADMIN (Step 5), ZONAL HR (Step 6), CENTRAL HR (Step 7), & BRANCH MANAGER (Step 8)
 // ==============================================================================
 
 app.use('/api/admin', createSuperAdminRouter(supabaseAdmin));
 app.use('/api/zonal', createZonalHrRouter(supabaseAdmin));
 app.use('/api/central', createCentralHrRouter(supabaseAdmin));
+app.use('/api/branch', createBranchManagerRouter(supabaseAdmin));
 
 // ==============================================================================
 // 5. Vite Middleware Setup
@@ -932,6 +1753,25 @@ async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`PostEx HR Portal Server running on http://0.0.0.0:${PORT}`);
+
+    // Initialize Data Retention Service and start background 24-hour retention scheduler
+    dataRetentionService.ensureInitialized(supabaseAdmin).then(() => {
+      console.log('[DATA RETENTION] Retention service initialized successfully.');
+    }).catch((err) => {
+      console.warn('[DATA RETENTION] Warning on init:', err);
+    });
+
+    setInterval(() => {
+      dataRetentionService.runRetentionCleanup(supabaseAdmin)
+        .then((res) => {
+          if (res.countArchived > 0) {
+            console.log(`[DATA RETENTION CRON] Cleaned up ${res.countArchived} records older than ${res.thresholdDays} days.`);
+          }
+        })
+        .catch((err) => {
+          console.error('[DATA RETENTION CRON ERROR]:', err);
+        });
+    }, 24 * 60 * 60 * 1000);
   });
 }
 

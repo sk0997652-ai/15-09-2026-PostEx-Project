@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useId } from 'react';
+import React, { useState, useEffect, useId, useMemo } from 'react';
 import {
   MapPin,
   Users,
@@ -30,11 +30,16 @@ import {
   Layers,
   Send,
   Lock,
+  Edit,
+  UserCheck,
+  UserX,
 } from 'lucide-react';
 import {
   getZonalMetrics,
   getZonalStaff,
   createZonalStaff,
+  updateZonalStaff,
+  toggleZonalStaffStatus,
   regenerateZonalStaffPassword,
   getZonalApplications,
   reassignZonalApplication,
@@ -86,6 +91,66 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
   } | null>(null);
   const [copiedPassword, setCopiedPassword] = useState(false);
 
+  // Edit Staff modal
+  const [editStaffModal, setEditStaffModal] = useState<{
+    isOpen: boolean;
+    staffId: string;
+    name: string;
+    email: string;
+    branchId: string;
+    roleName: 'central_hr' | 'branch_manager';
+    submitting: boolean;
+  }>({
+    isOpen: false,
+    staffId: '',
+    name: '',
+    email: '',
+    branchId: '',
+    roleName: 'central_hr',
+    submitting: false,
+  });
+
+  // Staff search, filter, and pagination
+  const [staffSearch, setStaffSearch] = useState('');
+  const [staffRoleFilter, setStaffRoleFilter] = useState('');
+  const [staffStatusFilter, setStaffStatusFilter] = useState('');
+  const [staffBranchFilter, setStaffBranchFilter] = useState('');
+  const [staffPage, setStaffPage] = useState(1);
+  const staffLimit = 10;
+
+  // Deduplicate and filter staff
+  const uniqueStaffList = useMemo(() => {
+    const seen = new Set<string>();
+    return staffList.filter((s) => {
+      if (seen.has(s.id)) return false;
+      seen.add(s.id);
+      return true;
+    });
+  }, [staffList]);
+
+  const filteredStaffList = useMemo(() => {
+    return uniqueStaffList.filter((s) => {
+      const q = staffSearch.trim().toLowerCase();
+      const matchSearch =
+        !q ||
+        (s.name && s.name.toLowerCase().includes(q)) ||
+        (s.email && s.email.toLowerCase().includes(q));
+      const matchRole = !staffRoleFilter || s.roles?.name === staffRoleFilter;
+      const matchStatus =
+        !staffStatusFilter ||
+        (staffStatusFilter === 'active' && s.is_active) ||
+        (staffStatusFilter === 'inactive' && !s.is_active);
+      const matchBranch = !staffBranchFilter || s.branches?.id === staffBranchFilter;
+      return matchSearch && matchRole && matchStatus && matchBranch;
+    });
+  }, [uniqueStaffList, staffSearch, staffRoleFilter, staffStatusFilter, staffBranchFilter]);
+
+  const staffTotalPages = Math.max(1, Math.ceil(filteredStaffList.length / staffLimit));
+  const paginatedStaffList = useMemo(() => {
+    const start = (staffPage - 1) * staffLimit;
+    return filteredStaffList.slice(start, start + staffLimit);
+  }, [filteredStaffList, staffPage, staffLimit]);
+
   // Applications state
   const [applications, setApplications] = useState<ZonalApplication[]>([]);
   const [centralHrList, setCentralHrList] = useState<CentralHrStaffMember[]>([]);
@@ -95,6 +160,16 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
   const [appStatusFilter, setAppStatusFilter] = useState('');
   const [appSearchQuery, setAppSearchQuery] = useState('');
   const [loadingApps, setLoadingApps] = useState(false);
+
+  // Deduplicate applications
+  const uniqueApplications = useMemo(() => {
+    const seen = new Set<string>();
+    return applications.filter((a) => {
+      if (seen.has(a.id)) return false;
+      seen.add(a.id);
+      return true;
+    });
+  }, [applications]);
 
   // Reassignment modal
   const [reassignModal, setReassignModal] = useState<{
@@ -265,6 +340,68 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
     }
   };
 
+  // Open Edit Staff Modal
+  const handleOpenEditStaff = (staff: ZonalStaffProfile) => {
+    setEditStaffModal({
+      isOpen: true,
+      staffId: staff.id,
+      name: staff.name,
+      email: staff.email,
+      branchId: staff.branches?.id || '',
+      roleName: (staff.roles?.name === 'branch_manager' ? 'branch_manager' : 'central_hr'),
+      submitting: false,
+    });
+  };
+
+  // Save Edit Staff
+  const handleSaveEditStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editStaffModal.name.trim()) {
+      setError('Staff name cannot be empty.');
+      return;
+    }
+    if (editStaffModal.roleName === 'branch_manager' && !editStaffModal.branchId) {
+      setError('Branch Manager must be assigned to an operational branch.');
+      return;
+    }
+
+    try {
+      setEditStaffModal((prev) => ({ ...prev, submitting: true }));
+      setError(null);
+      await updateZonalStaff(editStaffModal.staffId, {
+        name: editStaffModal.name.trim(),
+        branch_id: editStaffModal.roleName === 'branch_manager' ? editStaffModal.branchId : (editStaffModal.branchId || null),
+        role_name: editStaffModal.roleName,
+      });
+      setSuccessMessage('Staff profile updated successfully.');
+      setTimeout(() => setSuccessMessage(null), 5000);
+      setEditStaffModal((prev) => ({ ...prev, isOpen: false }));
+      loadDashboardData();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
+      setEditStaffModal((prev) => ({ ...prev, submitting: false }));
+    }
+  };
+
+  // Toggle Staff Active/Inactive status
+  const handleToggleStaffStatus = async (staff: ZonalStaffProfile) => {
+    const nextStatus = !staff.is_active;
+    const actionWord = nextStatus ? 'activate' : 'deactivate';
+    if (!window.confirm(`Are you sure you want to ${actionWord} ${staff.name}?`)) {
+      return;
+    }
+
+    try {
+      setError(null);
+      await toggleZonalStaffStatus(staff.id, nextStatus);
+      setSuccessMessage(`Staff member ${staff.name} is now ${nextStatus ? 'active' : 'inactive'}.`);
+      setTimeout(() => setSuccessMessage(null), 5000);
+      loadDashboardData();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   // Handle Reassignment
   const handleExecuteReassignment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -368,7 +505,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
             onClick={() => setActiveTab('overview')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'overview'
-                ? 'bg-teal-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
@@ -381,14 +518,14 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
             onClick={() => setActiveTab('staff')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'staff'
-                ? 'bg-teal-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
             <Users className="w-4 h-4" />
             <span className="flex-1 text-left">Zone Staff Management</span>
             {staffList.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-teal-300 font-mono">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-indigo-300 font-mono">
                 {staffList.length}
               </span>
             )}
@@ -399,7 +536,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
             onClick={() => setActiveTab('applications')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'applications'
-                ? 'bg-teal-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
@@ -417,7 +554,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
             onClick={() => setActiveTab('reports')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'reports'
-                ? 'bg-teal-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
@@ -433,7 +570,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
               <span className="text-xs font-bold text-slate-200 truncate">{currentUser.name || 'Zonal HR Manager'}</span>
               <span className="text-[10px] text-slate-400 truncate">{currentUser.email}</span>
             </div>
-            <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-teal-900/60 text-teal-300 border border-teal-700/50">
+            <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">
               Zonal HR
             </span>
           </div>
@@ -481,6 +618,32 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
           </div>
         )}
 
+        {/* Persistent Role & Section Banner */}
+        <div className="mb-6 pb-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold uppercase tracking-wider mb-1">
+              Zonal HR Workstation &bull; {metrics?.zoneName || zoneInfo?.name || 'Assigned Zone'}
+            </div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              {activeTab === 'overview' && 'Zonal HR Manager — Operational Overview'}
+              {activeTab === 'staff' && 'Zonal HR Manager — Zone Staff Management'}
+              {activeTab === 'applications' && 'Zonal HR Manager — Applications Pipeline'}
+              {activeTab === 'reports' && 'Zonal HR Manager — Zone Analytics & SLA'}
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {activeTab === 'overview' && 'Operational dashboard, regional KPIs, and branch performance in this zone.'}
+              {activeTab === 'staff' && 'Manage Central HR and Branch Manager staff accounts provisioned for this zone.'}
+              {activeTab === 'applications' && 'Search candidates, inspect verification progress, reassign Central HR reviewers, or issue override decisions.'}
+              {activeTab === 'reports' && 'Key performance metrics, turnaround benchmarks, and branch breakdown for this zone.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-medium shadow-2xs">
+              Logged in as: <strong className="text-slate-900">{currentUser.name}</strong>
+            </span>
+          </div>
+        </div>
+
         {/* TAB 1: ZONE OVERVIEW */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
@@ -488,7 +651,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-100 text-teal-800 border border-teal-200">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                     Geographic Region
                   </span>
                   <span className="text-xs text-slate-500 font-mono">ID: {metrics?.zoneId}</span>
@@ -517,7 +680,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                     setActiveTab('staff');
                     setShowAddStaffModal(true);
                   }}
-                  className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg bg-teal-600 hover:bg-teal-700 text-white shadow-xs transition-colors cursor-pointer"
+                  className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors cursor-pointer"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   <span>Create Zone Staff</span>
@@ -530,7 +693,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
               <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
                 <div className="flex items-center justify-between text-slate-500 mb-2">
                   <span className="text-xs font-semibold">Total Candidates</span>
-                  <Users className="w-4 h-4 text-teal-600" />
+                  <Users className="w-4 h-4 text-indigo-600" />
                 </div>
                 <div className="text-3xl font-black text-slate-900">{metrics?.totalCandidates ?? 0}</div>
                 <div className="mt-1 text-[11px] text-slate-500">Registered in {metrics?.zoneName}</div>
@@ -593,7 +756,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 font-semibold text-xs text-slate-900">
-                              <Building2 className="w-4 h-4 text-teal-600" />
+                              <Building2 className="w-4 h-4 text-indigo-600" />
                               <span>{branch.name}</span>
                             </div>
                             <span className="text-[10px] text-slate-400 font-mono">
@@ -622,24 +785,24 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                   <h3 className="text-sm font-bold text-slate-900">Zone HR Staff</h3>
                   <button
                     onClick={() => setActiveTab('staff')}
-                    className="text-xs text-teal-600 font-bold hover:underline cursor-pointer"
+                    className="text-xs text-indigo-600 font-bold hover:underline cursor-pointer"
                   >
                     Manage
                   </button>
                 </div>
 
                 <div className="space-y-3">
-                  <div className="p-3 rounded-lg bg-teal-50/70 border border-teal-100 flex items-center justify-between">
+                  <div className="p-3 rounded-lg bg-indigo-50/70 border border-indigo-100 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded bg-teal-600 text-white flex items-center justify-center font-bold text-xs">
+                      <div className="w-7 h-7 rounded bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
                         CH
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-teal-900">Central HR Reviewers</div>
-                        <div className="text-[11px] text-teal-700">Audit &amp; approve dossiers</div>
+                        <div className="text-xs font-bold text-indigo-900">Central HR Reviewers</div>
+                        <div className="text-[11px] text-indigo-700">Audit &amp; approve dossiers</div>
                       </div>
                     </div>
-                    <span className="text-sm font-black text-teal-900 font-mono">
+                    <span className="text-sm font-black text-indigo-900 font-mono">
                       {staffList.filter((s) => s.roles?.name === 'central_hr').length}
                     </span>
                   </div>
@@ -661,7 +824,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500 flex items-center gap-2">
-                  <Shield className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
+                  <Shield className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" />
                   <span>Zonal HR has authorization to create &amp; manage Central HR and Branch Managers in this zone.</span>
                 </div>
               </div>
@@ -675,7 +838,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-xs">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-100 text-teal-800 border border-teal-200">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                     Zone-Scoped Staff
                   </span>
                   <span className="text-xs text-slate-500">Region: {metrics?.zoneName}</span>
@@ -691,18 +854,94 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
               <button
                 id="zonal-add-staff-btn"
                 onClick={() => setShowAddStaffModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-lg bg-teal-600 hover:bg-teal-700 text-white shadow-xs transition-colors cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors cursor-pointer"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>Add Staff Member</span>
               </button>
             </div>
 
+            {/* Staff Search & Filter Toolbar */}
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center gap-3 justify-between">
+              <div className="relative w-full md:w-72">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search staff by name or email..."
+                  value={staffSearch}
+                  onChange={(e) => {
+                    setStaffSearch(e.target.value);
+                    setStaffPage(1);
+                  }}
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 bg-slate-50/50"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                <select
+                  value={staffRoleFilter}
+                  onChange={(e) => {
+                    setStaffRoleFilter(e.target.value);
+                    setStaffPage(1);
+                  }}
+                  className="px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 cursor-pointer"
+                >
+                  <option value="">All Roles</option>
+                  <option value="central_hr">Central HR</option>
+                  <option value="branch_manager">Branch Manager</option>
+                </select>
+
+                <select
+                  value={staffStatusFilter}
+                  onChange={(e) => {
+                    setStaffStatusFilter(e.target.value);
+                    setStaffPage(1);
+                  }}
+                  className="px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 cursor-pointer"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+
+                <select
+                  value={staffBranchFilter}
+                  onChange={(e) => {
+                    setStaffBranchFilter(e.target.value);
+                    setStaffPage(1);
+                  }}
+                  className="px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 cursor-pointer"
+                >
+                  <option value="">All Branches</option>
+                  {zoneBranches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+
+                {(staffSearch || staffRoleFilter || staffStatusFilter || staffBranchFilter) && (
+                  <button
+                    onClick={() => {
+                      setStaffSearch('');
+                      setStaffRoleFilter('');
+                      setStaffStatusFilter('');
+                      setStaffBranchFilter('');
+                      setStaffPage(1);
+                    }}
+                    className="px-2.5 py-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Staff Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
               <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-700">
-                  Active Staff Directory ({staffList.length})
+                  Staff Directory ({filteredStaffList.length} of {uniqueStaffList.length})
                 </span>
                 <span className="text-[11px] text-slate-500">Policy: Min 10 chars, forced password change on first login</span>
               </div>
@@ -720,14 +959,14 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {staffList.length === 0 ? (
+                    {paginatedStaffList.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="py-8 text-center text-slate-500">
-                          No staff accounts created in this zone yet.
+                          No staff accounts matching your search or filters.
                         </td>
                       </tr>
                     ) : (
-                      staffList.map((staff) => (
+                      paginatedStaffList.map((staff) => (
                         <tr key={staff.id} className="hover:bg-slate-50/70 transition-colors">
                           <td className="py-3.5 px-4">
                             <div className="font-bold text-slate-900">{staff.name}</div>
@@ -775,15 +1014,48 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                             </span>
                           </td>
                           <td className="py-3.5 px-4 text-right">
-                            <button
-                              id={`zonal-regen-pwd-${staff.id}`}
-                              onClick={() => handleRegeneratePassword(staff)}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition-colors cursor-pointer"
-                              title="Generate new temporary password"
-                            >
-                              <KeyRound className="w-3.5 h-3.5 text-amber-600" />
-                              <span>Reset Password</span>
-                            </button>
+                            <div className="inline-flex items-center gap-1.5 justify-end">
+                              <button
+                                id={`zonal-edit-staff-${staff.id}`}
+                                onClick={() => handleOpenEditStaff(staff)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition-colors cursor-pointer"
+                                title="Edit staff details and role track"
+                              >
+                                <Edit className="w-3 h-3 text-indigo-600" />
+                                <span>Edit</span>
+                              </button>
+                              <button
+                                id={`zonal-toggle-status-${staff.id}`}
+                                onClick={() => handleToggleStaffStatus(staff)}
+                                className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-md border transition-colors cursor-pointer ${
+                                  staff.is_active
+                                    ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                                    : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
+                                }`}
+                                title={staff.is_active ? 'Deactivate staff account' : 'Reactivate staff account'}
+                              >
+                                {staff.is_active ? (
+                                  <>
+                                    <UserX className="w-3 h-3 text-rose-600" />
+                                    <span>Deactivate</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserCheck className="w-3 h-3 text-emerald-600" />
+                                    <span>Activate</span>
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                id={`zonal-regen-pwd-${staff.id}`}
+                                onClick={() => handleRegeneratePassword(staff)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition-colors cursor-pointer"
+                                title="Generate new temporary password"
+                              >
+                                <KeyRound className="w-3 h-3 text-amber-600" />
+                                <span>Reset Password</span>
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -791,6 +1063,34 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                   </tbody>
                 </table>
               </div>
+
+              {/* Staff Table Pagination Controls */}
+              {filteredStaffList.length > 0 && (
+                <div className="p-4 border-t border-slate-200 bg-slate-50/70 flex items-center justify-between">
+                  <span className="text-xs text-slate-500">
+                    Showing {(staffPage - 1) * staffLimit + 1} to{' '}
+                    {Math.min(staffPage * staffLimit, filteredStaffList.length)} of {filteredStaffList.length} staff members (Page {staffPage} of {staffTotalPages})
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setStaffPage((p) => Math.max(1, p - 1))}
+                      disabled={staffPage <= 1}
+                      className="flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded bg-white border border-slate-300 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      <span>Previous</span>
+                    </button>
+                    <button
+                      onClick={() => setStaffPage((p) => Math.min(staffTotalPages, p + 1))}
+                      disabled={staffPage >= staffTotalPages}
+                      className="flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded bg-white border border-slate-300 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                    >
+                      <span>Next</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -827,11 +1127,11 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                     value={appSearchQuery}
                     onChange={(e) => setAppSearchQuery(e.target.value)}
                     placeholder="Search candidate name, Joining ID, or CNIC..."
-                    className="w-full pl-9 pr-20 py-2 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-teal-500 bg-white"
+                    className="w-full pl-9 pr-20 py-2 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 bg-white"
                   />
                   <button
                     type="submit"
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-bold rounded bg-teal-600 text-white hover:bg-teal-700 cursor-pointer"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-bold rounded bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer"
                   >
                     Search
                   </button>
@@ -847,7 +1147,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                       setAppStatusFilter(e.target.value);
                       setAppPage(1);
                     }}
-                    className="w-full sm:w-44 px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                    className="w-full sm:w-44 px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                   >
                     <option value="">All Statuses</option>
                     <option value="draft">Draft</option>
@@ -881,18 +1181,18 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                     {loadingApps ? (
                       <tr>
                         <td colSpan={7} className="py-8 text-center text-slate-500">
-                          <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-teal-600" />
+                          <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-indigo-600" />
                           <span>Loading applications in {metrics?.zoneName}...</span>
                         </td>
                       </tr>
-                    ) : applications.length === 0 ? (
+                    ) : uniqueApplications.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="py-8 text-center text-slate-500">
                           No applications matching your filters in this zone.
                         </td>
                       </tr>
                     ) : (
-                      applications.map((app) => (
+                      uniqueApplications.map((app) => (
                         <tr key={app.id} className="hover:bg-slate-50/70 transition-colors">
                           <td className="py-3.5 px-4">
                             <div className="font-bold text-slate-900">{app.candidate?.full_name || 'Candidate'}</div>
@@ -1019,9 +1319,9 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
               <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
                 <div className="flex items-center justify-between text-slate-500 mb-3">
                   <span className="text-xs font-bold">Average Turnaround</span>
-                  <Clock className="w-4 h-4 text-teal-600" />
+                  <Clock className="w-4 h-4 text-indigo-600" />
                 </div>
-                <div className="text-3xl font-black text-teal-900">{metrics?.avgTurnaroundHours ?? 'N/A'}</div>
+                <div className="text-3xl font-black text-indigo-900">{metrics?.avgTurnaroundHours ?? 'N/A'}</div>
                 <p className="text-xs text-slate-600 mt-2">
                   Calculated from submission timestamp to final HR decision timestamp across all candidates in this zone.
                 </p>
@@ -1106,7 +1406,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-150">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
                   <UserPlus className="w-4 h-4" />
                 </div>
                 <div>
@@ -1129,7 +1429,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                   id={staffRoleSelectId}
                   value={newStaffRole}
                   onChange={(e) => setNewStaffRole(e.target.value as any)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                 >
                   <option value="central_hr">Central HR (Review &amp; Dossier Approval)</option>
                   <option value="branch_manager">Branch Manager (In-Person Verification)</option>
@@ -1147,7 +1447,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                     value={newStaffBranchId}
                     onChange={(e) => setNewStaffBranchId(e.target.value)}
                     required
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-teal-500 cursor-pointer"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 cursor-pointer"
                   >
                     {zoneBranches.map((br) => (
                       <option key={br.id} value={br.id}>
@@ -1167,7 +1467,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                   value={newStaffName}
                   onChange={(e) => setNewStaffName(e.target.value)}
                   placeholder="e.g. Usman Tariq"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1180,7 +1480,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                   value={newStaffEmail}
                   onChange={(e) => setNewStaffEmail(e.target.value)}
                   placeholder="e.g. usman.tariq@postex.pk"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1192,12 +1492,12 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                   value={newStaffPhone}
                   onChange={(e) => setNewStaffPhone(e.target.value)}
                   placeholder="e.g. 03001234567"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-teal-500"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-[11px] text-slate-600 flex items-start gap-2">
-                <Lock className="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5" />
+                <Lock className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
                 <span>
                   A random 14-character password meeting company policy will be generated. The user will be required to change it on their first login.
                 </span>
@@ -1215,10 +1515,107 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
                   id="zonal-submit-create-staff-btn"
                   type="submit"
                   disabled={creatingStaff}
-                  className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-teal-600 hover:bg-teal-700 text-white shadow-xs disabled:opacity-50 cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs disabled:opacity-50 cursor-pointer"
                 >
                   {creatingStaff && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                   <span>Generate Credentials</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1b: EDIT ZONE STAFF */}
+      {editStaffModal.isOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                  <Edit className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Edit Zone Staff Member</h3>
+                  <p className="text-[11px] text-slate-500">{editStaffModal.email}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditStaffModal((prev) => ({ ...prev, isOpen: false }))}
+                className="text-slate-400 hover:text-slate-700 font-bold text-lg cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditStaff} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Full Name *</label>
+                <input
+                  id="zonal-edit-staff-name"
+                  type="text"
+                  required
+                  value={editStaffModal.name}
+                  onChange={(e) => setEditStaffModal({ ...editStaffModal, name: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Role Track *</label>
+                <select
+                  id="zonal-edit-staff-role"
+                  value={editStaffModal.roleName}
+                  onChange={(e) =>
+                    setEditStaffModal({
+                      ...editStaffModal,
+                      roleName: e.target.value as 'central_hr' | 'branch_manager',
+                    })
+                  }
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                >
+                  <option value="central_hr">Central HR (Reviewer)</option>
+                  <option value="branch_manager">Branch Manager (Verification)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {editStaffModal.roleName === 'branch_manager' ? 'Branch Hub Assignment *' : 'Branch Hub Assignment (Optional)'}
+                </label>
+                <select
+                  id="zonal-edit-staff-branch"
+                  value={editStaffModal.branchId}
+                  onChange={(e) => setEditStaffModal({ ...editStaffModal, branchId: e.target.value })}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                >
+                  {editStaffModal.roleName === 'central_hr' && (
+                    <option value="">Zone-Wide HQ (No specific branch)</option>
+                  )}
+                  {zoneBranches.map((br) => (
+                    <option key={br.id} value={br.id}>
+                      {br.name} ({br.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setEditStaffModal((prev) => ({ ...prev, isOpen: false }))}
+                  className="px-4 py-2 text-xs font-semibold rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  id="zonal-save-edit-staff-btn"
+                  type="submit"
+                  disabled={editStaffModal.submitting}
+                  className="flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs disabled:opacity-50 cursor-pointer"
+                >
+                  {editStaffModal.submitting && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Save Changes</span>
                 </button>
               </div>
             </form>

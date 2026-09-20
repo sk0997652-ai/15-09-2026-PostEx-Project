@@ -141,6 +141,42 @@ export async function regenerateZonalStaffPassword(staffId: string): Promise<{ t
   return { temporary_password: data.temporary_password };
 }
 
+// 4b. Update staff profile in zone (name, branch_id, role_name)
+export async function updateZonalStaff(
+  staffId: string,
+  payload: { name?: string; branch_id?: string | null; role_name?: 'central_hr' | 'branch_manager' }
+): Promise<ZonalStaffProfile> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`/api/zonal/staff/${encodeURIComponent(staffId)}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Failed to update staff member');
+  }
+  return data.staff;
+}
+
+// 4c. Toggle active status for staff in zone
+export async function toggleZonalStaffStatus(
+  staffId: string,
+  is_active: boolean
+): Promise<ZonalStaffProfile> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`/api/zonal/staff/${encodeURIComponent(staffId)}/status`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({ is_active }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.error || 'Failed to update staff status');
+  }
+  return data.staff;
+}
+
 // 5. Get paginated applications list
 export async function getZonalApplications(params: {
   page?: number;

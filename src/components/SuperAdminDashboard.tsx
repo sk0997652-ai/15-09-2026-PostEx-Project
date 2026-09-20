@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Building2,
   Users,
@@ -22,6 +22,8 @@ import {
   ChevronRight,
   UserPlus,
   FileSpreadsheet,
+  Sliders,
+  Archive,
 } from 'lucide-react';
 import {
   superAdminApi,
@@ -32,6 +34,30 @@ import {
   AuditLogItem,
   OrgSettings,
 } from '../lib/superAdminApi';
+import { FormBuilderModule } from './admin/FormBuilderModule';
+import { useBranding } from '../lib/branding';
+
+// Friendly human-readable labels for all 18 system permissions
+const PERMISSION_LABELS: Record<string, { label: string; description: string }> = {
+  'applications.view': { label: 'View Candidates', description: 'View candidate applications in operational pipelines' },
+  'applications.verify': { label: 'Review Applications', description: 'Review and verify candidate documents and credentials' },
+  'applications.decide': { label: 'Approve Applications', description: 'Approve or reject candidate applications' },
+  'candidates.view': { label: 'View Candidates', description: 'Inspect candidate profiles and basic registration details' },
+  'candidates.create': { label: 'Create New Candidates', description: 'Create candidate invitations and initiate onboarding' },
+  'candidates.edit': { label: 'Edit Candidate Details', description: 'Edit candidate profile and contact information' },
+  'staff.manage': { label: 'Manage Users', description: 'Provision staff accounts and manage user statuses' },
+  'audit.view': { label: 'View Audit Logs', description: 'Access immutable security audit logs and event history' },
+  'applications.reassign': { label: 'Reassign Applications', description: 'Reassign applications between staff members' },
+  'documents.view': { label: 'View Documents', description: 'View uploaded candidate identity and verification files' },
+  'documents.download': { label: 'Download Documents', description: 'Download candidate dossiers and verification assets' },
+  'employees.view': { label: 'View Enrolled Employees', description: 'View roster of enrolled employees and IDs' },
+  'organization.manage': { label: 'Manage Organization Structure', description: 'Create and edit zones, branches, departments, and designations' },
+  'form_builder.manage': { label: 'Edit Application Forms', description: 'Customize candidate wizard form fields and steps' },
+  'settings.manage': { label: 'Manage System Settings', description: 'Configure organization settings and retention policy' },
+  'permissions.manage': { label: 'Manage User Permissions', description: 'Manage permissions and role overrides for other users' },
+  'reports.view': { label: 'View Reports', description: 'Access zone and branch operational analytics' },
+  'reports.export': { label: 'Export Reports', description: 'Export operational data reports to CSV/Excel' },
+};
 
 interface SuperAdminDashboardProps {
   currentUser: { id: string; email: string; name?: string; role?: string };
@@ -45,12 +71,14 @@ type AdminTab =
   | 'overrides'
   | 'records'
   | 'audit'
+  | 'form_builder'
   | 'settings';
 
 export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   currentUser,
   onSignOut,
 }) => {
+  const { reloadBranding } = useBranding();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [org, setOrg] = useState<OrgStructure | null>(null);
@@ -79,6 +107,47 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   // Edit staff modal state
   const [editingStaff, setEditingStaff] = useState<StaffUserItem | null>(null);
 
+  // Staff search, filter, and pagination states
+  const [staffSearch, setStaffSearch] = useState('');
+  const [staffRoleFilter, setStaffRoleFilter] = useState('');
+  const [staffStatusFilter, setStaffStatusFilter] = useState('');
+  const [staffZoneFilter, setStaffZoneFilter] = useState('');
+  const [staffPage, setStaffPage] = useState(1);
+  const staffLimit = 10;
+
+  // Deduplicate and filter staff records
+  const uniqueStaff = useMemo(() => {
+    const seen = new Set<string>();
+    return staff.filter((u) => {
+      if (seen.has(u.id)) return false;
+      seen.add(u.id);
+      return true;
+    });
+  }, [staff]);
+
+  const filteredStaff = useMemo(() => {
+    return uniqueStaff.filter((u) => {
+      const q = staffSearch.trim().toLowerCase();
+      const matchSearch =
+        !q ||
+        (u.name && u.name.toLowerCase().includes(q)) ||
+        (u.email && u.email.toLowerCase().includes(q));
+      const matchRole = !staffRoleFilter || u.roles?.name === staffRoleFilter;
+      const matchStatus =
+        !staffStatusFilter ||
+        (staffStatusFilter === 'active' && u.is_active) ||
+        (staffStatusFilter === 'deactivated' && !u.is_active);
+      const matchZone = !staffZoneFilter || u.zone_id === staffZoneFilter;
+      return matchSearch && matchRole && matchStatus && matchZone;
+    });
+  }, [uniqueStaff, staffSearch, staffRoleFilter, staffStatusFilter, staffZoneFilter]);
+
+  const staffTotalPages = Math.max(1, Math.ceil(filteredStaff.length / staffLimit));
+  const paginatedStaff = useMemo(() => {
+    const start = (staffPage - 1) * staffLimit;
+    return filteredStaff.slice(start, start + staffLimit);
+  }, [filteredStaff, staffPage, staffLimit]);
+
   // Org CRUD states
   const [orgSubTab, setOrgSubTab] = useState<'zones' | 'branches' | 'departments' | 'designations'>('zones');
   const [showOrgModal, setShowOrgModal] = useState(false);
@@ -86,10 +155,14 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const [orgEditId, setOrgEditId] = useState<string | null>(null);
   const [orgForm, setOrgForm] = useState<any>({});
 
-  // Permission Override states
+  // User Permissions states
+  const [permissionStaffSearch, setPermissionStaffSearch] = useState('');
   const [selectedStaffForOverride, setSelectedStaffForOverride] = useState<StaffUserItem | null>(null);
   const [staffOverrides, setStaffOverrides] = useState<any[]>([]);
   const [availablePermissions, setAvailablePermissions] = useState<any[]>([]);
+  const [roleDefaultPermKeys, setRoleDefaultPermKeys] = useState<string[]>([]);
+  const [userPermissionsChecklist, setUserPermissionsChecklist] = useState<Record<string, boolean>>({});
+  const [permissionReason, setPermissionReason] = useState('');
   const [overrideForm, setOverrideForm] = useState({
     permission_id: '',
     granted: true,
@@ -103,6 +176,16 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const [recordZoneFilter, setRecordZoneFilter] = useState('');
   const [recordStatusFilter, setRecordStatusFilter] = useState('');
 
+  // Deduplicate records by candidate id
+  const uniqueRecords = useMemo(() => {
+    const seen = new Set<string>();
+    return records.filter((r) => {
+      if (seen.has(r.id)) return false;
+      seen.add(r.id);
+      return true;
+    });
+  }, [records]);
+
   // Audit Logs state
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [auditPagination, setAuditPagination] = useState({ page: 1, limit: 25, total: 0, totalPages: 1 });
@@ -111,6 +194,13 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   // Settings state
   const [settings, setSettings] = useState<OrgSettings | null>(null);
   const [settingsSaving, setSettingsSaving] = useState(false);
+  const [retentionRunning, setRetentionRunning] = useState(false);
+  const [retentionResult, setRetentionResult] = useState<{
+    countArchived: number;
+    thresholdDays: number;
+    cutoffDate: string;
+    message: string;
+  } | null>(null);
 
   // Auto-clear notifications after 6s
   useEffect(() => {
@@ -372,7 +462,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     }
   };
 
-  // Overrides Handlers
+  // User Permissions Handlers
   const handleSelectStaffForOverride = async (user: StaffUserItem) => {
     setSelectedStaffForOverride(user);
     setLoading(true);
@@ -380,11 +470,78 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       const res = await superAdminApi.getPermissionOverrides(user.id);
       setStaffOverrides(res.overrides);
       setAvailablePermissions(res.allPermissions);
+      const defaultKeys = res.roleDefaultPermissionKeys || [];
+      setRoleDefaultPermKeys(defaultKeys);
+
+      // Map existing overrides: if override exists, override.granted determines state; else defaultKeys
+      const overrideMap = new Map<string, boolean>();
+      res.overrides.forEach((ov) => {
+        if (ov.permissions?.key) {
+          overrideMap.set(ov.permissions.key, ov.granted);
+        }
+      });
+
+      const initialChecklist: Record<string, boolean> = {};
+      res.allPermissions.forEach((p) => {
+        if (overrideMap.has(p.key)) {
+          initialChecklist[p.key] = overrideMap.get(p.key)!;
+        } else {
+          initialChecklist[p.key] = defaultKeys.includes(p.key);
+        }
+      });
+
+      setUserPermissionsChecklist(initialChecklist);
+      setPermissionReason('');
       setOverrideForm({
         permission_id: res.allPermissions[0]?.id || '',
         granted: true,
         reason: '',
       });
+    } catch (err: any) {
+      setNotification({ type: 'error', text: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTogglePermission = (key: string) => {
+    setUserPermissionsChecklist((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const handleSaveUserPermissions = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStaffForOverride) return;
+
+    // [HARD RULE]: MANDATORY reason field validation
+    if (!permissionReason.trim()) {
+      setNotification({
+        type: 'error',
+        text: 'Reason for permission change is required. Please provide a valid justification before saving.',
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await superAdminApi.saveUserPermissions({
+        staff_profile_id: selectedStaffForOverride.id,
+        permissionsState: userPermissionsChecklist,
+        reason: permissionReason.trim(),
+      });
+
+      setNotification({
+        type: 'success',
+        text: res.message || 'User permissions updated successfully and logged to audit trail.',
+      });
+
+      // Reload fresh overrides
+      const fresh = await superAdminApi.getPermissionOverrides(selectedStaffForOverride.id);
+      setStaffOverrides(fresh.overrides);
+      setPermissionReason('');
+      loadAuditLogsData();
     } catch (err: any) {
       setNotification({ type: 'error', text: err.message });
     } finally {
@@ -446,6 +603,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     try {
       const updated = await superAdminApi.updateSettings(settings);
       setSettings(updated);
+      await reloadBranding();
       setNotification({ type: 'success', text: 'Organization settings and retention policy updated.' });
     } catch (err: any) {
       setNotification({ type: 'error', text: err.message });
@@ -454,12 +612,38 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     }
   };
 
+  const handleRunRetentionCleanup = async () => {
+    setRetentionRunning(true);
+    try {
+      const res = await superAdminApi.runDataRetentionCleanup();
+      setRetentionResult({
+        countArchived: res.countArchived,
+        thresholdDays: res.thresholdDays,
+        cutoffDate: res.cutoffDate,
+        message: res.message,
+      });
+      setNotification({
+        type: 'success',
+        text: `Retention cleanup executed: ${res.countArchived} application(s) older than ${res.thresholdDays} days soft-archived.`,
+      });
+      loadRecordsData();
+      loadAuditLogsData();
+    } catch (err: any) {
+      setNotification({
+        type: 'error',
+        text: err.message || 'Failed to run data retention cleanup',
+      });
+    } finally {
+      setRetentionRunning(false);
+    }
+  };
+
   return (
     <div className="flex min-h-[calc(100vh-4rem)] bg-slate-50 text-slate-800">
       {/* Sidebar Navigation */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col shrink-0 border-r border-slate-800">
         <div className="p-4 border-b border-slate-800 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center font-bold text-sm">
+          <div className="w-8 h-8 rounded-md bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center font-bold text-sm">
             SA
           </div>
           <div>
@@ -474,7 +658,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             id="nav-btn-overview"
             onClick={() => setActiveTab('overview')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
-              activeTab === 'overview' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+              activeTab === 'overview' ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800'
             }`}
           >
             <Building2 className="w-4 h-4" />
@@ -485,7 +669,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             id="nav-btn-org"
             onClick={() => setActiveTab('org')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
-              activeTab === 'org' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+              activeTab === 'org' ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800'
             }`}
           >
             <MapPin className="w-4 h-4" />
@@ -496,7 +680,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             id="nav-btn-staff"
             onClick={() => setActiveTab('staff')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
-              activeTab === 'staff' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+              activeTab === 'staff' ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800'
             }`}
           >
             <Users className="w-4 h-4" />
@@ -507,18 +691,18 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             id="nav-btn-overrides"
             onClick={() => setActiveTab('overrides')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
-              activeTab === 'overrides' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+              activeTab === 'overrides' ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800'
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>Permission Overrides</span>
+            <span>User Permissions</span>
           </button>
 
           <button
             id="nav-btn-records"
             onClick={() => setActiveTab('records')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
-              activeTab === 'records' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+              activeTab === 'records' ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800'
             }`}
           >
             <Search className="w-4 h-4" />
@@ -529,7 +713,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             id="nav-btn-audit"
             onClick={() => setActiveTab('audit')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
-              activeTab === 'audit' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+              activeTab === 'audit' ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800'
             }`}
           >
             <History className="w-4 h-4" />
@@ -537,10 +721,21 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           </button>
 
           <button
+            id="nav-btn-form-builder"
+            onClick={() => setActiveTab('form_builder')}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
+              activeTab === 'form_builder' ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800'
+            }`}
+          >
+            <Sliders className="w-4 h-4" />
+            <span>Form Builder</span>
+          </button>
+
+          <button
             id="nav-btn-settings"
             onClick={() => setActiveTab('settings')}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer ${
-              activeTab === 'settings' ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-800'
+              activeTab === 'settings' ? 'bg-indigo-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-800'
             }`}
           >
             <Settings className="w-4 h-4" />
@@ -579,16 +774,45 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           </div>
         )}
 
+        {/* Persistent Role & Section Banner */}
+        <div className="mb-6 pb-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold uppercase tracking-wider mb-1">
+              Super Admin Workstation
+            </div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              {activeTab === 'overview' && 'Super Admin — Executive HR Dashboard'}
+              {activeTab === 'org' && 'Super Admin — Organization Structure'}
+              {activeTab === 'staff' && 'Super Admin — Staff Account Management'}
+              {activeTab === 'overrides' && 'Super Admin — User Permissions'}
+              {activeTab === 'records' && 'Super Admin — Company Record Browser'}
+              {activeTab === 'audit' && 'Super Admin — Audit Trail Logs'}
+              {activeTab === 'settings' && 'Super Admin — Organization Settings'}
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {activeTab === 'overview' && 'Live operational counts, headcounts, and organizational metrics from PostEx onboarding backend.'}
+              {activeTab === 'org' && 'Manage and configure PostEx operating Zones, Branches, Departments, and Designations.'}
+              {activeTab === 'staff' && 'Provision new staff accounts with auto-generated passwords, assign zones/branches, and manage status.'}
+              {activeTab === 'overrides' && 'Manage granular system permissions for individual staff members with mandatory reason and audit logging.'}
+              {activeTab === 'records' && 'Search and inspect candidates across all zones with pagination and masked CNIC privacy protection.'}
+              {activeTab === 'audit' && 'Immutable audit trail of all security actions, credential regenerations, and organizational updates.'}
+              {activeTab === 'settings' && 'Configure company-wide onboarding parameters, support contact, and data retention rules.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-xs font-medium shadow-2xs">
+              Logged in as: <strong className="text-slate-900">{currentUser.name}</strong>
+            </span>
+          </div>
+        </div>
+
         {/* ------------------------------------------------------------------ */}
         {/* TAB 1: OVERVIEW DASHBOARD */}
         {/* ------------------------------------------------------------------ */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-black text-slate-900 tracking-tight">Executive HR Dashboard</h1>
-                <p className="text-xs text-slate-500">Live operational counts from PostEx onboarding backend.</p>
-              </div>
+              <h2 className="text-lg font-bold text-slate-900">Key Operational Metrics</h2>
               <button
                 onClick={loadOverviewData}
                 disabled={loading}
@@ -670,14 +894,14 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-xl font-black text-slate-900 tracking-tight">Organization Hierarchy</h1>
-                <p className="text-xs text-slate-500">Manage PostEx operating Zones, Branches, Departments, and Designations.</p>
+                <h2 className="text-lg font-bold text-slate-900">Entity Hierarchy Manager</h2>
+                <p className="text-xs text-slate-500">Add, edit, or remove organizational units across the company.</p>
               </div>
 
               <button
                 id="add-org-entity-btn"
                 onClick={handleOpenOrgCreate}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add {orgSubTab.slice(0, -1)}</span>
@@ -692,7 +916,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                   onClick={() => setOrgSubTab(tab)}
                   className={`pb-3 capitalize transition-colors cursor-pointer ${
                     orgSubTab === tab
-                      ? 'text-emerald-700 border-b-2 border-emerald-600 font-bold'
+                      ? 'text-indigo-700 border-b-2 border-indigo-600 font-bold'
                       : 'text-slate-500 hover:text-slate-900'
                   }`}
                 >
@@ -771,7 +995,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-xl font-black text-slate-900 tracking-tight">Staff &amp; User Accounts</h1>
+                <h2 className="text-lg font-bold text-slate-900">Staff User Directory</h2>
                 <p className="text-xs text-slate-500">
                   Provision new staff accounts with auto-generated passwords, assign zones/branches, and manage status.
                 </p>
@@ -780,11 +1004,95 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               <button
                 id="create-staff-user-btn"
                 onClick={() => setShowCreateStaffModal(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
               >
                 <UserPlus className="w-3.5 h-3.5" />
                 <span>Create Staff User</span>
               </button>
+            </div>
+
+            {/* Staff Search & Filter Toolbar */}
+            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex flex-wrap gap-3 items-center">
+              <div className="flex-1 min-w-[220px]">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search staff by name or email..."
+                    value={staffSearch}
+                    onChange={(e) => {
+                      setStaffSearch(e.target.value);
+                      setStaffPage(1);
+                    }}
+                    className="w-full text-xs pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <select
+                  value={staffRoleFilter}
+                  onChange={(e) => {
+                    setStaffRoleFilter(e.target.value);
+                    setStaffPage(1);
+                  }}
+                  className="text-xs p-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">All Roles</option>
+                  <option value="super_admin">Super Admin</option>
+                  <option value="zonal_hr_manager">Zonal HR Manager</option>
+                  <option value="central_hr">Central HR</option>
+                  <option value="branch_manager">Branch Manager</option>
+                </select>
+              </div>
+
+              <div>
+                <select
+                  value={staffStatusFilter}
+                  onChange={(e) => {
+                    setStaffStatusFilter(e.target.value);
+                    setStaffPage(1);
+                  }}
+                  className="text-xs p-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="active">Active Only</option>
+                  <option value="deactivated">Deactivated Only</option>
+                </select>
+              </div>
+
+              <div>
+                <select
+                  value={staffZoneFilter}
+                  onChange={(e) => {
+                    setStaffZoneFilter(e.target.value);
+                    setStaffPage(1);
+                  }}
+                  className="text-xs p-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">All Zones</option>
+                  {org?.zones.map((z) => (
+                    <option key={z.id} value={z.id}>
+                      {z.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {(staffSearch || staffRoleFilter || staffStatusFilter || staffZoneFilter) && (
+                <button
+                  onClick={() => {
+                    setStaffSearch('');
+                    setStaffRoleFilter('');
+                    setStaffStatusFilter('');
+                    setStaffZoneFilter('');
+                    setStaffPage(1);
+                  }}
+                  className="px-3 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+                >
+                  Clear Filters
+                </button>
+              )}
             </div>
 
             {/* Staff List Table */}
@@ -800,192 +1108,384 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {staff.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-50/50">
-                      <td className="p-3">
-                        <span className="font-bold text-slate-900 block">{u.name}</span>
-                        <span className="text-[11px] text-slate-500 font-mono">{u.email}</span>
-                      </td>
-                      <td className="p-3">
-                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono text-[11px] font-semibold">
-                          {u.roles?.name || 'staff'}
-                        </span>
-                      </td>
-                      <td className="p-3 text-slate-600">
-                        {u.zones?.name ? (
-                          <div>
-                            <span className="font-medium text-slate-800 block">{u.zones.name}</span>
-                            {u.branches?.name && (
-                              <span className="text-[11px] text-slate-400 block">&bull; {u.branches.name}</span>
-                            )}
+                  {paginatedStaff.length > 0 ? (
+                    paginatedStaff.map((u) => (
+                      <tr key={u.id} className="hover:bg-slate-50/50">
+                        <td className="p-3">
+                          <span className="font-bold text-slate-900 block">{u.name}</span>
+                          <span className="text-[11px] text-slate-500 font-mono">{u.email}</span>
+                        </td>
+                        <td className="p-3">
+                          <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 font-mono text-[11px] font-semibold">
+                            {u.roles?.name || 'staff'}
+                          </span>
+                        </td>
+                        <td className="p-3 text-slate-600">
+                          {u.zones?.name ? (
+                            <div>
+                              <span className="font-medium text-slate-800 block">{u.zones.name}</span>
+                              {u.branches?.name && (
+                                <span className="text-[11px] text-slate-400 block">&bull; {u.branches.name}</span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic">Company-wide (All Zones)</span>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          {u.is_active ? (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span> Deactivated
+                            </span>
+                          )}
+                          {u.must_change_password && (
+                            <span className="block text-[10px] text-amber-600 font-medium mt-0.5">
+                              Must Change Pwd
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <button
+                              onClick={() => handleRegeneratePassword(u)}
+                              className="px-2 py-1 rounded-md text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
+                              title="Regenerate temporary password"
+                            >
+                              <RefreshCw className="w-3 h-3 inline mr-1" />
+                              Regen Pwd
+                            </button>
+                            <button
+                              onClick={() => setEditingStaff(u)}
+                              className="p-1 rounded-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
+                              title="Edit Profile"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleToggleStaffStatus(u)}
+                              className={`px-2 py-1 rounded-md text-[10px] font-bold transition-colors cursor-pointer ${
+                                u.is_active
+                                  ? 'text-rose-700 bg-rose-50 hover:bg-rose-100'
+                                  : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                              }`}
+                            >
+                              {u.is_active ? 'Deactivate' : 'Activate'}
+                            </button>
                           </div>
-                        ) : (
-                          <span className="text-slate-400 italic">Company-wide (All Zones)</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        {u.is_active ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Active
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span> Deactivated
-                          </span>
-                        )}
-                        {u.must_change_password && (
-                          <span className="block text-[10px] text-amber-600 font-medium mt-0.5">
-                            Must Change Pwd
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3 text-right">
-                        <div className="inline-flex items-center gap-2">
-                          <button
-                            onClick={() => handleRegeneratePassword(u)}
-                            className="px-2 py-1 rounded-md text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
-                            title="Regenerate temporary password"
-                          >
-                            <RefreshCw className="w-3 h-3 inline mr-1" />
-                            Regen Pwd
-                          </button>
-                          <button
-                            onClick={() => setEditingStaff(u)}
-                            className="p-1 rounded-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
-                            title="Edit Profile"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleToggleStaffStatus(u)}
-                            className={`px-2 py-1 rounded-md text-[10px] font-bold transition-colors cursor-pointer ${
-                              u.is_active
-                                ? 'text-rose-700 bg-rose-50 hover:bg-rose-100'
-                                : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
-                            }`}
-                          >
-                            {u.is_active ? 'Deactivate' : 'Activate'}
-                          </button>
-                        </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-slate-400">
+                        No staff members found matching the selected filters.
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
+
+              {/* Staff Table Pagination Footer */}
+              <div className="p-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs text-slate-600">
+                <span>
+                  Showing {filteredStaff.length === 0 ? 0 : (staffPage - 1) * staffLimit + 1} to{' '}
+                  {Math.min(staffPage * staffLimit, filteredStaff.length)} of {filteredStaff.length} staff members &bull; Page {staffPage} of {staffTotalPages}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    disabled={staffPage <= 1}
+                    onClick={() => setStaffPage((p) => Math.max(1, p - 1))}
+                    className="px-2.5 py-1 rounded-md border border-slate-300 bg-white text-xs disabled:opacity-40 cursor-pointer hover:bg-slate-50"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    disabled={staffPage >= staffTotalPages}
+                    onClick={() => setStaffPage((p) => Math.min(staffTotalPages, p + 1))}
+                    className="px-2.5 py-1 rounded-md border border-slate-300 bg-white text-xs disabled:opacity-40 cursor-pointer hover:bg-slate-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* ------------------------------------------------------------------ */}
-        {/* TAB 4: PERMISSION OVERRIDES */}
+        {/* TAB 4: USER PERMISSIONS */}
         {/* ------------------------------------------------------------------ */}
         {activeTab === 'overrides' && (
           <div className="space-y-6">
             <div>
-              <h1 className="text-xl font-black text-slate-900 tracking-tight">Staff Permission Overrides</h1>
+              <h2 className="text-lg font-bold text-slate-900">User Permissions Management</h2>
               <p className="text-xs text-slate-500">
-                Grant or revoke granular system permissions for individual staff members. [HARD RULE: Mandatory Reason Logged to Audit Trail].
+                View and configure granular system permissions for individual staff members. [HARD RULE: Mandatory Reason Logged to Audit Trail].
               </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* User Selection Column */}
-              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs">
-                <h3 className="text-xs font-bold text-slate-900 mb-3">Select Staff Member</h3>
-                <div className="divide-y divide-slate-100 max-h-96 overflow-y-auto">
-                  {staff.map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => handleSelectStaffForOverride(s)}
-                      className={`w-full p-2.5 text-left rounded-lg transition-colors flex items-center justify-between cursor-pointer ${
-                        selectedStaffForOverride?.id === s.id
-                          ? 'bg-emerald-50 border border-emerald-200 text-emerald-950 font-bold'
-                          : 'hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <div>
-                        <span className="text-xs block">{s.name}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">{s.roles?.name}</span>
-                      </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                  ))}
+              {/* Staff Member Search & Selection Column */}
+              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs flex flex-col">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-bold text-slate-900">Find Staff Member</h3>
+                  <span className="text-[11px] text-slate-400">
+                    {
+                      staff.filter(
+                        (s) =>
+                          !permissionStaffSearch ||
+                          s.name.toLowerCase().includes(permissionStaffSearch.toLowerCase()) ||
+                          s.email.toLowerCase().includes(permissionStaffSearch.toLowerCase())
+                      ).length
+                    }{' '}
+                    found
+                  </span>
+                </div>
+
+                {/* Search box: by name or email */}
+                <div className="relative mb-3">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                  <input
+                    id="staff-permission-search-input"
+                    type="text"
+                    placeholder="Search by staff name or email..."
+                    value={permissionStaffSearch}
+                    onChange={(e) => setPermissionStaffSearch(e.target.value)}
+                    className="w-full text-xs pl-9 pr-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div className="divide-y divide-slate-100 max-h-[460px] overflow-y-auto pr-1">
+                  {staff
+                    .filter(
+                      (s) =>
+                        !permissionStaffSearch ||
+                        s.name.toLowerCase().includes(permissionStaffSearch.toLowerCase()) ||
+                        s.email.toLowerCase().includes(permissionStaffSearch.toLowerCase())
+                    )
+                    .map((s) => (
+                      <button
+                        key={s.id}
+                        id={`staff-select-btn-${s.id}`}
+                        onClick={() => handleSelectStaffForOverride(s)}
+                        className={`w-full p-2.5 text-left rounded-lg transition-colors flex items-center justify-between cursor-pointer my-0.5 ${
+                          selectedStaffForOverride?.id === s.id
+                            ? 'bg-indigo-50 border border-indigo-200 text-indigo-950 font-bold'
+                            : 'hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <div className="min-w-0 pr-2">
+                          <span className="text-xs block font-medium truncate">{s.name}</span>
+                          <span className="text-[11px] text-slate-500 block truncate">{s.email}</span>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-mono">
+                              {s.roles?.name || 'Staff'}
+                            </span>
+                            {s.is_active ? (
+                              <span className="text-[10px] text-emerald-600 font-semibold">• Active</span>
+                            ) : (
+                              <span className="text-[10px] text-rose-600 font-semibold">• Suspended</span>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      </button>
+                    ))}
+
+                  {staff.filter(
+                    (s) =>
+                      !permissionStaffSearch ||
+                      s.name.toLowerCase().includes(permissionStaffSearch.toLowerCase()) ||
+                      s.email.toLowerCase().includes(permissionStaffSearch.toLowerCase())
+                  ).length === 0 && (
+                    <div className="p-6 text-center text-xs text-slate-400">
+                      No staff members match "{permissionStaffSearch}".
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Overrides Management Column */}
+              {/* User Profile & Permissions Checklist Column */}
               <div className="lg:col-span-2 space-y-6">
                 {selectedStaffForOverride ? (
                   <>
-                    {/* Grant / Revoke Form */}
+                    {/* Selected User Profile Card */}
                     <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs">
-                      <h3 className="text-xs font-bold text-slate-900 mb-1">
-                        Apply Override for: {selectedStaffForOverride.name}
-                      </h3>
-                      <p className="text-xs text-slate-500 mb-4">
-                        Overrides take highest precedence over the default role permission matrix.
-                      </p>
-
-                      <form onSubmit={handleSaveOverride} className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-xs font-semibold text-slate-700 block mb-1">Permission Key</label>
-                            <select
-                              value={overrideForm.permission_id}
-                              onChange={(e) => setOverrideForm({ ...overrideForm, permission_id: e.target.value })}
-                              className="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white"
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-bold text-slate-900">{selectedStaffForOverride.name}</h3>
+                            <span
+                              className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                                selectedStaffForOverride.is_active
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-rose-100 text-rose-800'
+                              }`}
                             >
-                              {availablePermissions.map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.key} {p.description ? `(${p.description})` : ''}
-                                </option>
-                              ))}
-                            </select>
+                              {selectedStaffForOverride.is_active ? 'Active' : 'Suspended'}
+                            </span>
                           </div>
+                          <p className="text-xs text-slate-500 mt-0.5">{selectedStaffForOverride.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold">
+                            Role: {selectedStaffForOverride.roles?.name || 'Staff'}
+                          </span>
+                        </div>
+                      </div>
 
-                          <div>
-                            <label className="text-xs font-semibold text-slate-700 block mb-1">Action Override</label>
-                            <select
-                              value={overrideForm.granted ? 'true' : 'false'}
-                              onChange={(e) => setOverrideForm({ ...overrideForm, granted: e.target.value === 'true' })}
-                              className="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white"
-                            >
-                              <option value="true">Grant (Explicit Allow)</option>
-                              <option value="false">Revoke (Explicit Deny)</option>
-                            </select>
-                          </div>
+                      {/* Profile Details Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 text-xs">
+                        <div>
+                          <span className="text-slate-400 text-[11px] block">Role</span>
+                          <span className="font-semibold text-slate-800">{selectedStaffForOverride.roles?.name || '—'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 text-[11px] block">Zone</span>
+                          <span className="font-semibold text-slate-800">{selectedStaffForOverride.zones?.name || 'All Zones (HQ)'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 text-[11px] block">Branch</span>
+                          <span className="font-semibold text-slate-800">{selectedStaffForOverride.branches?.name || 'All Branches'}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 text-[11px] block">Active Overrides</span>
+                          <span className="font-semibold text-indigo-600">{staffOverrides.length} customized</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Permissions Checklist Form */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-xs font-bold text-slate-900">System Permissions Checklist</h3>
+                          <p className="text-[11px] text-slate-500">
+                            Check to grant, uncheck to revoke. Overrides from role default are flagged automatically.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px]">
+                          <span className="flex items-center gap-1 text-slate-500">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Granted
+                          </span>
+                          <span className="flex items-center gap-1 text-slate-500">
+                            <span className="w-2 h-2 rounded-full bg-slate-300 inline-block"></span> Revoked
+                          </span>
+                        </div>
+                      </div>
+
+                      <form onSubmit={handleSaveUserPermissions} className="space-y-5">
+                        {/* 18 Permissions Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto p-1 border border-slate-100 rounded-lg bg-slate-50/50">
+                          {availablePermissions.map((perm) => {
+                            const isChecked = Boolean(userPermissionsChecklist[perm.key]);
+                            const isRoleDefault = roleDefaultPermKeys.includes(perm.key);
+                            const isOverride = isChecked !== isRoleDefault;
+                            const meta = PERMISSION_LABELS[perm.key] || {
+                              label: perm.key,
+                              description: perm.description || '',
+                            };
+
+                            return (
+                              <label
+                                key={perm.id}
+                                htmlFor={`perm-checkbox-${perm.key}`}
+                                className={`p-3 rounded-lg border text-xs flex items-start gap-3 cursor-pointer transition-all ${
+                                  isChecked
+                                    ? 'bg-white border-indigo-200 shadow-2xs ring-1 ring-indigo-50'
+                                    : 'bg-white/60 border-slate-200 opacity-85 hover:opacity-100'
+                                }`}
+                              >
+                                <input
+                                  id={`perm-checkbox-${perm.key}`}
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => handleTogglePermission(perm.key)}
+                                  className="mt-0.5 w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className="font-bold text-slate-900 block truncate">{meta.label}</span>
+                                    {isOverride && (
+                                      <span
+                                        className={`text-[9px] px-1.5 py-0.2 rounded font-semibold uppercase tracking-wider ${
+                                          isChecked
+                                            ? 'bg-amber-100 text-amber-800'
+                                            : 'bg-rose-100 text-rose-800'
+                                        }`}
+                                      >
+                                        {isChecked ? 'Override Grant' : 'Override Revoke'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2 leading-tight">
+                                    {meta.description}
+                                  </p>
+                                  <span className="text-[10px] text-slate-400 font-mono block mt-1">
+                                    Key: {perm.key} {isRoleDefault ? '• (Role Default)' : ''}
+                                  </span>
+                                </div>
+                              </label>
+                            );
+                          })}
                         </div>
 
-                        {/* Mandatory Reason */}
-                        <div>
-                          <label className="text-xs font-semibold text-slate-700 block mb-1">
-                            Justification / Reason <span className="text-rose-600 font-bold">* [MANDATORY]</span>
+                        {/* Mandatory Reason Input */}
+                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                          <label className="text-xs font-bold text-slate-800 block mb-1">
+                            Reason for permission change <span className="text-rose-600">* [MANDATORY]</span>
                           </label>
+                          <p className="text-[11px] text-slate-500 mb-2">
+                            Every permission update creates an immutable entry in the system audit trail. Please provide a clear operational justification.
+                          </p>
                           <input
+                            id="user-permission-reason-input"
                             type="text"
                             required
-                            placeholder="e.g., Temporary cover for Central HR manager during annual leave"
-                            value={overrideForm.reason}
-                            onChange={(e) => setOverrideForm({ ...overrideForm, reason: e.target.value })}
-                            className="w-full text-xs p-2 rounded-lg border border-slate-300 bg-white"
+                            placeholder="e.g., Assigned special verification authority for Lahore South expansion"
+                            value={permissionReason}
+                            onChange={(e) => setPermissionReason(e.target.value)}
+                            className="w-full text-xs p-2.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                         </div>
 
-                        <button
-                          type="submit"
-                          disabled={loading}
-                          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-                        >
-                          Save Override &amp; Record Audit Log
-                        </button>
+                        {/* Submit Action */}
+                        <div className="flex items-center justify-between pt-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSelectStaffForOverride(selectedStaffForOverride)}
+                            className="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer"
+                          >
+                            Reset to Current
+                          </button>
+                          <button
+                            id="save-user-permissions-btn"
+                            type="submit"
+                            disabled={loading}
+                            className="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                          >
+                            <ShieldCheck className="w-4 h-4" />
+                            <span>Save Permissions &amp; Audit</span>
+                          </button>
+                        </div>
                       </form>
                     </div>
 
-                    {/* Active Overrides for this User */}
+                    {/* Active Individual Overrides List */}
                     <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs">
-                      <h3 className="text-xs font-bold text-slate-900 mb-3">
-                        Active Overrides ({staffOverrides.length})
-                      </h3>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-xs font-bold text-slate-900">
+                          Specific Overrides for {selectedStaffForOverride.name} ({staffOverrides.length})
+                        </h3>
+                        <span className="text-[11px] text-slate-400">
+                          These explicit overrides deviate from role defaults
+                        </span>
+                      </div>
+
                       {staffOverrides.length > 0 ? (
                         <div className="divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden">
                           {staffOverrides.map((ov) => (
@@ -1011,7 +1511,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                               <button
                                 onClick={() => handleDeleteOverride(ov.id)}
                                 className="p-1 rounded-sm text-slate-400 hover:text-rose-600 cursor-pointer"
-                                title="Remove Override"
+                                title="Remove Override and Revert to Role Default"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -1019,13 +1519,15 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-slate-400 italic">No overrides applied. Standard role permissions govern this user.</p>
+                        <p className="text-xs text-slate-400 italic">
+                          No specific overrides applied. Standard role permissions govern this user.
+                        </p>
                       )}
                     </div>
                   </>
                 ) : (
                   <div className="p-12 text-center border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-xs">
-                    Select a staff member from the left to view and configure permission overrides.
+                    Select a staff member from the search list on the left to view their profile and manage their permissions.
                   </div>
                 )}
               </div>
@@ -1040,7 +1542,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h1 className="text-xl font-black text-slate-900 tracking-tight">Company-Wide Record Browser</h1>
+                <h2 className="text-lg font-bold text-slate-900">Candidate Directory Browser</h2>
                 <p className="text-xs text-slate-500">
                   Search and inspect candidates across all zones with pagination and masked CNIC privacy protection.
                 </p>
@@ -1097,7 +1599,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
               <button
                 onClick={() => loadRecordsData(1, recordPagination.limit)}
-                className="px-4 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition-colors cursor-pointer"
               >
                 Search
               </button>
@@ -1117,8 +1619,8 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {records.length > 0 ? (
-                    records.map((r) => {
+                  {uniqueRecords.length > 0 ? (
+                    uniqueRecords.map((r) => {
                       const app = r.applications?.[0];
                       return (
                         <tr key={r.id} className="hover:bg-slate-50/50">
@@ -1188,7 +1690,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl font-black text-slate-900 tracking-tight">Security &amp; Audit Logs</h1>
+                <h2 className="text-lg font-bold text-slate-900">System Activity Audit Trail</h2>
                 <p className="text-xs text-slate-500">
                   Immutable audit trail of all security actions, credential regenerations, and organizational updates.
                   [HARD RULE: Strictly restricted to Super Admin].
@@ -1289,12 +1791,21 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
         )}
 
         {/* ------------------------------------------------------------------ */}
+        {/* TAB: DYNAMIC FORM BUILDER (DUAL-TRACK DOSSIER MANAGEMENT) */}
+        {/* ------------------------------------------------------------------ */}
+        {activeTab === 'form_builder' && (
+          <div className="max-w-5xl">
+            <FormBuilderModule />
+          </div>
+        )}
+
+        {/* ------------------------------------------------------------------ */}
         {/* TAB 7: ORGANIZATION SETTINGS & DATA RETENTION */}
         {/* ------------------------------------------------------------------ */}
         {activeTab === 'settings' && (
           <div className="max-w-2xl space-y-6">
             <div>
-              <h1 className="text-xl font-black text-slate-900 tracking-tight">Organization Settings</h1>
+              <h2 className="text-lg font-bold text-slate-900">System Preferences &amp; Retention</h2>
               <p className="text-xs text-slate-500">
                 Configure organizational parameters and data retention rules.
               </p>
@@ -1329,7 +1840,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                     <div>
                       <span className="text-xs font-bold text-slate-900 block">Data Retention Policy</span>
                       <span className="text-[11px] text-slate-500 block">
-                        Specifies the number of days after an application is rejected before candidate dossier data is hidden and archived (actual purge job scheduled in Step 10).
+                        Specifies the number of days after an application is rejected before candidate dossier data is archived in compliance with privacy retention regulations.
                       </span>
                     </div>
                   </div>
@@ -1374,13 +1885,59 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                   <button
                     type="submit"
                     disabled={settingsSaving}
-                    className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                    className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
                   >
                     {settingsSaving ? 'Saving...' : 'Save Organization Settings'}
                   </button>
                 </div>
               </form>
             )}
+
+            {/* Data Retention Enforcement Job Panel */}
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-2xs space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Archive className="w-4 h-4 text-indigo-600" />
+                    <h3 className="text-sm font-bold text-slate-900">Automated Data Retention Policy Enforcement</h3>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Enforces data retention compliance by soft-hiding rejected candidate applications older than the configured policy threshold ({settings?.dataRetentionDaysAfterRejection || 120} days). Records remain fully intact in compliance audit logs.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  id="btn-run-retention-cleanup"
+                  onClick={handleRunRetentionCleanup}
+                  disabled={retentionRunning}
+                  className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${retentionRunning ? 'animate-spin' : ''}`} />
+                  {retentionRunning ? 'Executing Cleanup...' : 'Run Retention Cleanup Now'}
+                </button>
+              </div>
+
+              {retentionResult && (
+                <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-slate-800 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      Execution Result:
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">
+                      Cutoff: {new Date(retentionResult.cutoffDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                    {retentionResult.message}
+                  </p>
+                  <div className="flex items-center gap-4 text-[11px] text-slate-500 pt-1 font-mono">
+                    <span>Archived: <strong className="text-indigo-600">{retentionResult.countArchived}</strong></span>
+                    <span>Policy Threshold: <strong className="text-slate-700">{retentionResult.thresholdDays} days</strong></span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>
@@ -1526,7 +2083,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer"
+                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold cursor-pointer"
                 >
                   Generate Credentials
                 </button>
@@ -1623,7 +2180,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer"
+                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold cursor-pointer"
                 >
                   Save Changes
                 </button>
@@ -1720,7 +2277,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer"
+                  className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold cursor-pointer"
                 >
                   Save
                 </button>

@@ -5,6 +5,9 @@
 import { Router } from 'express';
 import { SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import { validateStatusTransition } from './workflowStateMachine';
+import { notificationService } from './notificationService';
+import { dataRetentionService } from './dataRetentionStore';
 
 export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
   const router = Router();
@@ -421,6 +424,141 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
     }
   });
 
+  // Edit Staff Member in Zone
+  router.put('/staff/:id', requireZonalHr, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { name, branch_id, role_name } = req.body;
+      const zoneId = req.zonalUser.role === 'super_admin' ? null : req.zonalUser.zone_id;
+
+      // Confirm target belongs to their zone
+      const { data: targetProfile, error: targErr } = await supabaseAdmin
+        .from('staff_profiles')
+        .select('id, name, zone_id, roles(name)')
+        .eq('id', id)
+        .single();
+
+      if (targErr || !targetProfile) {
+        return res.status(404).json({ success: false, error: 'Staff member not found.' });
+      }
+
+      if (zoneId && targetProfile.zone_id !== zoneId) {
+        return res.status(403).json({
+          success: false,
+          error: 'You cannot edit staff outside your assigned zone.',
+        });
+      }
+
+      const updateData: any = {};
+      if (name && typeof name === 'string' && name.trim()) {
+        updateData.name = name.trim();
+      }
+
+      if (branch_id !== undefined) {
+        if (branch_id) {
+          // Verify branch belongs to this zone
+          const { data: bData } = await supabaseAdmin
+            .from('branches')
+            .select('id, zone_id')
+            .eq('id', branch_id)
+            .single();
+          if (!bData || (zoneId && bData.zone_id !== zoneId)) {
+            return res.status(400).json({ success: false, error: 'Branch does not belong to your zone.' });
+          }
+          updateData.branch_id = branch_id;
+        } else {
+          updateData.branch_id = null;
+        }
+      }
+
+      if (role_name) {
+        if (!['central_hr', 'branch_manager'].includes(role_name)) {
+          return res.status(400).json({ success: false, error: 'Only Central HR and Branch Manager roles can be assigned.' });
+        }
+        const { data: rRow } = await supabaseAdmin.from('roles').select('id').eq('name', role_name).single();
+        if (rRow) {
+          updateData.role_id = rRow.id;
+        }
+      }
+
+      const { data: updated, error: updErr } = await supabaseAdmin
+        .from('staff_profiles')
+        .update(updateData)
+        .eq('id', id)
+        .select('*, roles(name), branches(name)')
+        .single();
+
+      if (updErr) {
+        return res.status(400).json({ success: false, error: updErr.message });
+      }
+
+      await supabaseAdmin.from('audit_logs').insert({
+        actor_id: req.zonalUser.id,
+        actor_type: 'staff',
+        action: 'ZONAL_STAFF_UPDATED',
+        entity_type: 'staff_profiles',
+        entity_id: id,
+        metadata: { ...updateData, previous_name: targetProfile.name },
+      });
+
+      return res.json({ success: true, staff: updated, message: 'Staff profile updated successfully.' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ success: false, error: msg });
+    }
+  });
+
+  // Toggle Staff Active Status in Zone
+  router.patch('/staff/:id/status', requireZonalHr, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { is_active } = req.body;
+      const zoneId = req.zonalUser.role === 'super_admin' ? null : req.zonalUser.zone_id;
+
+      const { data: targetProfile, error: targErr } = await supabaseAdmin
+        .from('staff_profiles')
+        .select('id, name, zone_id, roles(name)')
+        .eq('id', id)
+        .single();
+
+      if (targErr || !targetProfile) {
+        return res.status(404).json({ success: false, error: 'Staff member not found.' });
+      }
+
+      if (zoneId && targetProfile.zone_id !== zoneId) {
+        return res.status(403).json({
+          success: false,
+          error: 'You cannot change status of staff outside your assigned zone.',
+        });
+      }
+
+      const { data: updated, error: updErr } = await supabaseAdmin
+        .from('staff_profiles')
+        .update({ is_active: Boolean(is_active) })
+        .eq('id', id)
+        .select('*, roles(name)')
+        .single();
+
+      if (updErr) {
+        return res.status(400).json({ success: false, error: updErr.message });
+      }
+
+      await supabaseAdmin.from('audit_logs').insert({
+        actor_id: req.zonalUser.id,
+        actor_type: 'staff',
+        action: is_active ? 'ZONAL_STAFF_ACTIVATED' : 'ZONAL_STAFF_DEACTIVATED',
+        entity_type: 'staff_profiles',
+        entity_id: id,
+        metadata: { staff_name: targetProfile.name, is_active },
+      });
+
+      return res.json({ success: true, staff: updated, message: `Staff user ${is_active ? 'activated' : 'deactivated'}.` });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ success: false, error: msg });
+    }
+  });
+
   // Regenerate Password for staff in their zone
   router.post('/staff/:id/regenerate-password', requireZonalHr, async (req: any, res) => {
     try {
@@ -481,6 +619,14 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
         entity_id: id,
         metadata: { staff_name: targetProfile.name },
       });
+
+      // Dispatch centralized notification
+      await notificationService.notifyStaffCredentialReset(
+        supabaseAdmin,
+        { id, name: targetProfile.name },
+        newTempPassword,
+        req.zonalUser.id
+      );
 
       return res.json({
         success: true,
@@ -588,7 +734,11 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
       }));
 
       // 4. Enrich applications with masked candidate data
-      const enrichedApps = (applications || []).map((app) => {
+      const unarchivedApps = (applications || []).filter(
+        (app) => req.query.include_archived === 'true' || !dataRetentionService.isApplicationArchived(app.id, app.decision_reason)
+      );
+
+      const enrichedApps = unarchivedApps.map((app) => {
         const cand = candidateMap.get(app.candidate_id);
         let maskedCnic = '*****';
         if (cand?.cnic) {
@@ -745,7 +895,7 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
       // Fetch application and candidate to check zone
       const { data: application, error: appErr } = await supabaseAdmin
         .from('applications')
-        .select('id, candidate_id, status, candidates(zone_id, full_name)')
+        .select('id, candidate_id, status, candidates(id, zone_id, full_name, mobile, email, joining_id)')
         .eq('id', id)
         .single();
 
@@ -775,6 +925,12 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
       } else {
         newStatus = 'rejected';
         hrDecisionType = 'rejected';
+      }
+
+      // [STATE MACHINE ENFORCEMENT]
+      const transValidation = validateStatusTransition(application.status, newStatus);
+      if (!transValidation.valid) {
+        return res.status(400).json({ success: false, error: transValidation.error });
       }
 
       const now = new Date().toISOString();
@@ -822,6 +978,30 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
           override_by_name: req.zonalUser.name,
         },
       });
+
+      // Dispatch centralized notification to candidate
+      if (candidate) {
+        if (newStatus === 'approved') {
+          await notificationService.notifyApplicationApproved(
+            supabaseAdmin,
+            candidate,
+            `EMP-${candidate.joining_id || id.slice(0, 6)}`
+          );
+        } else if (newStatus === 'needs_correction') {
+          await notificationService.notifyApplicationReturnedForCorrection(
+            supabaseAdmin,
+            candidate,
+            reason.trim(),
+            'central_hr'
+          );
+        } else if (newStatus === 'rejected') {
+          await notificationService.notifyApplicationRejected(
+            supabaseAdmin,
+            candidate,
+            reason.trim()
+          );
+        }
+      }
 
       return res.json({
         success: true,
