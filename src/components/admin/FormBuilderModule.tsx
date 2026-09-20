@@ -9,7 +9,6 @@ import {
   RotateCcw,
   CheckCircle2,
   AlertCircle,
-  HelpCircle,
   Sliders,
   Layers,
   Sparkles,
@@ -22,6 +21,7 @@ import {
   FormSectionItem,
   FormTemplateItem,
 } from '../../server/formTemplatesStore';
+import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 
 export const FormBuilderModule: React.FC = () => {
   const [selectedTrack, setSelectedTrack] = useState<CandidateTrack>('executive');
@@ -65,6 +65,19 @@ export const FormBuilderModule: React.FC = () => {
     open: false,
     title: '',
     description: '',
+  });
+
+  // Dedicated UI Confirmation Modal for Destructive Actions
+  const [deleteModal, setDeleteModal] = useState<{
+    open: boolean;
+    type: 'field' | 'reset';
+    fieldId?: string;
+    fieldName?: string;
+    sectionTitle?: string;
+    isDeleting?: boolean;
+  }>({
+    open: false,
+    type: 'field',
   });
 
   const loadTemplate = async (track: CandidateTrack) => {
@@ -159,17 +172,52 @@ export const FormBuilderModule: React.FC = () => {
     }
   };
 
-  // Delete Field
-  const handleDeleteField = async (fieldId: string, label: string) => {
-    if (!window.confirm(`Are you sure you want to remove field "${label}" from the ${selectedTrack} form template?`)) {
-      return;
-    }
+  // Trigger Delete Field confirmation
+  const handleInitiateDeleteField = (section: FormSectionItem, field: FormFieldItem) => {
+    setDeleteModal({
+      open: true,
+      type: 'field',
+      fieldId: field.id,
+      fieldName: field.label,
+      sectionTitle: section.title,
+      isDeleting: false,
+    });
+  };
+
+  // Trigger Reset Defaults confirmation
+  const handleInitiateReset = () => {
+    setDeleteModal({
+      open: true,
+      type: 'reset',
+      fieldName: selectedTrack === 'executive' ? 'Executive Track Template' : 'Non-Executive Track Template',
+      sectionTitle: `${selectedTrack === 'executive' ? 'Executive' : 'Non-Executive'} Track Defaults`,
+      isDeleting: false,
+    });
+  };
+
+  // Confirm and Execute Deletion / Reset with mandatory audit reason
+  const handleExecuteConfirmedAction = async (reason?: string) => {
+    setDeleteModal((prev) => ({ ...prev, isDeleting: true }));
     try {
-      await formBuilderApi.deleteField(selectedTrack, fieldId);
-      setActionMessage({ type: 'success', text: `Field "${label}" deleted.` });
+      if (deleteModal.type === 'field' && deleteModal.fieldId) {
+        await formBuilderApi.deleteField(selectedTrack, deleteModal.fieldId, reason);
+        setActionMessage({
+          type: 'success',
+          text: `Field "${deleteModal.fieldName}" removed permanently and recorded in audit log.`,
+        });
+      } else if (deleteModal.type === 'reset') {
+        const trackLabel = selectedTrack === 'executive' ? 'Executive Track' : 'Non-Executive Track';
+        await formBuilderApi.resetToDefault(selectedTrack, reason);
+        setActionMessage({
+          type: 'success',
+          text: `${trackLabel} restored to default physical form structure and recorded in audit log.`,
+        });
+      }
+      setDeleteModal({ open: false, type: 'field' });
       loadTemplate(selectedTrack);
     } catch (err: any) {
-      setActionMessage({ type: 'error', text: err.message || 'Failed to delete field.' });
+      setActionMessage({ type: 'error', text: err.message || 'Deletion operation failed.' });
+      setDeleteModal((prev) => ({ ...prev, isDeleting: false }));
     }
   };
 
@@ -201,21 +249,6 @@ export const FormBuilderModule: React.FC = () => {
       loadTemplate(selectedTrack);
     } catch (err: any) {
       setActionMessage({ type: 'error', text: err.message || 'Failed to add section.' });
-    }
-  };
-
-  // Reset to default
-  const handleResetToDefault = async () => {
-    const trackLabel = selectedTrack === 'executive' ? 'Executive Track' : 'Non-Executive Track';
-    if (!window.confirm(`Are you sure you want to restore the official physical joining form defaults for ${trackLabel}? Any custom changes will be reset.`)) {
-      return;
-    }
-    try {
-      await formBuilderApi.resetToDefault(selectedTrack);
-      setActionMessage({ type: 'success', text: `${trackLabel} restored to default physical form structure.` });
-      loadTemplate(selectedTrack);
-    } catch (err: any) {
-      setActionMessage({ type: 'error', text: err.message || 'Failed to reset template.' });
     }
   };
 
@@ -278,7 +311,7 @@ export const FormBuilderModule: React.FC = () => {
             )}
             <span>{actionMessage.text}</span>
           </div>
-          <button onClick={() => setActionMessage(null)} className="text-xs font-bold opacity-60 hover:opacity-100">
+          <button onClick={() => setActionMessage(null)} className="text-xs font-bold opacity-60 hover:opacity-100 cursor-pointer">
             &times;
           </button>
         </div>
@@ -309,16 +342,18 @@ export const FormBuilderModule: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
+            id="btn-add-section"
             onClick={() => setSectionModal({ open: true, title: '', description: '' })}
-            className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Section</span>
           </button>
           <button
-            onClick={handleResetToDefault}
+            id="btn-reset-defaults"
+            onClick={handleInitiateReset}
             title="Reset to official company physical form seed"
-            className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
           >
             <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
             <span>Reset Defaults</span>
@@ -349,6 +384,7 @@ export const FormBuilderModule: React.FC = () => {
                   {section.fields.length} {section.fields.length === 1 ? 'field' : 'fields'}
                 </span>
                 <button
+                  id={`btn-add-field-${section.id}`}
                   onClick={() => handleOpenAddField(section.id)}
                   className="px-2.5 py-1 rounded-md bg-white border border-indigo-200 hover:bg-indigo-50 text-indigo-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
                 >
@@ -363,6 +399,7 @@ export const FormBuilderModule: React.FC = () => {
               {section.fields.map((field, fIdx) => (
                 <div
                   key={field.id}
+                  id={`field-row-${field.id}`}
                   className="p-3.5 hover:bg-slate-50/80 transition-colors flex items-center justify-between gap-4"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -413,6 +450,7 @@ export const FormBuilderModule: React.FC = () => {
                   {/* Actions */}
                   <div className="flex items-center gap-1 shrink-0">
                     <button
+                      id={`btn-edit-field-${field.id}`}
                       onClick={() => handleOpenEditField(section.id, field)}
                       className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
                       title="Edit Field"
@@ -420,7 +458,8 @@ export const FormBuilderModule: React.FC = () => {
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => handleDeleteField(field.id, field.label)}
+                      id={`btn-delete-field-${field.id}`}
+                      onClick={() => handleInitiateDeleteField(section, field)}
                       className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                       title="Delete Field"
                     >
@@ -450,7 +489,7 @@ export const FormBuilderModule: React.FC = () => {
               </h3>
               <button
                 onClick={() => setFieldModal((prev) => ({ ...prev, open: false }))}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer"
               >
                 &times;
               </button>
@@ -462,6 +501,7 @@ export const FormBuilderModule: React.FC = () => {
                   Field Label <span className="text-rose-500">*</span>
                 </label>
                 <input
+                  id="input-field-label"
                   type="text"
                   required
                   placeholder="e.g. Driving License Number"
@@ -479,7 +519,7 @@ export const FormBuilderModule: React.FC = () => {
                       },
                     })
                   }
-                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                 />
               </div>
 
@@ -487,6 +527,7 @@ export const FormBuilderModule: React.FC = () => {
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Field Type</label>
                   <select
+                    id="select-field-type"
                     value={fieldModal.form.field_type}
                     onChange={(e) =>
                       setFieldModal({
@@ -494,7 +535,7 @@ export const FormBuilderModule: React.FC = () => {
                         form: { ...fieldModal.form, field_type: e.target.value as FormFieldType },
                       })
                     }
-                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                   >
                     <option value="text">Single-line Text</option>
                     <option value="number">Number</option>
@@ -510,6 +551,7 @@ export const FormBuilderModule: React.FC = () => {
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Field Key (Unique Identifier)</label>
                   <input
+                    id="input-field-key"
                     type="text"
                     required
                     placeholder="e.g. driving_license_no"
@@ -520,7 +562,7 @@ export const FormBuilderModule: React.FC = () => {
                         form: { ...fieldModal.form, field_key: e.target.value },
                       })
                     }
-                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-mono"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                   />
                 </div>
               </div>
@@ -540,7 +582,7 @@ export const FormBuilderModule: React.FC = () => {
                         form: { ...fieldModal.form, optionsString: e.target.value },
                       })
                     }
-                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                   />
                 </div>
               )}
@@ -560,7 +602,7 @@ export const FormBuilderModule: React.FC = () => {
                         form: { ...fieldModal.form, conditional_label: e.target.value },
                       })
                     }
-                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
+                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                   />
                 </div>
               )}
@@ -568,6 +610,7 @@ export const FormBuilderModule: React.FC = () => {
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Placeholder Text (Optional)</label>
                 <input
+                  id="input-field-placeholder"
                   type="text"
                   placeholder="e.g. Enter registered engine number"
                   value={fieldModal.form.placeholder}
@@ -577,13 +620,14 @@ export const FormBuilderModule: React.FC = () => {
                       form: { ...fieldModal.form, placeholder: e.target.value },
                     })
                   }
-                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                 />
               </div>
 
               <div className="pt-2">
                 <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
                   <input
+                    id="checkbox-field-required"
                     type="checkbox"
                     checked={fieldModal.form.is_required}
                     onChange={(e) =>
@@ -600,15 +644,17 @@ export const FormBuilderModule: React.FC = () => {
 
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
+                  id="btn-cancel-field"
                   type="button"
                   onClick={() => setFieldModal((prev) => ({ ...prev, open: false }))}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-semibold cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-semibold cursor-pointer hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
+                  id="btn-save-field"
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold cursor-pointer shadow-xs transition-colors"
                 >
                   {fieldModal.mode === 'create' ? 'Create Field' : 'Save Changes'}
                 </button>
@@ -626,7 +672,7 @@ export const FormBuilderModule: React.FC = () => {
               <h3 className="text-sm font-bold text-slate-900">Add New Section</h3>
               <button
                 onClick={() => setSectionModal({ open: false, title: '', description: '' })}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer"
               >
                 &times;
               </button>
@@ -636,23 +682,25 @@ export const FormBuilderModule: React.FC = () => {
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Section Title *</label>
                 <input
+                  id="input-section-title"
                   type="text"
                   required
                   placeholder="e.g. Additional Certifications"
                   value={sectionModal.title}
                   onChange={(e) => setSectionModal({ ...sectionModal, title: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                 />
               </div>
 
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Description / Subtitle</label>
                 <textarea
+                  id="input-section-desc"
                   rows={2}
                   placeholder="Brief guidance for candidates filling this section..."
                   value={sectionModal.description}
                   onChange={(e) => setSectionModal({ ...sectionModal, description: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white"
+                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
                 />
               </div>
 
@@ -660,13 +708,14 @@ export const FormBuilderModule: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSectionModal({ open: false, title: '', description: '' })}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-semibold cursor-pointer"
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-semibold cursor-pointer hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
+                  id="btn-create-section-submit"
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold cursor-pointer shadow-xs transition-colors"
                 >
                   Create Section
                 </button>
@@ -675,6 +724,32 @@ export const FormBuilderModule: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* REUSABLE DELETE CONFIRMATION MODAL WITH AUDIT REASON */}
+      <DeleteConfirmationModal
+        isOpen={deleteModal.open}
+        title={deleteModal.type === 'field' ? 'Delete Form Field' : 'Restore Track Seed Defaults'}
+        itemName={deleteModal.fieldName || 'Selected Item'}
+        itemType={deleteModal.type === 'field' ? 'Form Field' : 'Track Template'}
+        contextInfo={`${selectedTrack === 'executive' ? 'Executive Track' : 'Non-Executive Track'} ${
+          deleteModal.sectionTitle ? `→ ${deleteModal.sectionTitle}` : ''
+        }`}
+        warningMessage={
+          deleteModal.type === 'field'
+            ? 'Removing this field will permanently omit it from live onboarding forms for all prospective candidates in this track.'
+            : 'Resetting defaults will wipe all custom added fields and restore the official 2026 printed joining form schema.'
+        }
+        requireReason={true}
+        reasonPlaceholder={
+          deleteModal.type === 'field'
+            ? 'State why this field is being removed (e.g. Field rendered obsolete per HR Circular 2026-04)...'
+            : 'State why template is being reset to defaults...'
+        }
+        confirmButtonLabel={deleteModal.type === 'field' ? 'Yes, Delete Field' : 'Yes, Reset Defaults'}
+        isDeleting={deleteModal.isDeleting}
+        onConfirm={handleExecuteConfirmedAction}
+        onCancel={() => setDeleteModal({ open: false, type: 'field' })}
+      />
     </div>
   );
 };

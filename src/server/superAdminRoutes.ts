@@ -1007,7 +1007,7 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
   // Add field to section
   router.post('/form-builder/fields', requireSuperAdmin, async (req: any, res) => {
     try {
-      const { track, section_id, field_key, label, field_type, is_required, order_index, options, table_columns, conditional_label, placeholder } = req.body;
+      const { track, section_id, field_key, label, field_type, is_required, order_index, options, table_columns, conditional_label, placeholder, reason } = req.body;
       if (!track || !section_id || !label || !field_type) {
         return res.status(400).json({ success: false, error: 'track, section_id, label, and field_type are required.' });
       }
@@ -1029,6 +1029,23 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
         supabaseAdmin
       );
 
+      // Audit Log for Form Builder field addition
+      await supabaseAdmin.from('audit_logs').insert({
+        actor_id: req.superAdminUser.id,
+        actor_type: 'staff',
+        action: 'form_builder_add_field',
+        entity_type: 'form_fields',
+        entity_id: newField.id,
+        metadata: {
+          track,
+          section_id,
+          field_key: newField.field_key,
+          label: newField.label,
+          field_type: newField.field_type,
+          reason: reason || 'Added via Super Admin Form Builder',
+        },
+      });
+
       return res.json({ success: true, field: newField });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1040,12 +1057,27 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
   router.put('/form-builder/fields/:id', requireSuperAdmin, async (req: any, res) => {
     try {
       const fieldId = req.params.id;
-      const { track, ...updates } = req.body;
+      const { track, reason, ...updates } = req.body;
       if (!track) {
         return res.status(400).json({ success: false, error: 'track parameter is required.' });
       }
 
       const updated = await formTemplatesService.updateField(track, fieldId, updates, supabaseAdmin);
+
+      // Audit Log for Form Builder field update
+      await supabaseAdmin.from('audit_logs').insert({
+        actor_id: req.superAdminUser.id,
+        actor_type: 'staff',
+        action: 'form_builder_update_field',
+        entity_type: 'form_fields',
+        entity_id: fieldId,
+        metadata: {
+          track,
+          updates,
+          reason: reason || 'Updated via Super Admin Form Builder',
+        },
+      });
+
       return res.json({ success: true, field: updated });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1053,17 +1085,34 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
     }
   });
 
-  // Delete field
+  // Delete field (with mandatory audit logging)
   router.delete('/form-builder/fields/:id', requireSuperAdmin, async (req: any, res) => {
     try {
       const fieldId = req.params.id;
-      const track = req.query.track as 'executive' | 'non_executive';
+      const track = (req.query.track || req.body?.track) as 'executive' | 'non_executive';
+      const reason = (req.body?.reason || req.query.reason || 'Deleted via Super Admin Form Builder') as string;
+
       if (!track) {
         return res.status(400).json({ success: false, error: 'track query parameter is required.' });
       }
 
       const success = await formTemplatesService.deleteField(track, fieldId, supabaseAdmin);
-      return res.json({ success });
+
+      // Audit Log for Form Builder field deletion
+      await supabaseAdmin.from('audit_logs').insert({
+        actor_id: req.superAdminUser.id,
+        actor_type: 'staff',
+        action: 'form_builder_delete_field',
+        entity_type: 'form_fields',
+        entity_id: fieldId,
+        metadata: {
+          track,
+          field_id: fieldId,
+          reason,
+        },
+      });
+
+      return res.json({ success, message: 'Field deleted successfully and logged to audit trail.' });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       return res.status(500).json({ success: false, error: msg });
@@ -1089,12 +1138,27 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
   // Add section
   router.post('/form-builder/sections', requireSuperAdmin, async (req: any, res) => {
     try {
-      const { track, title, description } = req.body;
+      const { track, title, description, reason } = req.body;
       if (!track || !title) {
         return res.status(400).json({ success: false, error: 'track and title are required.' });
       }
 
       const section = await formTemplatesService.addSection(track, title, description, supabaseAdmin);
+
+      await supabaseAdmin.from('audit_logs').insert({
+        actor_id: req.superAdminUser.id,
+        actor_type: 'staff',
+        action: 'form_builder_add_section',
+        entity_type: 'form_sections',
+        entity_id: section.id,
+        metadata: {
+          track,
+          title,
+          description,
+          reason: reason || 'Added new section via Super Admin Form Builder',
+        },
+      });
+
       return res.json({ success: true, section });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -1105,12 +1169,25 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
   // Reset track to default seed template
   router.post('/form-builder/reset-default', requireSuperAdmin, async (req: any, res) => {
     try {
-      const { track } = req.body;
+      const { track, reason } = req.body;
       if (!track || (track !== 'executive' && track !== 'non_executive')) {
         return res.status(400).json({ success: false, error: 'Valid track is required.' });
       }
 
       const template = formTemplatesService.resetTrackToDefault(track);
+
+      await supabaseAdmin.from('audit_logs').insert({
+        actor_id: req.superAdminUser.id,
+        actor_type: 'staff',
+        action: 'form_builder_reset_defaults',
+        entity_type: 'form_templates',
+        entity_id: template.id,
+        metadata: {
+          track,
+          reason: reason || 'Reset track to default seed template',
+        },
+      });
+
       return res.json({ success: true, template });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

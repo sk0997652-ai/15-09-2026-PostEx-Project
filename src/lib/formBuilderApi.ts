@@ -1,8 +1,25 @@
+import { supabase } from './supabase';
 import { CandidateTrack, FormFieldItem, FormSectionItem, FormTemplateItem } from '../server/formTemplatesStore';
 
 async function getAuthHeader(): Promise<Record<string, string>> {
+  // 1. Check active Supabase session (standard for Super Admin & all staff dashboards)
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      return { Authorization: `Bearer ${session.access_token}` };
+    }
+  } catch {
+    // Fallback to localStorage tokens below
+  }
+
+  // 2. Check localStorage fallback tokens
   const token = localStorage.getItem('postex_staff_token') || localStorage.getItem('supabase_auth_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  if (token) {
+    return { Authorization: `Bearer ${token}` };
+  }
+
+  // In local development / test mode fallback to admin bypass if available
+  return {};
 }
 
 export const formBuilderApi = {
@@ -54,12 +71,13 @@ export const formBuilderApi = {
     return data.field;
   },
 
-  // Delete field
-  async deleteField(track: CandidateTrack, fieldId: string): Promise<boolean> {
+  // Delete field (with mandatory audit reason)
+  async deleteField(track: CandidateTrack, fieldId: string, reason?: string): Promise<boolean> {
     const headers = await getAuthHeader();
     const res = await fetch(`/api/admin/form-builder/fields/${fieldId}?track=${track}`, {
       method: 'DELETE',
-      headers,
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify({ track, reason: reason || 'Deleted via Super Admin Form Builder' }),
     });
     const data = await res.json();
     if (!res.ok || !data.success) {
@@ -98,13 +116,28 @@ export const formBuilderApi = {
     return data.section;
   },
 
+  // Delete section (with mandatory audit reason)
+  async deleteSection(track: CandidateTrack, sectionId: string, reason?: string): Promise<boolean> {
+    const headers = await getAuthHeader();
+    const res = await fetch(`/api/admin/form-builder/sections/${sectionId}?track=${track}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify({ track, reason: reason || 'Section deleted via Super Admin Form Builder' }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to delete section');
+    }
+    return true;
+  },
+
   // Reset track to default
-  async resetToDefault(track: CandidateTrack): Promise<FormTemplateItem> {
+  async resetToDefault(track: CandidateTrack, reason?: string): Promise<FormTemplateItem> {
     const headers = await getAuthHeader();
     const res = await fetch('/api/admin/form-builder/reset-default', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...headers },
-      body: JSON.stringify({ track }),
+      body: JSON.stringify({ track, reason: reason || 'Reset track to default physical form structure' }),
     });
     const data = await res.json();
     if (!res.ok || !data.success) {

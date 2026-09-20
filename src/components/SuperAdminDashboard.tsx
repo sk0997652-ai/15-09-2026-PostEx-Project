@@ -36,6 +36,7 @@ import {
 } from '../lib/superAdminApi';
 import { FormBuilderModule } from './admin/FormBuilderModule';
 import { useBranding } from '../lib/branding';
+import { DeleteConfirmationModal } from './common/DeleteConfirmationModal';
 
 // Friendly human-readable labels for all 18 system permissions
 const PERMISSION_LABELS: Record<string, { label: string; description: string }> = {
@@ -154,6 +155,22 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const [orgModalMode, setOrgModalMode] = useState<'create' | 'edit'>('create');
   const [orgEditId, setOrgEditId] = useState<string | null>(null);
   const [orgForm, setOrgForm] = useState<any>({});
+
+  // Unified Delete Confirmation Modal State
+  const [deleteModalState, setDeleteModalState] = useState<{
+    open: boolean;
+    type: 'org' | 'override';
+    targetId: string;
+    targetName: string;
+    subTab?: 'zones' | 'branches' | 'departments' | 'designations';
+    isDeleting: boolean;
+  }>({
+    open: false,
+    type: 'org',
+    targetId: '',
+    targetName: '',
+    isDeleting: false,
+  });
 
   // User Permissions states
   const [permissionStaffSearch, setPermissionStaffSearch] = useState('');
@@ -448,15 +465,28 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     }
   };
 
-  const handleDeleteOrgEntity = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"? This cannot be undone.`)) return;
+  const handleDeleteOrgEntity = (id: string, name: string) => {
+    setDeleteModalState({
+      open: true,
+      type: 'org',
+      targetId: id,
+      targetName: name,
+      subTab: orgSubTab,
+      isDeleting: false,
+    });
+  };
+
+  const handleConfirmDeleteOrgEntity = async () => {
+    setDeleteModalState((prev) => ({ ...prev, isDeleting: true }));
     setLoading(true);
     try {
-      await superAdminApi.deleteOrgEntity(orgSubTab, id);
-      setNotification({ type: 'success', text: `Deleted "${name}".` });
+      await superAdminApi.deleteOrgEntity(deleteModalState.subTab || orgSubTab, deleteModalState.targetId);
+      setNotification({ type: 'success', text: `Deleted "${deleteModalState.targetName}".` });
+      setDeleteModalState({ open: false, type: 'org', targetId: '', targetName: '', isDeleting: false });
       await loadOrgData();
     } catch (err: any) {
       setNotification({ type: 'error', text: err.message });
+      setDeleteModalState((prev) => ({ ...prev, isDeleting: false }));
     } finally {
       setLoading(false);
     }
@@ -578,18 +608,30 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     }
   };
 
-  const handleDeleteOverride = async (overrideId: string) => {
-    if (!confirm('Remove this override? The user will revert to default role permissions.')) return;
+  const handleDeleteOverride = (overrideId: string) => {
+    setDeleteModalState({
+      open: true,
+      type: 'override',
+      targetId: overrideId,
+      targetName: 'Custom Permission Override',
+      isDeleting: false,
+    });
+  };
+
+  const handleConfirmDeleteOverride = async () => {
+    setDeleteModalState((prev) => ({ ...prev, isDeleting: true }));
     setLoading(true);
     try {
-      await superAdminApi.deletePermissionOverride(overrideId);
+      await superAdminApi.deletePermissionOverride(deleteModalState.targetId);
       if (selectedStaffForOverride) {
         const res = await superAdminApi.getPermissionOverrides(selectedStaffForOverride.id);
         setStaffOverrides(res.overrides);
       }
       setNotification({ type: 'success', text: 'Override removed.' });
+      setDeleteModalState({ open: false, type: 'override', targetId: '', targetName: '', isDeleting: false });
     } catch (err: any) {
       setNotification({ type: 'error', text: err.message });
+      setDeleteModalState((prev) => ({ ...prev, isDeleting: false }));
     } finally {
       setLoading(false);
     }
@@ -2286,6 +2328,24 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* REUSABLE DELETE CONFIRMATION MODAL FOR ORG ENTITIES & OVERRIDES */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalState.open}
+        title={deleteModalState.type === 'org' ? `Delete ${deleteModalState.subTab?.slice(0, -1) || 'Item'}` : 'Remove Permission Override'}
+        itemName={deleteModalState.targetName}
+        itemType={deleteModalState.type === 'org' ? deleteModalState.subTab?.slice(0, -1) || 'Entity' : 'User Permission Override'}
+        contextInfo={deleteModalState.type === 'org' ? `Organization Structure → ${deleteModalState.subTab}` : `Staff User: ${selectedStaffForOverride?.name || selectedStaffForOverride?.email}`}
+        warningMessage={
+          deleteModalState.type === 'org'
+            ? `Deleting this ${deleteModalState.subTab?.slice(0, -1)} will permanently dissociate it from all assigned employees, branches, or onboarding forms.`
+            : 'Removing this override will immediately revert this staff user to their baseline role-assigned permissions.'
+        }
+        confirmButtonLabel={deleteModalState.type === 'org' ? 'Yes, Delete' : 'Yes, Remove Override'}
+        isDeleting={deleteModalState.isDeleting}
+        onConfirm={deleteModalState.type === 'org' ? handleConfirmDeleteOrgEntity : handleConfirmDeleteOverride}
+        onCancel={() => setDeleteModalState((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 };
