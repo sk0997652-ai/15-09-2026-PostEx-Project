@@ -4,6 +4,12 @@
 
 import { SupabaseClient } from '@supabase/supabase-js';
 
+function isValidSupabase(supabase?: SupabaseClient): boolean {
+  if (!supabase) return false;
+  const url = (supabase as any).supabaseUrl || '';
+  return typeof url === 'string' && url.startsWith('https://') && !url.includes('placeholder-project');
+}
+
 export type CandidateTrack = 'executive' | 'non_executive';
 
 export type FormFieldType =
@@ -550,9 +556,9 @@ export class FormTemplatesService {
 
   // --- Organization Branding ---
   async getOrgSettings(supabase?: SupabaseClient): Promise<OrganizationSettings> {
-    if (supabase) {
+    if (isValidSupabase(supabase)) {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabase!
           .from('organization_settings')
           .select('*')
           .order('updated_at', { ascending: false })
@@ -592,9 +598,9 @@ export class FormTemplatesService {
     };
     this.orgSettings = updated;
 
-    if (supabase) {
+    if (isValidSupabase(supabase)) {
       try {
-        await supabase.from('organization_settings').upsert({
+        await supabase!.from('organization_settings').upsert({
           id: this.orgSettings.id,
           company_name: updated.company_name,
           portal_name: updated.portal_name,
@@ -619,9 +625,9 @@ export class FormTemplatesService {
   }
 
   async getTemplateForTrack(track: CandidateTrack, supabase?: SupabaseClient): Promise<FormTemplateItem> {
-    if (supabase) {
+    if (isValidSupabase(supabase)) {
       try {
-        const { data: dbTemplate, error: tErr } = await supabase
+        const { data: dbTemplate, error: tErr } = await supabase!
           .from('form_templates')
           .select('*')
           .eq('track', track)
@@ -721,9 +727,9 @@ export class FormTemplatesService {
     section.fields.push(newField);
     section.fields.sort((a, b) => a.order_index - b.order_index);
 
-    if (supabase) {
+    if (isValidSupabase(supabase)) {
       try {
-        await supabase.from('form_fields').insert({
+        await supabase!.from('form_fields').insert({
           id: newField.id,
           section_id: newField.section_id,
           field_key: newField.field_key,
@@ -765,9 +771,9 @@ export class FormTemplatesService {
       throw new Error(`Field ${fieldId} not found in ${track} track template.`);
     }
 
-    if (supabase) {
+    if (isValidSupabase(supabase)) {
       try {
-        await supabase
+        await supabase!
           .from('form_fields')
           .update({
             label: targetField.label,
@@ -800,9 +806,9 @@ export class FormTemplatesService {
       }
     }
 
-    if (supabase && deleted) {
+    if (isValidSupabase(supabase) && deleted) {
       try {
-        await supabase.from('form_fields').delete().eq('id', fieldId);
+        await supabase!.from('form_fields').delete().eq('id', fieldId);
       } catch (e) {
         console.warn('Could not delete from form_fields in Supabase:', e);
       }
@@ -835,10 +841,10 @@ export class FormTemplatesService {
 
     section.fields = reordered;
 
-    if (supabase) {
+    if (isValidSupabase(supabase)) {
       try {
         for (const f of reordered) {
-          await supabase.from('form_fields').update({ order_index: f.order_index }).eq('id', f.id);
+          await supabase!.from('form_fields').update({ order_index: f.order_index }).eq('id', f.id);
         }
       } catch (e) {
         console.warn('Could not update order in Supabase:', e);
@@ -868,9 +874,9 @@ export class FormTemplatesService {
 
     template.sections.push(newSection);
 
-    if (supabase) {
+    if (isValidSupabase(supabase)) {
       try {
-        await supabase.from('form_sections').insert({
+        await supabase!.from('form_sections').insert({
           id: newSection.id,
           template_id: newSection.template_id,
           title: newSection.title,

@@ -205,6 +205,24 @@ async function getStaffContext(userId: string) {
   };
 }
 
+// Database guard middleware to prevent hangs when Supabase credentials are missing or placeholders
+app.use([
+  '/api/candidate-auth',
+  '/api/staff',
+  '/api/applications',
+  '/api/candidate',
+  '/api/documents',
+  '/api/rbac',
+], (req, res, next) => {
+  if (!isSupabaseServerConfigured) {
+    return res.status(503).json({
+      success: false,
+      error: 'Database service is in standby mode. Please configure VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in your environment to enable database operations.',
+    });
+  }
+  next();
+});
+
 // ==============================================================================
 // 1. API: CANDIDATE OTP AUTHENTICATION
 // ==============================================================================

@@ -2,6 +2,12 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { formTemplatesService } from './formTemplatesStore';
 import { notificationService } from './notificationService';
 
+function isValidSupabase(client?: SupabaseClient): boolean {
+  if (!client) return false;
+  const url = (client as any).supabaseUrl || '';
+  return typeof url === 'string' && url.startsWith('https://') && !url.includes('placeholder-project');
+}
+
 export interface DataRetentionCleanupResult {
   success: boolean;
   countArchived: number;
@@ -19,9 +25,9 @@ export class DataRetentionService {
    * Initializes the in-memory cache of soft-archived application IDs from DB audit_logs.
    */
   async ensureInitialized(supabaseAdmin?: SupabaseClient) {
-    if (this.initialized || !supabaseAdmin) return;
+    if (this.initialized || !isValidSupabase(supabaseAdmin)) return;
     try {
-      const { data: logs, error } = await supabaseAdmin
+      const { data: logs, error } = await supabaseAdmin!
         .from('audit_logs')
         .select('entity_id')
         .eq('action', 'data_retention_archived')
@@ -65,6 +71,17 @@ export class DataRetentionService {
     supabaseAdmin: SupabaseClient,
     actorId?: string
   ): Promise<DataRetentionCleanupResult> {
+    if (!isValidSupabase(supabaseAdmin)) {
+      return {
+        success: true,
+        countArchived: 0,
+        thresholdDays: 120,
+        cutoffDate: new Date().toISOString(),
+        archivedIds: [],
+        message: 'Supabase client in standby mode. Retention cleanup skipped.',
+      };
+    }
+
     await this.ensureInitialized(supabaseAdmin);
 
     // 1. Get organizational settings for threshold (default 120 days)
