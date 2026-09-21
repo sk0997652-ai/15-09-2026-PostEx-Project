@@ -320,6 +320,7 @@ export function createBranchManagerRouter(supabaseAdmin: SupabaseClient) {
           candidate: cand
             ? {
                 ...cand,
+                cnic: maskCnic(cand.cnic),
                 masked_cnic: maskCnic(cand.cnic),
                 branch_name: branchName || req.staff.branch_name,
               }

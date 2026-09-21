@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { CandidateTrack, FormFieldItem, FormSectionItem, FormTemplateItem } from '../server/formTemplatesStore';
+import { CandidateTrack, FormFieldItem, FormSectionItem, FormTemplateItem } from '../types/formTemplates';
 
 async function getAuthHeader(): Promise<Record<string, string>> {
   // 1. Check active Supabase session (standard for Super Admin & all staff dashboards)

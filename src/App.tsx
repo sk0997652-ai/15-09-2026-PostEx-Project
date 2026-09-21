@@ -32,6 +32,14 @@ export default function App() {
   const [authPortalType, setAuthPortalType] = useState<'staff' | 'candidate'>('staff');
   const [showDevMenu, setShowDevMenu] = useState(false);
 
+  const [portalName, setPortalName] = useState('PostEx');
+
+  const [isDevToolsEnabled, setIsDevToolsEnabled] = useState(
+    ['true', '1', 'yes'].includes(
+      String(import.meta.env.VITE_ENABLE_DEV_TOOLS || '').trim().toLowerCase()
+    )
+  );
+
   // Sync staff auth session
   const refreshSession = async () => {
     const session = await checkStaffSession();
@@ -43,6 +51,20 @@ export default function App() {
       setIsSuperAdmin(false);
     }
   };
+
+  useEffect(() => {
+    fetch('/api/organization-settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.settings?.company_name) {
+          setPortalName(data.settings.company_name);
+        }
+        if (typeof data?.enableDevTools === 'boolean') {
+          setIsDevToolsEnabled(data.enableDevTools);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     refreshSession();
@@ -72,7 +94,7 @@ export default function App() {
             </div>
             <div>
               <span className="text-base font-bold tracking-tight text-white flex items-center gap-2">
-                PostEx <span className="text-slate-400 font-normal">| HR Onboarding Portal</span>
+                {portalName} <span className="text-slate-400 font-normal">| HR Onboarding Portal</span>
               </span>
             </div>
           </div>
@@ -92,74 +114,76 @@ export default function App() {
               </div>
             )}
 
-            {/* Separated Developer Verification Tools Menu */}
-            <div className="relative">
-              <button
-                id="dev-tools-menu-btn"
-                onClick={() => setShowDevMenu(!showDevMenu)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 transition-colors cursor-pointer"
-              >
-                <Wrench className="w-3.5 h-3.5" />
-                <span>Dev Verification Tools</span>
-                <ChevronDown className="w-3 h-3" />
-              </button>
+            {/* Developer Verification Tools Menu - Gated behind VITE_ENABLE_DEV_TOOLS flag (off by default in production) */}
+            {isDevToolsEnabled && (
+              <div className="relative">
+                <button
+                  id="dev-tools-menu-btn"
+                  onClick={() => setShowDevMenu(!showDevMenu)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 transition-colors cursor-pointer"
+                >
+                  <Wrench className="w-3.5 h-3.5" />
+                  <span>Dev Verification Tools</span>
+                  <ChevronDown className="w-3 h-3" />
+                </button>
 
-              {showDevMenu && (
-                <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-1.5 z-40 text-xs space-y-1">
-                  <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Step Diagnostics (Dev Only)
+                {showDevMenu && (
+                  <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-1.5 z-40 text-xs space-y-1">
+                    <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Step Diagnostics (Super Admin Only)
+                    </div>
+                    <button
+                      onClick={() => {
+                        setActiveDevTab('none');
+                        setShowDevMenu(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
+                        activeDevTab === 'none' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span>Real App Dashboard</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveDevTab('rbac');
+                        setShowDevMenu(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
+                        activeDevTab === 'rbac' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Step 4: RBAC &amp; RLS Tests</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveDevTab('auth');
+                        setShowDevMenu(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
+                        activeDevTab === 'auth' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      <Shield className="w-3.5 h-3.5" />
+                      <span>Step 3: Auth System Test</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setActiveDevTab('connectivity');
+                        setShowDevMenu(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
+                        activeDevTab === 'connectivity' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      <Activity className="w-3.5 h-3.5" />
+                      <span>Step 1: Diagnostics</span>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      setActiveDevTab('none');
-                      setShowDevMenu(false);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
-                      activeDevTab === 'none' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
-                    }`}
-                  >
-                    <Building2 className="w-3.5 h-3.5" />
-                    <span>Real App Dashboard</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveDevTab('rbac');
-                      setShowDevMenu(false);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
-                      activeDevTab === 'rbac' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
-                    }`}
-                  >
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Step 4: RBAC &amp; RLS Tests</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveDevTab('auth');
-                      setShowDevMenu(false);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
-                      activeDevTab === 'auth' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
-                    }`}
-                  >
-                    <Shield className="w-3.5 h-3.5" />
-                    <span>Step 3: Auth System Test</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveDevTab('connectivity');
-                      setShowDevMenu(false);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
-                      activeDevTab === 'connectivity' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
-                    }`}
-                  >
-                    <Activity className="w-3.5 h-3.5" />
-                    <span>Step 1: Diagnostics</span>
-                  </button>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </header>

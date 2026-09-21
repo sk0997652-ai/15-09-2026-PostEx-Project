@@ -20,7 +20,7 @@ import {
   FormFieldType,
   FormSectionItem,
   FormTemplateItem,
-} from '../../server/formTemplatesStore';
+} from '../../types/formTemplates';
 import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 
 export const FormBuilderModule: React.FC = () => {
@@ -70,9 +70,10 @@ export const FormBuilderModule: React.FC = () => {
   // Dedicated UI Confirmation Modal for Destructive Actions
   const [deleteModal, setDeleteModal] = useState<{
     open: boolean;
-    type: 'field' | 'reset';
+    type: 'field' | 'section' | 'reset';
     fieldId?: string;
     fieldName?: string;
+    sectionId?: string;
     sectionTitle?: string;
     isDeleting?: boolean;
   }>({
@@ -184,6 +185,18 @@ export const FormBuilderModule: React.FC = () => {
     });
   };
 
+  // Trigger Delete Section confirmation
+  const handleInitiateDeleteSection = (section: FormSectionItem) => {
+    setDeleteModal({
+      open: true,
+      type: 'section',
+      sectionId: section.id,
+      sectionTitle: section.title,
+      fieldName: section.title,
+      isDeleting: false,
+    });
+  };
+
   // Trigger Reset Defaults confirmation
   const handleInitiateReset = () => {
     setDeleteModal({
@@ -204,6 +217,12 @@ export const FormBuilderModule: React.FC = () => {
         setActionMessage({
           type: 'success',
           text: `Field "${deleteModal.fieldName}" removed permanently and recorded in audit log.`,
+        });
+      } else if (deleteModal.type === 'section' && deleteModal.sectionId) {
+        await formBuilderApi.deleteSection(selectedTrack, deleteModal.sectionId, reason);
+        setActionMessage({
+          type: 'success',
+          text: `Section "${deleteModal.sectionTitle}" and all nested fields deleted permanently and recorded in audit log.`,
         });
       } else if (deleteModal.type === 'reset') {
         const trackLabel = selectedTrack === 'executive' ? 'Executive Track' : 'Non-Executive Track';
@@ -390,6 +409,15 @@ export const FormBuilderModule: React.FC = () => {
                 >
                   <Plus className="w-3 h-3" />
                   <span>Add Field</span>
+                </button>
+                <button
+                  id={`btn-delete-section-${section.id}`}
+                  onClick={() => handleInitiateDeleteSection(section)}
+                  className="px-2.5 py-1 rounded-md bg-white border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Delete entire section and all its fields"
+                >
+                  <Trash2 className="w-3 h-3 text-red-500" />
+                  <span>Delete Section</span>
                 </button>
               </div>
             </div>
@@ -728,24 +756,46 @@ export const FormBuilderModule: React.FC = () => {
       {/* REUSABLE DELETE CONFIRMATION MODAL WITH AUDIT REASON */}
       <DeleteConfirmationModal
         isOpen={deleteModal.open}
-        title={deleteModal.type === 'field' ? 'Delete Form Field' : 'Restore Track Seed Defaults'}
+        title={
+          deleteModal.type === 'field'
+            ? 'Delete Form Field'
+            : deleteModal.type === 'section'
+            ? 'Delete Form Section'
+            : 'Restore Track Seed Defaults'
+        }
         itemName={deleteModal.fieldName || 'Selected Item'}
-        itemType={deleteModal.type === 'field' ? 'Form Field' : 'Track Template'}
+        itemType={
+          deleteModal.type === 'field'
+            ? 'Form Field'
+            : deleteModal.type === 'section'
+            ? 'Form Section'
+            : 'Track Template'
+        }
         contextInfo={`${selectedTrack === 'executive' ? 'Executive Track' : 'Non-Executive Track'} ${
           deleteModal.sectionTitle ? `→ ${deleteModal.sectionTitle}` : ''
         }`}
         warningMessage={
           deleteModal.type === 'field'
             ? 'Removing this field will permanently omit it from live onboarding forms for all prospective candidates in this track.'
+            : deleteModal.type === 'section'
+            ? 'Deleting this entire section will permanently remove it along with ALL fields nested inside it. This cannot be undone.'
             : 'Resetting defaults will wipe all custom added fields and restore the official 2026 printed joining form schema.'
         }
         requireReason={true}
         reasonPlaceholder={
           deleteModal.type === 'field'
             ? 'State why this field is being removed (e.g. Field rendered obsolete per HR Circular 2026-04)...'
+            : deleteModal.type === 'section'
+            ? 'State why this entire section is being deleted (mandatory for audit logging)...'
             : 'State why template is being reset to defaults...'
         }
-        confirmButtonLabel={deleteModal.type === 'field' ? 'Yes, Delete Field' : 'Yes, Reset Defaults'}
+        confirmButtonLabel={
+          deleteModal.type === 'field'
+            ? 'Yes, Delete Field'
+            : deleteModal.type === 'section'
+            ? 'Yes, Delete Section'
+            : 'Yes, Reset Defaults'
+        }
         isDeleting={deleteModal.isDeleting}
         onConfirm={handleExecuteConfirmedAction}
         onCancel={() => setDeleteModal({ open: false, type: 'field' })}

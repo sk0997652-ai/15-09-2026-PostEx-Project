@@ -8,7 +8,7 @@ import { createSuperAdminRouter } from './src/server/superAdminRoutes';
 import { createZonalHrRouter } from './src/server/zonalHrRoutes';
 import { createCentralHrRouter } from './src/server/centralHrRoutes';
 import { createBranchManagerRouter } from './src/server/branchManagerRoutes';
-import { formTemplatesService } from './src/server/formTemplatesStore';
+import { formTemplatesService } from './src/server/formTemplatesDbService';
 import { validateStatusTransition } from './src/server/workflowStateMachine';
 import { notificationService } from './src/server/notificationService';
 import { dataRetentionService } from './src/server/dataRetentionStore';
@@ -870,7 +870,7 @@ app.get('/api/candidate/application', async (req, res) => {
     }
 
     // Resolve track: DB column or fallback store
-    const resolvedTrack = candidate.track || formTemplatesService.getCandidateTrack(candidateId) || 'executive';
+    const resolvedTrack = candidate.track || (await formTemplatesService.getCandidateTrack(candidateId, supabaseAdmin)) || 'executive';
     candidate.track = resolvedTrack;
 
     // Resolve candidate designation from audit logs or designations table
@@ -912,8 +912,20 @@ app.get('/api/candidate/application', async (req, res) => {
       .eq('candidate_id', candidateId)
       .maybeSingle();
 
-    if (application && application.track === undefined) {
-      application.track = resolvedTrack;
+    // Resolve track: DB column, application step data, or formTemplatesService
+    let finalTrack = candidate.track || (await formTemplatesService.getCandidateTrack(candidateId, supabaseAdmin));
+    if ((!finalTrack || finalTrack === 'executive') && application && Array.isArray(application.application_steps)) {
+      const step1 = application.application_steps.find((s: any) => s.step_name === 'personal_info' || s.step_number === 1);
+      if (step1?.data?.track) {
+        finalTrack = step1.data.track;
+        await formTemplatesService.setCandidateTrack(candidateId, finalTrack, supabaseAdmin);
+      }
+    }
+    if (!finalTrack) finalTrack = 'executive';
+    candidate.track = finalTrack;
+
+    if (application) {
+      application.track = finalTrack;
     }
 
     // Attach signed preview URLs to uploaded documents
@@ -964,7 +976,10 @@ app.get('/api/candidate/application', async (req, res) => {
 app.get('/api/organization-settings', async (req, res) => {
   try {
     const settings = await formTemplatesService.getOrgSettings(supabaseAdmin);
-    return res.json({ success: true, settings });
+    const enableDevTools = ['true', '1', 'yes'].includes(
+      String(process.env.VITE_ENABLE_DEV_TOOLS || '').trim().toLowerCase()
+    );
+    return res.json({ success: true, settings, enableDevTools });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return res.status(500).json({ success: false, error: msg });
@@ -990,14 +1005,19 @@ app.put('/api/admin/organization-settings', async (req, res) => {
   }
 });
 
-// Form Template for candidate track (Executive or Non-Executive)
-app.get('/api/form-templates/:track', async (req, res) => {
+// Form Template for candidate track (Executive/White-Collar or Non-Executive/Blue-Collar)
+app.get(['/api/form-templates/published', '/api/form-templates/:track'], async (req, res) => {
   try {
-    const track = req.params.track as 'executive' | 'non_executive';
-    if (track !== 'executive' && track !== 'non_executive') {
+    const rawTrack = String(req.params.track || req.query.track || 'executive').toLowerCase();
+    let track: 'executive' | 'non_executive' = 'executive';
+    if (rawTrack === 'blue_collar' || rawTrack === 'non_executive') {
+      track = 'non_executive';
+    } else if (rawTrack === 'white_collar' || rawTrack === 'executive') {
+      track = 'executive';
+    } else {
       return res.status(400).json({
         success: false,
-        error: 'Invalid track parameter. Must be "executive" or "non_executive".',
+        error: 'Invalid track parameter. Must be "executive", "non_executive", "white_collar", or "blue_collar".',
       });
     }
     const template = await formTemplatesService.getActiveTemplate(track, supabaseAdmin);
@@ -1083,8 +1103,8 @@ app.post('/api/candidate/consent', async (req, res) => {
   }
 });
 
-// Candidate Autosave Step Data Endpoint
-app.post('/api/candidate/autosave', async (req, res) => {
+// Candidate Autosave Step Data Endpoint (supports both /autosave and /application/step)
+app.post(['/api/candidate/autosave', '/api/candidate/application/step'], async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
@@ -1512,15 +1532,69 @@ app.delete('/api/candidate/documents/:docId', async (req, res) => {
 // Secure Document View/Stream Endpoint (Supports candidate, BM, Central HR, Zonal HR, Super Admin)
 app.get('/api/documents/:docId/view', async (req, res) => {
   try {
+    const authHeader = req.headers.authorization || (req.query.token ? `Bearer ${req.query.token}` : null);
+    if (!authHeader) {
+      return res.status(401).json({ success: false, error: 'Authentication token required to access document.' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    let isAuthorized = false;
+
+    // Check 1: Candidate JWT
+    const candidateVerification = verifyCandidateSessionToken(token, serviceRoleKey);
+    let candidateIdFromToken: string | null = null;
+    if (candidateVerification.valid && candidateVerification.payload) {
+      candidateIdFromToken = candidateVerification.payload.sub;
+    }
+
+    // Check 2: Staff Supabase Auth
+    let staffUser: any = null;
+    if (!candidateIdFromToken) {
+      const { data: authStaff } = await supabaseAdmin.auth.getUser(token);
+      if (authStaff?.user) {
+        staffUser = authStaff.user;
+      }
+    }
+
+    if (!candidateIdFromToken && !staffUser) {
+      return res.status(401).json({ success: false, error: 'Invalid or expired session token.' });
+    }
+
     const docId = req.params.docId;
     const { data: doc, error: docErr } = await supabaseAdmin
       .from('documents')
-      .select('id, storage_path, type, application_id')
+      .select('id, storage_path, type, application_id, applications(candidate_id)')
       .eq('id', docId)
       .maybeSingle();
 
     if (docErr || !doc) {
       return res.status(404).json({ success: false, error: 'Document not found.' });
+    }
+
+    // Authorization evaluation:
+    // If candidate: document must belong to their application
+    if (candidateIdFromToken) {
+      const appCandidateId = (doc.applications as any)?.candidate_id;
+      if (appCandidateId !== candidateIdFromToken) {
+        return res.status(403).json({ success: false, error: 'Forbidden: You do not own this document.' });
+      }
+      isAuthorized = true;
+    } else if (staffUser) {
+      // Staff profile check
+      const { data: profile } = await supabaseAdmin
+        .from('staff_profiles')
+        .select('id, is_active, role_id, zone_id, branch_id, roles(name)')
+        .eq('id', staffUser.id)
+        .maybeSingle();
+
+      if (!profile || !profile.is_active) {
+        return res.status(403).json({ success: false, error: 'Staff account inactive or not found.' });
+      }
+      isAuthorized = true;
+    }
+
+    if (!isAuthorized) {
+      return res.status(403).json({ success: false, error: 'Access denied.' });
     }
 
     // Generate signed URL from candidate-documents
@@ -1555,8 +1629,8 @@ app.get('/api/documents/:docId/view', async (req, res) => {
   }
 });
 
-// Candidate Submit Application Endpoint
-app.post('/api/candidate/submit', async (req, res) => {
+// Candidate Submit Application Endpoint (supports both /submit and /application/submit)
+app.post(['/api/candidate/submit', '/api/candidate/application/submit'], async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {

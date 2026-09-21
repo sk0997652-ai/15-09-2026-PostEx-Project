@@ -139,11 +139,15 @@ export const superAdminApi = {
     return data.data;
   },
 
-  async deleteOrgEntity(entity: 'zones' | 'branches' | 'departments' | 'designations', id: string) {
+  async deleteOrgEntity(entity: 'zones' | 'branches' | 'departments' | 'designations', id: string, reason?: string) {
     const headers = await getAuthHeader();
     const res = await fetch(`/api/admin/org/${entity}/${id}`, {
       method: 'DELETE',
-      headers,
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ reason: reason || 'Deleted via Super Admin Organization Manager' }),
     });
     const data = await res.json();
     if (!res.ok || !data.success) {

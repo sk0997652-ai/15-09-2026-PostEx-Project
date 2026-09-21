@@ -23,7 +23,7 @@ import {
   FormFieldItem,
   FormSectionItem,
   FormTemplateItem,
-} from '../../server/formTemplatesStore';
+} from '../../types/formTemplates';
 import { autosaveStepData, submitCandidateApplication } from '../../lib/candidateApi';
 import { DocumentUploadStep, DocumentRecord } from './DocumentUploadStep';
 import { SignatureStep } from './SignatureStep';

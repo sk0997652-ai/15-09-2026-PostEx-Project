@@ -758,6 +758,7 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
           candidate: cand
             ? {
                 ...cand,
+                cnic: maskedCnic,
                 masked_cnic: maskedCnic,
               }
             : null,

@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { formTemplatesService } from './formTemplatesStore';
+import { formTemplatesService } from './formTemplatesDbService';
 import { notificationService } from './notificationService';
 
 function isValidSupabase(client?: SupabaseClient): boolean {

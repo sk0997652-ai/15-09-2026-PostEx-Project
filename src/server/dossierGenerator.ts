@@ -6,6 +6,7 @@ import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export interface DossierPayload {
+  companyName?: string;
   employeeId: string;
   joiningId: string;
   candidateName: string;
@@ -61,7 +62,7 @@ export async function generateAndUploadPdfDossier(
   });
 
   // Logo text
-  page.drawText('POSTEX', {
+  page.drawText((payload.companyName || 'POSTEX').toUpperCase(), {
     x: 40,
     y: height - 48,
     size: 22,
@@ -396,7 +397,7 @@ export async function generateAndUploadPdfDossier(
     const { data: buckets } = await supabaseAdmin.storage.listBuckets();
     const hasDossiersBucket = (buckets || []).some((b) => b.name === 'dossiers');
     if (!hasDossiersBucket) {
-      await supabaseAdmin.storage.createBucket('dossiers', { public: true });
+      await supabaseAdmin.storage.createBucket('dossiers', { public: false });
     }
 
     const { error: uploadErr } = await supabaseAdmin.storage

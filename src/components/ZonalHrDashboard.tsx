@@ -49,6 +49,7 @@ import {
   ZonalApplication,
   CentralHrStaffMember,
 } from '../lib/zonalHrApi';
+import { DeleteConfirmationModal } from './common/DeleteConfirmationModal';
 
 interface ZonalHrDashboardProps {
   currentUser: {
@@ -201,6 +202,19 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
     submitting: false,
   });
 
+  // Dedicated confirmation modal state (replacing window.confirm)
+  const [confirmActionModal, setConfirmActionModal] = useState<{
+    isOpen: boolean;
+    type: 'regenerate_password' | 'toggle_status';
+    staff: ZonalStaffProfile | null;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    type: 'regenerate_password',
+    staff: null,
+    isDeleting: false,
+  });
+
   const staffRoleSelectId = useId();
   const staffBranchSelectId = useId();
   const reassignSelectId = useId();
@@ -318,26 +332,14 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
     }
   };
 
-  // Handle password regeneration
-  const handleRegeneratePassword = async (staff: ZonalStaffProfile) => {
-    if (!window.confirm(`Regenerate temporary password for ${staff.name} (${staff.email})?`)) {
-      return;
-    }
-
-    try {
-      setError(null);
-      const res = await regenerateZonalStaffPassword(staff.id);
-      setCreatedPasswordModal({
-        isOpen: true,
-        staffName: staff.name,
-        email: staff.email,
-        password: res.temporary_password,
-      });
-      setSuccessMessage(`New temporary password generated for ${staff.name}.`);
-      setTimeout(() => setSuccessMessage(null), 6000);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
+  // Handle password regeneration trigger
+  const handleRegeneratePassword = (staff: ZonalStaffProfile) => {
+    setConfirmActionModal({
+      isOpen: true,
+      type: 'regenerate_password',
+      staff,
+      isDeleting: false,
+    });
   };
 
   // Open Edit Staff Modal
@@ -383,22 +385,47 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
     }
   };
 
-  // Toggle Staff Active/Inactive status
-  const handleToggleStaffStatus = async (staff: ZonalStaffProfile) => {
-    const nextStatus = !staff.is_active;
-    const actionWord = nextStatus ? 'activate' : 'deactivate';
-    if (!window.confirm(`Are you sure you want to ${actionWord} ${staff.name}?`)) {
-      return;
-    }
+  // Toggle Staff Active/Inactive status trigger
+  const handleToggleStaffStatus = (staff: ZonalStaffProfile) => {
+    setConfirmActionModal({
+      isOpen: true,
+      type: 'toggle_status',
+      staff,
+      isDeleting: false,
+    });
+  };
+
+  // Execute confirmed action (regenerate password or toggle status)
+  const handleExecuteConfirmedAction = async () => {
+    const staff = confirmActionModal.staff;
+    if (!staff) return;
+
+    setConfirmActionModal((prev) => ({ ...prev, isDeleting: true }));
+    setError(null);
 
     try {
-      setError(null);
-      await toggleZonalStaffStatus(staff.id, nextStatus);
-      setSuccessMessage(`Staff member ${staff.name} is now ${nextStatus ? 'active' : 'inactive'}.`);
-      setTimeout(() => setSuccessMessage(null), 5000);
-      loadDashboardData();
+      if (confirmActionModal.type === 'regenerate_password') {
+        const res = await regenerateZonalStaffPassword(staff.id);
+        setConfirmActionModal({ isOpen: false, type: 'regenerate_password', staff: null, isDeleting: false });
+        setCreatedPasswordModal({
+          isOpen: true,
+          staffName: staff.name,
+          email: staff.email,
+          password: res.temporary_password,
+        });
+        setSuccessMessage(`New temporary password generated for ${staff.name}.`);
+        setTimeout(() => setSuccessMessage(null), 6000);
+      } else if (confirmActionModal.type === 'toggle_status') {
+        const nextStatus = !staff.is_active;
+        await toggleZonalStaffStatus(staff.id, nextStatus);
+        setConfirmActionModal({ isOpen: false, type: 'toggle_status', staff: null, isDeleting: false });
+        setSuccessMessage(`Staff member ${staff.name} is now ${nextStatus ? 'active' : 'inactive'}.`);
+        setTimeout(() => setSuccessMessage(null), 5000);
+        await loadDashboardData();
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : String(err));
+      setConfirmActionModal((prev) => ({ ...prev, isDeleting: false }));
     }
   };
 
@@ -1837,6 +1864,48 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
             </form>
           </div>
         </div>
+      )}
+      {/* Dedicated Confirmation Modal for Password Regeneration & Staff Status Toggle */}
+      {confirmActionModal.staff && (
+        <DeleteConfirmationModal
+          isOpen={confirmActionModal.isOpen}
+          title={
+            confirmActionModal.type === 'regenerate_password'
+              ? 'Regenerate Staff Temporary Password'
+              : !confirmActionModal.staff.is_active
+              ? 'Activate Staff Member'
+              : 'Deactivate Staff Member'
+          }
+          itemName={`${confirmActionModal.staff.name} (${confirmActionModal.staff.email})`}
+          itemType={confirmActionModal.type === 'regenerate_password' ? 'Staff Credentials' : 'Staff Profile'}
+          contextInfo={`Branch: ${confirmActionModal.staff.branches?.name || 'Zonal Staff'} | Role: ${
+            confirmActionModal.staff.roles?.name === 'branch_manager' ? 'Branch Manager' : 'Central HR'
+          }`}
+          warningMessage={
+            confirmActionModal.type === 'regenerate_password'
+              ? 'Generating a new temporary password will immediately invalidate current credentials for this staff member.'
+              : !confirmActionModal.staff.is_active
+              ? 'Activating this staff member will restore their operational portal access immediately.'
+              : 'Deactivating this staff member will immediately revoke active access to the portal.'
+          }
+          confirmButtonLabel={
+            confirmActionModal.type === 'regenerate_password'
+              ? 'Yes, Regenerate Password'
+              : !confirmActionModal.staff.is_active
+              ? 'Yes, Activate Staff'
+              : 'Yes, Deactivate Staff'
+          }
+          isDeleting={confirmActionModal.isDeleting}
+          onConfirm={handleExecuteConfirmedAction}
+          onCancel={() =>
+            setConfirmActionModal((prev) => ({
+              ...prev,
+              isOpen: false,
+              staff: null,
+              isDeleting: false,
+            }))
+          }
+        />
       )}
     </div>
   );

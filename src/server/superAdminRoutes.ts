@@ -5,7 +5,7 @@
 import { Router } from 'express';
 import { SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
-import { formTemplatesService } from './formTemplatesStore';
+import { formTemplatesService } from './formTemplatesDbService';
 import { notificationService } from './notificationService';
 import { dataRetentionService } from './dataRetentionStore';
 
@@ -254,8 +254,8 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
     }
   });
 
-  // Delete Entity
-  router.delete('/org/:entity/:id', requireSuperAdmin, async (req, res) => {
+  // Delete Entity with friendly dependency validation
+  router.delete('/org/:entity/:id', requireSuperAdmin, async (req: any, res) => {
     try {
       const { entity, id } = req.params;
       const allowed = ['zones', 'branches', 'departments', 'designations'];
@@ -263,8 +263,53 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
         return res.status(400).json({ success: false, error: 'Invalid entity type.' });
       }
 
+      const reason = (req.body?.reason || req.query?.reason || 'Deleted via Super Admin Organization Manager') as string;
+
+      // Check dependent records before deleting to provide specific, clear user feedback
+      if (entity === 'zones') {
+        const { data: zoneRecord } = await supabaseAdmin.from('zones').select('name').eq('id', id).maybeSingle();
+        const zoneName = zoneRecord?.name || 'this zone';
+        const [branchesCount, staffCount, candidatesCount] = await Promise.all([
+          supabaseAdmin.from('branches').select('id', { count: 'exact' }).eq('zone_id', id),
+          supabaseAdmin.from('staff_profiles').select('id', { count: 'exact' }).eq('zone_id', id),
+          supabaseAdmin.from('candidates').select('id', { count: 'exact' }).eq('zone_id', id),
+        ]);
+        const dependents: string[] = [];
+        if (branchesCount.count && branchesCount.count > 0) dependents.push(`${branchesCount.count} branch${branchesCount.count > 1 ? 'es' : ''}`);
+        if (staffCount.count && staffCount.count > 0) dependents.push(`${staffCount.count} staff member${staffCount.count > 1 ? 's' : ''}`);
+        if (candidatesCount.count && candidatesCount.count > 0) dependents.push(`${candidatesCount.count} candidate${candidatesCount.count > 1 ? 's' : ''}`);
+        if (dependents.length > 0) {
+          return res.status(400).json({
+            success: false,
+            error: `Cannot delete ${zoneName}: it has ${dependents.join(' and ')} assigned. Please reassign or remove them first.`,
+          });
+        }
+      } else if (entity === 'branches') {
+        const { data: branchRecord } = await supabaseAdmin.from('branches').select('name').eq('id', id).maybeSingle();
+        const branchName = branchRecord?.name || 'this branch';
+        const [staffCount, candidatesCount] = await Promise.all([
+          supabaseAdmin.from('staff_profiles').select('id', { count: 'exact' }).eq('branch_id', id),
+          supabaseAdmin.from('candidates').select('id', { count: 'exact' }).eq('branch_id', id),
+        ]);
+        const dependents: string[] = [];
+        if (staffCount.count && staffCount.count > 0) dependents.push(`${staffCount.count} staff member${staffCount.count > 1 ? 's' : ''}`);
+        if (candidatesCount.count && candidatesCount.count > 0) dependents.push(`${candidatesCount.count} candidate${candidatesCount.count > 1 ? 's' : ''}`);
+        if (dependents.length > 0) {
+          return res.status(400).json({
+            success: false,
+            error: `Cannot delete ${branchName}: it has ${dependents.join(' and ')} assigned. Please reassign or remove them first.`,
+          });
+        }
+      }
+
       const { error } = await supabaseAdmin.from(entity).delete().eq('id', id);
       if (error) {
+        if (error.code === '23503') {
+          return res.status(400).json({
+            success: false,
+            error: `Cannot delete this ${entity.slice(0, -1)}: it is still referenced by other active system records.`,
+          });
+        }
         return res.status(400).json({ success: false, error: error.message });
       }
 
@@ -274,7 +319,10 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
         action: `delete_${entity.slice(0, -1)}`,
         entity_type: entity,
         entity_id: id,
-        metadata: {},
+        metadata: {
+          reason,
+          deleted_at: new Date().toISOString(),
+        },
       });
 
       return res.json({ success: true, message: `${entity} record deleted.` });
@@ -1166,6 +1214,40 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
     }
   });
 
+  // Delete section (and all its nested fields)
+  router.delete('/form-builder/sections/:id', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const sectionId = req.params.id;
+      const track = (req.body?.track || req.query?.track) as 'executive' | 'non_executive';
+      const reason = (req.body?.reason || req.query?.reason || 'Section deleted via Super Admin Form Builder') as string;
+
+      if (!track) {
+        return res.status(400).json({ success: false, error: 'track parameter is required.' });
+      }
+
+      const success = await formTemplatesService.deleteSection(track, sectionId, supabaseAdmin);
+
+      await supabaseAdmin.from('audit_logs').insert({
+        actor_id: req.superAdminUser.id,
+        actor_type: 'staff',
+        action: 'form_builder_delete_section',
+        entity_type: 'form_sections',
+        entity_id: sectionId,
+        metadata: {
+          track,
+          section_id: sectionId,
+          reason,
+          deleted_at: new Date().toISOString(),
+        },
+      });
+
+      return res.json({ success, message: 'Section and associated fields deleted successfully.' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ success: false, error: msg });
+    }
+  });
+
   // Reset track to default seed template
   router.post('/form-builder/reset-default', requireSuperAdmin, async (req: any, res) => {
     try {
@@ -1174,7 +1256,7 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
         return res.status(400).json({ success: false, error: 'Valid track is required.' });
       }
 
-      const template = formTemplatesService.resetTrackToDefault(track);
+      const template = await formTemplatesService.resetTrackToDefault(track, supabaseAdmin);
 
       await supabaseAdmin.from('audit_logs').insert({
         actor_id: req.superAdminUser.id,

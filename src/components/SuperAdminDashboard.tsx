@@ -476,11 +476,11 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     });
   };
 
-  const handleConfirmDeleteOrgEntity = async () => {
+  const handleConfirmDeleteOrgEntity = async (reason?: string) => {
     setDeleteModalState((prev) => ({ ...prev, isDeleting: true }));
     setLoading(true);
     try {
-      await superAdminApi.deleteOrgEntity(deleteModalState.subTab || orgSubTab, deleteModalState.targetId);
+      await superAdminApi.deleteOrgEntity(deleteModalState.subTab || orgSubTab, deleteModalState.targetId, reason);
       setNotification({ type: 'success', text: `Deleted "${deleteModalState.targetName}".` });
       setDeleteModalState({ open: false, type: 'org', targetId: '', targetName: '', isDeleting: false });
       await loadOrgData();
@@ -2341,6 +2341,8 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             ? `Deleting this ${deleteModalState.subTab?.slice(0, -1)} will permanently dissociate it from all assigned employees, branches, or onboarding forms.`
             : 'Removing this override will immediately revert this staff user to their baseline role-assigned permissions.'
         }
+        requireReason={deleteModalState.type === 'org'}
+        reasonPlaceholder="State the operational justification for deleting this organization record (mandatory for audit log)..."
         confirmButtonLabel={deleteModalState.type === 'org' ? 'Yes, Delete' : 'Yes, Remove Override'}
         isDeleting={deleteModalState.isDeleting}
         onConfirm={deleteModalState.type === 'org' ? handleConfirmDeleteOrgEntity : handleConfirmDeleteOverride}

@@ -6,7 +6,8 @@ import { Router } from 'express';
 import { SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { generateAndUploadPdfDossier } from './dossierGenerator';
-import { formTemplatesService, CandidateTrack } from './formTemplatesStore';
+import { formTemplatesService } from './formTemplatesDbService';
+import { CandidateTrack } from '../types/formTemplates';
 import { validateStatusTransition } from './workflowStateMachine';
 import { notificationService } from './notificationService';
 import { dataRetentionService } from './dataRetentionStore';
@@ -541,7 +542,7 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
       const candidateId = crypto.randomUUID();
       let newCandidate: any = null;
 
-      // Attempt insert with track column
+      // 8. Create Candidate in Supabase (valid schema columns only)
       const candidatePayload: any = {
         id: candidateId,
         full_name: String(full_name).trim(),
@@ -551,95 +552,63 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
         joining_id: joiningId,
         zone_id: zoneId,
         branch_id: targetBranchId,
-        track: assignedTrack,
         created_by: req.centralUser.id,
       };
 
-      let { data: candWithTrack, error: candTrackErr } = await supabaseAdmin
+      let { data: candData, error: candErr } = await supabaseAdmin
         .from('candidates')
         .insert(candidatePayload)
         .select()
         .single();
 
-      if (candTrackErr && candTrackErr.message.includes('foreign key')) {
+      if (candErr && candErr.message.includes('foreign key')) {
         candidatePayload.created_by = null;
         const retryRes = await supabaseAdmin
           .from('candidates')
           .insert(candidatePayload)
           .select()
           .single();
-        candWithTrack = retryRes.data;
-        candTrackErr = retryRes.error;
+        candData = retryRes.data;
+        candErr = retryRes.error;
       }
 
-      if (candTrackErr) {
-        // If column 'track' does not exist yet in schema, retry without track column
-        console.warn('candidates table insert with track column failed, falling back:', candTrackErr.message);
-        delete candidatePayload.track;
-        let { data: candFallback, error: fallbackErr } = await supabaseAdmin
-          .from('candidates')
-          .insert(candidatePayload)
-          .select()
-          .single();
-
-        if (fallbackErr && fallbackErr.message.includes('foreign key')) {
-          candidatePayload.created_by = null;
-          const retryFallback = await supabaseAdmin
-            .from('candidates')
-            .insert(candidatePayload)
-            .select()
-            .single();
-          candFallback = retryFallback.data;
-          fallbackErr = retryFallback.error;
-        }
-
-        if (fallbackErr || !candFallback) {
-          throw new Error(`Failed to create candidate record: ${fallbackErr?.message || candTrackErr.message}`);
-        }
-        newCandidate = candFallback;
-      } else {
-        newCandidate = candWithTrack;
+      if (candErr || !candData) {
+        throw new Error(`Failed to create candidate record: ${candErr?.message || 'Unknown database error'}`);
       }
 
-      // Always register candidate track in formTemplatesService
-      formTemplatesService.setCandidateTrack(candidateId, assignedTrack);
+      newCandidate = {
+        ...candData,
+        track: assignedTrack,
+      };
 
-      // 9. Auto-create Application Record
+      // Register candidate track in formTemplatesService (persisted to DB)
+      await formTemplatesService.setCandidateTrack(candidateId, assignedTrack, supabaseAdmin);
+
+      // 9. Auto-create Application Record (valid schema columns only)
       const appId = crypto.randomUUID();
-      let newApp: any = null;
-      const { data: appWithTrack, error: appTrackErr } = await supabaseAdmin
+      const { data: createdApp, error: appErr } = await supabaseAdmin
         .from('applications')
         .insert({
           id: appId,
           candidate_id: candidateId,
           status: 'draft',
           current_step: 1,
-          track: assignedTrack,
           assigned_central_hr_id: req.centralUser.id,
           submitted_at: null,
         })
         .select()
         .single();
 
-      if (appTrackErr) {
-        const { data: appFallback } = await supabaseAdmin
-          .from('applications')
-          .insert({
-            id: appId,
-            candidate_id: candidateId,
-            status: 'draft',
-            current_step: 1,
-            assigned_central_hr_id: req.centralUser.id,
-            submitted_at: null,
-          })
-          .select()
-          .single();
-        newApp = appFallback;
-      } else {
-        newApp = appWithTrack;
+      if (appErr || !createdApp) {
+        throw new Error(`Failed to create application record: ${appErr?.message || 'Unknown database error'}`);
       }
 
-      // 10. Initialize 5 Application Steps
+      const newApp = {
+        ...createdApp,
+        track: assignedTrack,
+      };
+
+      // 10. Initialize 5 Application Steps (persisting track in step 1 data)
       const initialSteps = [
         {
           application_id: appId,
@@ -651,6 +620,7 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
             mobile: cleanMobile,
             email: email || '',
             designation_id: designation_id || null,
+            track: assignedTrack,
           },
           completed: false,
         },
@@ -826,6 +796,7 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
           candidate: candidate
             ? {
                 ...candidate,
+                cnic: maskCnic(candidate.cnic),
                 masked_cnic: maskCnic(candidate.cnic),
                 zone_name: (candidate.zones as any)?.name || 'Unknown Zone',
                 branch_name: (candidate.branches as any)?.name || 'Unknown Branch',
@@ -1058,14 +1029,17 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
         const branchName = (candidate.branches as any)?.name || 'Central Hub';
         const employeeId = await generateEmployeeId(branchName);
 
-        // Fetch documents and verification remarks for official PDF dossier
-        const [{ data: docs }, { data: remarks }] = await Promise.all([
+        // Fetch documents, verification remarks, and organization settings for official PDF dossier
+        const [{ data: docs }, { data: remarks }, { data: orgSettings }] = await Promise.all([
           supabaseAdmin.from('documents').select('type, verification_status, remark').eq('application_id', id),
           supabaseAdmin.from('verification_remarks').select('remark').eq('application_id', id).limit(1),
+          supabaseAdmin.from('organization_settings').select('company_name').limit(1).maybeSingle(),
         ]);
+        const companyName = orgSettings?.company_name || 'PostEx';
 
         // Generate real PDF Dossier file and upload to Supabase Storage
         const { storagePath: pdfStoragePath } = await generateAndUploadPdfDossier(supabaseAdmin, {
+          companyName,
           employeeId,
           joiningId: candidate.joining_id,
           candidateName: candidate.full_name,
@@ -1416,12 +1390,15 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
       }
 
       // Generate on-the-fly if needed
-      const [{ data: docs }, { data: remarks }] = await Promise.all([
+      const [{ data: docs }, { data: remarks }, { data: orgSettings }] = await Promise.all([
         supabaseAdmin.from('documents').select('type, verification_status, remark').eq('application_id', app.id),
         supabaseAdmin.from('verification_remarks').select('remark').eq('application_id', app.id).limit(1),
+        supabaseAdmin.from('organization_settings').select('company_name').limit(1).maybeSingle(),
       ]);
+      const companyName = orgSettings?.company_name || 'PostEx';
 
       const result = await generateAndUploadPdfDossier(supabaseAdmin, {
+        companyName,
         employeeId: employee.employee_id,
         joiningId: cand?.joining_id || 'PX-2026-000000',
         candidateName: cand?.full_name || 'PostEx Candidate',

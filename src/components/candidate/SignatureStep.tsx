@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../../lib/i18n';
 import { VerificationStampSeal } from '../common/VerificationStampSeal';
-import { FormSectionItem } from '../../server/formTemplatesStore';
+import { FormSectionItem } from '../../types/formTemplates';
 import { DocumentRecord } from './DocumentUploadStep';
 
 interface SignatureStepProps {
