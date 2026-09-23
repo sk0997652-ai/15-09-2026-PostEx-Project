@@ -14,7 +14,8 @@ import { CentralHrDashboard } from './components/CentralHrDashboard';
 import { BranchManagerDashboard } from './components/BranchManagerDashboard';
 import { checkStaffSession, signOutStaff } from './lib/staffAuth';
 import { supabase } from './lib/supabase';
-import { Building2, Shield, Users, Smartphone, Activity, Lock, Wrench, ChevronDown, UserCheck, LogOut } from 'lucide-react';
+import { Building2, Shield, Users, Smartphone, Activity, Lock, Wrench, ChevronDown, UserCheck, LogOut, Sparkles } from 'lucide-react';
+import { ComponentLibraryShowcase } from './components/ui/ComponentLibraryShowcase';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<{
@@ -28,7 +29,15 @@ export default function App() {
     branch_name?: string;
   } | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const [activeDevTab, setActiveDevTab] = useState<'none' | 'rbac' | 'auth' | 'connectivity'>('none');
+  const [activeDevTab, setActiveDevTab] = useState<'none' | 'rbac' | 'auth' | 'connectivity' | 'ui-library'>(() => {
+    if (typeof window !== 'undefined') {
+      const search = window.location.search;
+      if (search.includes('view=ui-library') || search.includes('tab=ui-library')) {
+        return 'ui-library';
+      }
+    }
+    return 'none';
+  });
   const [authPortalType, setAuthPortalType] = useState<'staff' | 'candidate'>('staff');
   const [showDevMenu, setShowDevMenu] = useState(false);
 
@@ -146,6 +155,18 @@ export default function App() {
                     </button>
                     <button
                       onClick={() => {
+                        setActiveDevTab('ui-library');
+                        setShowDevMenu(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
+                        activeDevTab === 'ui-library' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Design Step 1: UI Library</span>
+                    </button>
+                    <button
+                      onClick={() => {
                         setActiveDevTab('rbac');
                         setShowDevMenu(false);
                       }}
@@ -190,7 +211,11 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 w-full">
-        {activeDevTab === 'rbac' ? (
+        {activeDevTab === 'ui-library' ? (
+          <div className="w-full">
+            <ComponentLibraryShowcase />
+          </div>
+        ) : activeDevTab === 'rbac' ? (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
             <RbacTestingPanel />
           </div>

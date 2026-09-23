@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../../lib/i18n';
 import { uploadCandidateDocument, deleteCandidateDocument } from '../../lib/candidateApi';
+import { Button, Card, CardContent, CardHeader, CardTitle, Badge, Modal, PageHeader } from '../ui';
 
 export interface DocumentRecord {
   id: string;
@@ -236,44 +237,37 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
   return (
     <div id="candidate-document-upload-step" className="space-y-6">
       {/* Header & Status Summary */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
-                <UploadCloud className="w-4 h-4" />
-              </span>
-              <h2 className="text-lg font-bold text-slate-900">Upload Required Documents</h2>
+      <Card className="p-6">
+        <PageHeader
+          title="Upload Required Documents"
+          description="Please upload clear photos or scanned copies. Max 5MB per document. Accepted formats: JPG, PNG, PDF."
+          roleContext="Documentation Stage"
+          actions={
+            <div
+              id="doc-upload-progress-card"
+              className={`px-4 py-2.5 rounded-xl border flex items-center gap-3 shrink-0 ${
+                isAllMandatoryUploaded
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  : 'bg-amber-50 border-amber-200 text-amber-900'
+              }`}
+            >
+              {isAllMandatoryUploaded ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+              )}
+              <div className="text-left">
+                <span className="text-xs font-bold block">
+                  {completedMandatoryCount} of {mandatorySlots.length} Mandatory Uploaded
+                </span>
+                <span className="text-[11px] opacity-80">
+                  {isAllMandatoryUploaded ? 'Ready for Signature & Review' : 'Mandatory documents required to submit'}
+                </span>
+              </div>
             </div>
-            <p className="text-xs text-slate-600">
-              Please upload clear photos or scanned copies. Max 5MB per document. Accepted formats: JPG, PNG, PDF.
-            </p>
-          </div>
-
-          <div
-            id="doc-upload-progress-card"
-            className={`px-4 py-2.5 rounded-xl border flex items-center gap-3 shrink-0 ${
-              isAllMandatoryUploaded
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                : 'bg-amber-50 border-amber-200 text-amber-900'
-            }`}
-          >
-            {isAllMandatoryUploaded ? (
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-            )}
-            <div>
-              <span className="text-xs font-bold block">
-                {completedMandatoryCount} of {mandatorySlots.length} Mandatory Uploaded
-              </span>
-              <span className="text-[11px] opacity-80">
-                {isAllMandatoryUploaded ? 'Ready for Signature & Review' : 'Mandatory documents required to submit'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+          }
+        />
+      </Card>
 
       {/* Slots List */}
       <div className="space-y-4">
@@ -285,10 +279,10 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
           const errorMessage = errorMessages[slot.type];
 
           return (
-            <div
+            <Card
               key={slot.type}
               id={`doc-slot-${slot.type}`}
-              className={`bg-white rounded-2xl border transition-all p-5 shadow-xs ${
+              className={`transition-all p-5 ${
                 hasDoc
                   ? 'border-emerald-200 bg-emerald-50/10'
                   : slot.required
@@ -315,13 +309,13 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-sm font-bold text-slate-900">{slot.title}</h3>
                       {slot.required ? (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                        <Badge variant="danger" size="sm" className="font-bold">
                           Mandatory
-                        </span>
+                        </Badge>
                       ) : (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
+                        <Badge variant="outline" size="sm" className="font-medium text-slate-600">
                           Optional
-                        </span>
+                        </Badge>
                       )}
                       {slot.urduTitle && (
                         <span className="text-xs text-slate-500 font-urdu" dir="rtl">
@@ -335,7 +329,7 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
 
                 {/* Right Action Buttons */}
                 {!isReadOnly && (
-                  <div className="flex items-center gap-2 self-start shrink-0">
+                  <div className="flex items-center gap-2 self-start shrink-0 flex-wrap">
                     {/* Hidden Standard File Input */}
                     <input
                       type="file"
@@ -366,30 +360,34 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
                     )}
 
                     {/* Choose File Button */}
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="sm"
                       id={`btn-upload-${slot.type}`}
                       disabled={isUploading}
                       onClick={() => fileInputRefs.current[slot.type]?.click()}
-                      className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer disabled:opacity-50"
+                      leftIcon={<UploadCloud className="w-3.5 h-3.5" />}
+                      className="text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-200"
                     >
-                      <UploadCloud className="w-3.5 h-3.5" />
-                      <span>{hasDoc && !slot.isMultiple ? 'Re-upload' : 'Select File'}</span>
-                    </button>
+                      {hasDoc && !slot.isMultiple ? 'Re-upload' : 'Select File'}
+                    </Button>
 
                     {/* Camera Capture Button */}
                     {slot.acceptCamera && (
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
                         id={`btn-camera-${slot.type}`}
                         disabled={isUploading}
                         onClick={() => cameraInputRefs.current[slot.type]?.click()}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer disabled:opacity-50"
+                        leftIcon={<Camera className="w-3.5 h-3.5 text-slate-600" />}
                         title="Capture using mobile camera"
+                        className="bg-slate-100 hover:bg-slate-200 border border-slate-200"
                       >
-                        <Camera className="w-3.5 h-3.5 text-slate-600" />
                         <span className="hidden sm:inline">Camera</span>
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )}
@@ -455,7 +453,9 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
                               {fileName}
                             </p>
                             <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-0.5">
-                              <span className="font-mono uppercase">{isPdf ? 'PDF' : 'IMAGE'}</span>
+                              <Badge variant="outline" size="sm" className="font-mono text-[9px] py-0 px-1.5 uppercase">
+                                {isPdf ? 'PDF' : 'IMAGE'}
+                              </Badge>
                               <span>&bull;</span>
                               <span>{new Date(doc.uploaded_at).toLocaleDateString()}</span>
                               <span className="inline-flex items-center gap-0.5 text-emerald-600 font-semibold">
@@ -494,65 +494,53 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
                   })}
                 </div>
               )}
-            </div>
+            </Card>
           );
         })}
       </div>
 
       {/* Document Preview Modal */}
       {previewModalDoc && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-150">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-bold text-slate-900">
-                  {DOCUMENT_SLOTS.find((s) => s.type === previewModalDoc.type)?.title || 'Document Preview'}
-                </h4>
-                <p className="text-[10px] text-slate-500 font-mono">{previewModalDoc.storage_path}</p>
-              </div>
-              <button
-                onClick={() => setPreviewModalDoc(null)}
-                className="p-1 hover:bg-slate-100 rounded-lg text-slate-500 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-6 bg-slate-50 flex items-center justify-center max-h-[70vh] overflow-auto">
-              {previewModalDoc.preview_url ? (
-                previewModalDoc.storage_path?.toLowerCase().endsWith('.pdf') ? (
-                  <iframe
-                    src={previewModalDoc.preview_url}
-                    className="w-full h-[450px] rounded-xl border border-slate-200"
-                    title="PDF Preview"
-                  />
-                ) : (
-                  <img
-                    src={previewModalDoc.preview_url}
-                    alt="Preview"
-                    className="max-h-[450px] max-w-full rounded-xl object-contain shadow-sm border border-slate-200"
-                  />
-                )
+        <Modal
+          isOpen={!!previewModalDoc}
+          onClose={() => setPreviewModalDoc(null)}
+          title={DOCUMENT_SLOTS.find((s) => s.type === previewModalDoc.type)?.title || 'Document Preview'}
+          description={previewModalDoc.storage_path}
+          size="xl"
+          footer={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewModalDoc(null)}
+            >
+              Close Preview
+            </Button>
+          }
+        >
+          <div className="bg-slate-50 p-4 rounded-xl flex items-center justify-center max-h-[70vh] overflow-auto">
+            {previewModalDoc.preview_url ? (
+              previewModalDoc.storage_path?.toLowerCase().endsWith('.pdf') ? (
+                <iframe
+                  src={previewModalDoc.preview_url}
+                  className="w-full h-[450px] rounded-xl border border-slate-200"
+                  title="PDF Preview"
+                />
               ) : (
-                <div className="text-center py-12">
-                  <FileText className="w-12 h-12 text-indigo-600 mx-auto mb-2" />
-                  <p className="text-xs font-bold text-slate-800">Secure Document Artifact</p>
-                  <p className="text-[11px] text-slate-500 font-mono mt-1">{previewModalDoc.storage_path}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 bg-white border-t border-slate-100 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setPreviewModalDoc(null)}
-                className="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
-              >
-                Close Preview
-              </button>
-            </div>
+                <img
+                  src={previewModalDoc.preview_url}
+                  alt="Preview"
+                  className="max-h-[450px] max-w-full rounded-xl object-contain shadow-sm border border-slate-200"
+                />
+              )
+            ) : (
+              <div className="text-center py-12">
+                <FileText className="w-12 h-12 text-indigo-600 mx-auto mb-2" />
+                <p className="text-xs font-bold text-slate-800">Secure Document Artifact</p>
+                <p className="text-[11px] text-slate-500 font-mono mt-1">{previewModalDoc.storage_path}</p>
+              </div>
+            )}
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

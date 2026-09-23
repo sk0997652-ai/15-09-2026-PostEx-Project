@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useI18n, LanguageSelector } from '../../lib/i18n';
 import { useBranding } from '../../lib/branding';
+import { Button, Card, CardContent, CardHeader, CardTitle, Badge, PageHeader } from '../ui';
 
 interface WelcomeScreenProps {
   candidate: {
@@ -62,39 +63,21 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   return (
     <div id="candidate-welcome-screen" className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 animate-in fade-in-50 duration-300">
       {/* Top Header Card */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs mb-6 relative overflow-hidden">
+      <Card className="rounded-3xl border-slate-200/80 p-6 sm:p-8 mb-6 relative overflow-hidden">
         {/* Subtle decorative background glow */}
         <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
         <div className="absolute -left-16 -bottom-16 w-56 h-56 rounded-full bg-indigo-600/5 blur-3xl pointer-events-none" />
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-md shadow-indigo-600/20 shrink-0">
-              <Sparkles className="w-7 h-7" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide uppercase bg-indigo-50 text-indigo-700 border border-indigo-200/80">
-                  {branding.companyName} Onboarding
-                </span>
-                <span className="font-mono text-[11px] font-semibold text-slate-500">
-                  {candidate.joining_id}
-                </span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {isRTL ? `خوش آمدید، ${candidate.full_name}!` : `Welcome aboard, ${candidate.full_name}!`}
-              </h1>
-            </div>
-          </div>
-          <div className="self-end sm:self-center">
-            <LanguageSelector />
-          </div>
-        </div>
-
-        <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-3xl">
-          {t('welcome.subtitle') ||
-            `Congratulations on joining the team! We are thrilled to welcome you. Please take a few moments to review your offer profile snapshot and complete your digital joining dossier.`}
-        </p>
+        <PageHeader
+          title={isRTL ? `خوش آمدید، ${candidate.full_name}!` : `Welcome aboard, ${candidate.full_name}!`}
+          description={
+            t('welcome.subtitle') ||
+            `Congratulations on joining the team! We are thrilled to welcome you. Please take a few moments to review your offer profile snapshot and complete your digital joining dossier.`
+          }
+          roleContext={`${branding.companyName} Onboarding • ${candidate.joining_id}`}
+          actions={<LanguageSelector />}
+          className="mb-6 pb-6 border-b border-slate-100"
+        />
 
         {/* Profile Snapshot Grid */}
         <div className="mt-6 pt-6 border-t border-slate-100">
@@ -124,15 +107,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <Layers className="w-3.5 h-3.5 text-slate-400" />
                 <span>Track</span>
               </span>
-              <span
-                id="candidate-welcome-track-badge"
-                className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                  isExecutive
-                    ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
-                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                }`}
-              >
-                {isExecutive ? 'Executive Track' : 'Non-Executive Track'}
+              <span id="candidate-welcome-track-badge">
+                <Badge
+                  variant={isExecutive ? 'primary' : 'success'}
+                  size="sm"
+                  className="mt-1 font-bold inline-block"
+                >
+                  {isExecutive ? 'Executive Track' : 'Non-Executive Track'}
+                </Badge>
               </span>
             </div>
 
@@ -157,12 +139,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Two Column Section: Document Checklist & Process Guide */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {/* Document Checklist (Span 2) */}
-        <div className="md:col-span-2 bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs">
+        <Card className="md:col-span-2 rounded-3xl border-slate-200/80 p-6 sm:p-7">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
@@ -173,9 +155,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <p className="text-xs text-slate-500">Prepare these files before you proceed with the wizard</p>
               </div>
             </div>
-            <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+            <Badge variant="outline" size="sm" className="font-semibold text-slate-500">
               Max 5MB each &bull; JPG, PNG, PDF
-            </span>
+            </Badge>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
@@ -219,10 +201,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Process & Time Card (Span 1) */}
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-xs flex flex-col justify-between">
+        <Card className="rounded-3xl border-slate-200/80 p-6 sm:p-7 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
@@ -256,11 +238,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             <Shield className="w-3.5 h-3.5 text-indigo-600" />
             <span>Encrypted under NADRA &amp; ETO 2002 guidelines</span>
           </div>
-        </div>
+        </Card>
       </div>
 
-      {/* Action Footer */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* Action Footer Card */}
+      <Card className="rounded-3xl border-slate-200/80 p-6">
         {isSubmitted ? (
           <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -274,23 +256,25 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             </div>
 
             <div className="flex items-center gap-3 w-full sm:w-auto">
-              <button
-                type="button"
+              <Button
+                variant="primary"
+                size="md"
                 onClick={onViewStatusTracker}
                 id="candidate-view-tracker-btn"
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-600/20 cursor-pointer transition-colors"
+                leftIcon={<FileCheck className="w-4 h-4" />}
+                className="flex-1 sm:flex-initial"
               >
-                <FileCheck className="w-4 h-4" />
-                <span>View Status Tracker</span>
-              </button>
-              <button
-                type="button"
+                View Status Tracker
+              </Button>
+              <Button
+                variant="outline"
+                size="md"
                 onClick={onStartWizard}
                 id="candidate-review-form-btn"
-                className="px-5 py-3.5 rounded-xl font-bold text-sm text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-300 cursor-pointer transition-colors"
+                className="flex-1 sm:flex-initial"
               >
                 Review Form
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
@@ -315,19 +299,20 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 </button>
               )}
 
-              <button
-                type="button"
+              <Button
+                variant="primary"
+                size="lg"
                 onClick={onStartWizard}
                 id="candidate-start-wizard-btn"
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold text-sm sm:text-base text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 cursor-pointer transition-all transform active:scale-98"
+                rightIcon={<ArrowRight className="w-4 h-4" />}
+                className="w-full sm:w-auto shadow-md shadow-indigo-600/20"
               >
-                <span>{hasStarted ? 'Continue Digital Onboarding' : 'Begin Application'}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+                {hasStarted ? 'Continue Digital Onboarding' : 'Begin Application'}
+              </Button>
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 };

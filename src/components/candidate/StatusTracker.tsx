@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useI18n, LanguageSelector } from '../../lib/i18n';
 import { VerificationStampSeal } from '../common/VerificationStampSeal';
+import { Button, Card, CardContent, CardHeader, CardTitle, Badge, StatusBadge, PageHeader } from '../ui';
 
 interface StatusTrackerProps {
   candidate: {
@@ -92,94 +93,30 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
     },
   ];
 
-  const getStatusBadge = () => {
-    switch (status) {
-      case 'approved':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-            <span>{t('tracker.statusApproved')}</span>
-          </span>
-        );
-      case 'rejected':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
-            <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
-            <span>{t('tracker.statusRejected')}</span>
-          </span>
-        );
-      case 'needs_correction':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-700" />
-            <span>{t('tracker.statusNeedsCorrection')}</span>
-          </span>
-        );
-      case 'hr_review':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
-            <Clock className="w-3.5 h-3.5 text-blue-600" />
-            <span>{t('tracker.statusHrReview')}</span>
-          </span>
-        );
-      case 'bm_verification':
-      case 'submitted':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
-            <Clock className="w-3.5 h-3.5 text-indigo-600" />
-            <span>{status === 'bm_verification' ? t('tracker.statusBmVerification') : t('tracker.statusSubmitted')}</span>
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-300">
-            <FileText className="w-3.5 h-3.5 text-slate-600" />
-            <span>{t('tracker.statusDraft')}</span>
-          </span>
-        );
-    }
-  };
-
   return (
     <div id="candidate-status-tracker-card" className="max-w-3xl mx-auto px-4 py-8">
-      {/* Top Bar with Language Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 mb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2 flex-wrap">
-            {onBackToWelcome && (
-              <button
-                onClick={onBackToWelcome}
-                id="tracker-back-to-welcome-btn"
-                className="flex items-center gap-1.5 text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 cursor-pointer transition-colors"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back to Welcome</span>
-              </button>
-            )}
-            <button
-              onClick={onBackToWizard}
-              id="tracker-back-to-form-btn"
-              className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>{t('common.backToForm')}</span>
-            </button>
+      {/* Top Bar with Language Selector and Navigation */}
+      <PageHeader
+        title={t('tracker.title')}
+        description={t('tracker.subtitle')}
+        roleContext={`Candidate ${candidate.joining_id}`}
+        breadcrumbs={[
+          ...(onBackToWelcome ? [{ label: 'Welcome', onClick: onBackToWelcome }] : []),
+          { label: 'Joining Dossier', onClick: onBackToWizard },
+          { label: 'Status Tracker' },
+        ]}
+        actions={
+          <div className="flex items-center gap-3">
+            <StatusBadge status={status} />
+            <LanguageSelector />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">
-              {candidate.joining_id}
-            </span>
-            {getStatusBadge()}
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 mt-2">{t('tracker.title')}</h2>
-          <p className="text-xs text-slate-600 mt-0.5">{t('tracker.subtitle')}</p>
-        </div>
-        <LanguageSelector />
-      </div>
+        }
+        className="mb-6 pb-6 border-b border-slate-200"
+      />
 
-      {/* Action Required Banner if Needs Correction */}
+      {/* Action Required Banner if Approved */}
       {status === 'approved' && (
-        <div className="mb-6 p-6 rounded-2xl bg-gradient-to-r from-emerald-50/70 via-white to-indigo-50/50 border border-emerald-200 shadow-xs flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
+        <Card className="mb-6 p-6 rounded-2xl bg-linear-to-r from-emerald-50/70 via-white to-indigo-50/50 border-emerald-200 flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
           <VerificationStampSeal
             stage="central_approval"
             signerName="PostEx Central HR"
@@ -188,9 +125,7 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
             showDetails={false}
           />
           <div className="space-y-1">
-            <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
-              {t('tracker.statusApproved')}
-            </span>
+            <StatusBadge status="approved" size="sm" />
             <h3 className="text-base font-black text-slate-900">
               Welcome to the PostEx Team!
             </h3>
@@ -198,14 +133,15 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
               Your onboarding application has been formally approved and enrolled. Official corporate seals and verification stamps have been applied to your permanent employee record.
             </p>
           </div>
-        </div>
+        </Card>
       )}
 
+      {/* Action Required Banner if Needs Correction */}
       {status === 'needs_correction' && (
-        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-300 shadow-xs">
+        <Card className="mb-6 p-4 rounded-2xl bg-amber-50 border-amber-300">
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 flex-1">
               <h3 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
                 {t('tracker.correctionNotice')}
               </h3>
@@ -215,19 +151,21 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
                   <p className="font-medium text-slate-700">{application.decision_reason}</p>
                 </div>
               )}
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={onBackToWizard}
-                className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                className="mt-2 bg-amber-600 hover:bg-amber-700"
               >
-                <span>Update Application Details</span>
-              </button>
+                Update Application Details
+              </Button>
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* 4-Stage Stepper Progression */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs mb-6">
+      <Card className="rounded-2xl border-slate-200 p-6 mb-6">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-6">
           Onboarding Lifecycle Stages
         </h3>
@@ -280,14 +218,16 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
                       {stg.title}
                     </h4>
                     {stg.isCompleted && (
-                      <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        Verified &bull; Complete
-                      </span>
+                      <StatusBadge status="approved" customLabel="Verified • Complete" />
                     )}
                     {stg.isCurrent && !stg.isCompleted && (
-                      <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200 animate-pulse">
-                        In Progress
-                      </span>
+                      <StatusBadge
+                        status={status === 'needs_correction' && stg.id === 2 ? 'needs_correction' : 'hr_review'}
+                        customLabel={status === 'needs_correction' && stg.id === 2 ? 'Needs Correction' : 'In Progress'}
+                      />
+                    )}
+                    {!stg.isCompleted && !stg.isCurrent && (
+                      <StatusBadge status="draft" customLabel="Pending" dot={false} />
                     )}
                   </div>
                   <p className="text-xs text-slate-500 mt-1 leading-relaxed">
@@ -298,10 +238,10 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
             );
           })}
         </div>
-      </div>
+      </Card>
 
       {/* Branch Physical Verification Instructions */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs mb-6">
+      <Card className="rounded-2xl border-slate-200 p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Building2 className="w-5 h-5 text-indigo-600" />
           <h3 className="text-sm font-bold text-slate-900">{t('tracker.assignedBranch')}</h3>
@@ -327,17 +267,18 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
             <span className="font-semibold text-indigo-700">Bring Original CNIC &amp; Degrees</span>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Bottom Navigation */}
       <div className="flex justify-between items-center pt-2">
-        <button
+        <Button
+          variant="outline"
+          size="md"
           onClick={onBackToWizard}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer"
+          leftIcon={<ArrowLeft className="w-4 h-4" />}
         >
-          <ArrowLeft className="w-4 h-4" />
-          <span>{t('common.backToForm')}</span>
-        </button>
+          {t('common.backToForm')}
+        </Button>
       </div>
     </div>
   );

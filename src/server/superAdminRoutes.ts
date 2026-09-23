@@ -65,7 +65,7 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
         (process.env.SUPABASE_SERVICE_ROLE_KEY && token === process.env.SUPABASE_SERVICE_ROLE_KEY)
       ) {
         const { data: firstStaff } = await supabaseAdmin.from('staff_profiles').select('id, email').limit(1).maybeSingle();
-        req.superAdminUser = { id: firstStaff?.id || '00000000-0000-0000-0000-000000000003' };
+        req.superAdminUser = { id: firstStaff?.id || null };
         return next();
       }
 
@@ -399,7 +399,7 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
           branch_id: branch_id || null,
           is_active: true,
           must_change_password: true,
-          created_by: req.superAdminUser.id,
+          created_by: req.superAdminUser?.id || null,
         })
         .select('*, roles(name), zones(name), branches(name)')
         .single();
@@ -412,7 +412,7 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
 
       // Audit Log
       await supabaseAdmin.from('audit_logs').insert({
-        actor_id: req.superAdminUser.id,
+        actor_id: req.superAdminUser?.id || null,
         actor_type: 'staff',
         action: 'create_staff_user',
         entity_type: 'staff_profiles',

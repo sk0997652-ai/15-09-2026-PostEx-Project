@@ -21,6 +21,7 @@ import { useI18n } from '../../lib/i18n';
 import { VerificationStampSeal } from '../common/VerificationStampSeal';
 import { FormSectionItem } from '../../types/formTemplates';
 import { DocumentRecord } from './DocumentUploadStep';
+import { Button, Card, Badge, Input, PageHeader } from '../ui';
 
 interface SignatureStepProps {
   candidate: {
@@ -373,21 +374,18 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
       {/* ------------------------------------------------------------------ */}
       {/* 1. Full Review Summary of All Sections                             */}
       {/* ------------------------------------------------------------------ */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
-          <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-              <FileCheck className="w-4 h-4" />
-            </span>
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Application Review Summary</h2>
-              <p className="text-xs text-slate-500">Please review all submitted information carefully before final signing.</p>
-            </div>
-          </div>
-          <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full">
-            Ready for Final Submission
-          </span>
-        </div>
+      <Card className="p-6">
+        <PageHeader
+          title="Application Review Summary"
+          description="Please review all submitted information carefully before final signing."
+          roleContext="Final Review"
+          actions={
+            <Badge variant="primary" size="sm" className="font-bold">
+              Ready for Final Submission
+            </Badge>
+          }
+          className="mb-5 pb-4 border-b border-slate-100"
+        />
 
         {/* Section by Section Review Collapsible */}
         <div className="space-y-3">
@@ -504,12 +502,12 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
             )}
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* ------------------------------------------------------------------ */}
       {/* 2. Digital Signature Pad                                           */}
       {/* ------------------------------------------------------------------ */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+      <Card className="p-6">
         {/* Declaration Endorsement Bar */}
         <div className="mb-5 p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-4 flex-wrap">
@@ -538,45 +536,40 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
           )}
         </div>
 
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
-          <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-              <PenTool className="w-4 h-4" />
-            </span>
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Candidate Digital Signature</h2>
-              <p className="text-xs text-slate-500">Provide your digital signature for employment verification and dossier attestation.</p>
+        <PageHeader
+          title="Candidate Digital Signature"
+          description="Provide your digital signature for employment verification and dossier attestation."
+          roleContext="Official Attestation"
+          actions={
+            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
+              <button
+                type="button"
+                id="sig-tab-draw"
+                onClick={() => setSignatureMode('canvas')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  signatureMode === 'canvas'
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Draw Signature
+              </button>
+              <button
+                type="button"
+                id="sig-tab-typed"
+                onClick={() => setSignatureMode('typed')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  signatureMode === 'typed'
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Type Legal Name
+              </button>
             </div>
-          </div>
-
-          {/* Mode Switcher Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
-            <button
-              type="button"
-              id="sig-tab-draw"
-              onClick={() => setSignatureMode('canvas')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                signatureMode === 'canvas'
-                  ? 'bg-white text-indigo-700 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Draw Signature
-            </button>
-            <button
-              type="button"
-              id="sig-tab-typed"
-              onClick={() => setSignatureMode('typed')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                signatureMode === 'typed'
-                  ? 'bg-white text-indigo-700 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Type Legal Name
-            </button>
-          </div>
-        </div>
+          }
+          className="mb-5 pb-4 border-b border-slate-100"
+        />
 
         {/* Draw Canvas Option */}
         {signatureMode === 'canvas' ? (
@@ -603,26 +596,29 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
 
               {/* Action Toolbar */}
               <div className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-white/90 backdrop-blur-xs p-1 rounded-lg border border-slate-200 shadow-2xs">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   id="sig-undo-btn"
                   onClick={undoSignature}
                   disabled={!hasDrawnSignature}
-                  className="p-1.5 text-slate-500 hover:text-slate-800 rounded disabled:opacity-30 cursor-pointer transition-colors"
+                  leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
                   title="Undo last stroke"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                </button>
-                <button
+                  className="px-2 py-1 h-auto"
+                />
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   id="sig-clear-btn"
                   onClick={clearSignature}
                   disabled={!hasDrawnSignature}
-                  className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded disabled:opacity-30 cursor-pointer transition-colors"
+                  leftIcon={<Eraser className="w-3.5 h-3.5 text-rose-600" />}
+                  className="text-rose-600 hover:bg-rose-50 px-2.5 py-1 h-auto"
                 >
-                  <Eraser className="w-3.5 h-3.5" />
-                  <span>Clear / Redraw</span>
-                </button>
+                  Clear / Redraw
+                </Button>
               </div>
             </div>
 
@@ -649,50 +645,44 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* ------------------------------------------------------------------ */}
       {/* 3. Thumb Impression Capture                                        */}
       {/* ------------------------------------------------------------------ */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
-          <div className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-              <Fingerprint className="w-4 h-4" />
-            </span>
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Thumb Impression (Biometric Capture)</h2>
-              <p className="text-xs text-slate-500">
-                Upload a clear photo/scan of your right thumb impression, or apply a digital biometric stamp.
-              </p>
+      <Card className="p-6">
+        <PageHeader
+          title="Thumb Impression (Biometric Capture)"
+          description="Upload a clear photo/scan of your right thumb impression, or apply a digital biometric stamp."
+          roleContext="Biometric Verification"
+          actions={
+            <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setThumbMode('upload')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  thumbMode === 'upload'
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Photo / Scan
+              </button>
+              <button
+                type="button"
+                onClick={() => setThumbMode('stamp')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  thumbMode === 'stamp'
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Digital Stamp
+              </button>
             </div>
-          </div>
-
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setThumbMode('upload')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                thumbMode === 'upload'
-                  ? 'bg-white text-indigo-700 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Photo / Scan
-            </button>
-            <button
-              type="button"
-              onClick={() => setThumbMode('stamp')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                thumbMode === 'stamp'
-                  ? 'bg-white text-indigo-700 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Digital Stamp
-            </button>
-          </div>
-        </div>
+          }
+          className="mb-5 pb-4 border-b border-slate-100"
+        />
 
         {thumbMode === 'upload' ? (
           <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -735,33 +725,39 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
               <p className="text-xs text-slate-500">
                 You can ink your thumb on paper, take a crisp photo using your phone camera, and upload it here.
               </p>
-              <div className="flex items-center gap-2 pt-1">
-                <button
+              <div className="flex items-center gap-2 pt-1 flex-wrap">
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   id="btn-upload-thumb"
                   onClick={() => thumbInputRef.current?.click()}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 cursor-pointer"
+                  leftIcon={<UploadCloud className="w-3.5 h-3.5" />}
+                  className="text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-200"
                 >
-                  <UploadCloud className="w-3.5 h-3.5" />
-                  <span>Choose Photo</span>
-                </button>
-                <button
+                  Choose Photo
+                </Button>
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   id="btn-camera-thumb"
                   onClick={() => thumbCameraInputRef.current?.click()}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 cursor-pointer"
+                  leftIcon={<Camera className="w-3.5 h-3.5" />}
+                  className="bg-slate-100 hover:bg-slate-200 border border-slate-200"
                 >
-                  <Camera className="w-3.5 h-3.5" />
-                  <span>Use Camera</span>
-                </button>
+                  Use Camera
+                </Button>
                 {thumbDataUrl && (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setThumbDataUrl(null)}
-                    className="px-2.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
+                    className="text-rose-600 hover:bg-rose-50"
                   >
                     Remove
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -782,23 +778,24 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
               <p className="text-xs text-slate-500">
                 Click below to generate a cryptographically bound PostEx biometric digital impression.
               </p>
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={handleDigitalStamp}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-xs cursor-pointer"
+                leftIcon={<Fingerprint className="w-4 h-4" />}
               >
-                <Fingerprint className="w-4 h-4" />
-                <span>{hasStampedThumb ? 'Regenerate Digital Stamp' : 'Generate Digital Stamp'}</span>
-              </button>
+                {hasStampedThumb ? 'Regenerate Digital Stamp' : 'Generate Digital Stamp'}
+              </Button>
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* ------------------------------------------------------------------ */}
       {/* 4. Solemn Affirmation & Final Submit                               */}
       {/* ------------------------------------------------------------------ */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+      <Card className="p-6 space-y-4">
         <label className="flex items-start gap-3 text-sm text-slate-800 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -814,7 +811,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
 
         {/* Live Preview of Verification Seal upon Attestation */}
         {attestationConfirmed && (hasDrawnSignature || typedName.trim()) && (
-          <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-50/70 to-slate-50 border border-indigo-200 flex flex-col sm:flex-row items-center gap-4">
+          <div className="p-4 rounded-xl bg-linear-to-r from-indigo-50/70 to-slate-50 border border-indigo-200 flex flex-col sm:flex-row items-center gap-4">
             <VerificationStampSeal
               stage="candidate_signature"
               signerName={candidate.full_name}
@@ -846,27 +843,21 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
             <span>Application will be locked upon final submission and routed to your Branch Manager.</span>
           </span>
 
-          <button
+          <Button
             type="button"
+            variant="success"
+            size="lg"
             id="btn-final-submit-application"
             disabled={isSubmitting || !attestationConfirmed}
+            isLoading={isSubmitting}
             onClick={handleFinalSubmit}
-            className="flex items-center justify-center gap-2 h-12 px-8 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-200 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+            leftIcon={!isSubmitting ? <Send className="w-4 h-4" /> : undefined}
+            className="shrink-0 font-bold"
           >
-            {isSubmitting ? (
-              <>
-                <Clock className="w-4 h-4 animate-spin" />
-                <span>Submitting &amp; Locking Dossier...</span>
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4" />
-                <span>Final Submit Application</span>
-              </>
-            )}
-          </button>
+            {isSubmitting ? 'Submitting & Locking Dossier...' : 'Final Submit Application'}
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

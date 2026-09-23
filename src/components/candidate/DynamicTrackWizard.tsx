@@ -29,6 +29,7 @@ import { DocumentUploadStep, DocumentRecord } from './DocumentUploadStep';
 import { SignatureStep } from './SignatureStep';
 import { SignaturePadInput } from './SignaturePadInput';
 import { SubmissionConfirmationModal } from './SubmissionConfirmationModal';
+import { Button, Card, Badge, Input, Textarea, Select, PageHeader } from '../ui';
 
 interface DynamicTrackWizardProps {
   candidate: {
@@ -405,25 +406,23 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
       )}
 
       {/* Top Banner: Candidate Information & Track Indicator */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <Card className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-indigo-100 text-indigo-800">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <Badge variant="outline" size="sm" className="font-mono font-bold bg-indigo-50 text-indigo-800 border-indigo-200">
               {candidate.joining_id}
-            </span>
-            <span
-              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-                track === 'executive'
-                  ? 'bg-indigo-100 text-indigo-800 border-indigo-200'
-                  : 'bg-emerald-100 text-emerald-800 border-emerald-200'
-              }`}
+            </Badge>
+            <Badge
+              variant={track === 'executive' ? 'primary' : 'success'}
+              size="sm"
+              className="font-bold"
             >
               {track === 'executive' ? 'Executive Track Form' : 'Non-Executive Track Form'}
-            </span>
+            </Badge>
             {isLocked && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+              <Badge variant="success" size="sm" className="font-bold">
                 Submitted &amp; Locked
-              </span>
+              </Badge>
             )}
           </div>
           <h1 className="text-xl font-black text-slate-900">
@@ -436,14 +435,15 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
 
         {/* Action Controls & Autosave Status */}
         <div className="flex items-center gap-3 self-start sm:self-auto flex-wrap">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={onViewStatusTracker}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 cursor-pointer transition-colors"
+            leftIcon={<Clock className="w-3.5 h-3.5 text-indigo-600" />}
           >
-            <Clock className="w-3.5 h-3.5 text-indigo-600" />
-            <span>View Status Tracker</span>
-          </button>
+            View Status Tracker
+          </Button>
 
           {!isLocked && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-medium border bg-slate-50 border-slate-200">
@@ -477,10 +477,10 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
           )}
           <LanguageSelector />
         </div>
-      </div>
+      </Card>
 
       {/* Progress Bar & Step Navigation */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+      <Card className="p-5 space-y-4">
         <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
           <span>
             Step {currentSectionIndex + 1} of {totalWizardSteps}:{' '}
@@ -568,7 +568,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
             <span>Review &amp; Sign</span>
           </button>
         </div>
-      </div>
+      </Card>
 
       {/* Validation or Submission Errors */}
       {submitError && (
@@ -592,26 +592,28 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
           />
 
           {/* Bottom Step Actions for Document Upload */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex items-center justify-between">
-            <button
+          <Card className="p-5 flex items-center justify-between">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={handlePrevSection}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              leftIcon={<ChevronLeft className="w-4 h-4" />}
             >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Previous Section</span>
-            </button>
+              Previous Section
+            </Button>
 
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="sm"
               id="wizard-docs-next-btn"
               onClick={handleNextSection}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold text-white shadow-xs transition-colors cursor-pointer"
+              rightIcon={<ChevronRight className="w-4 h-4" />}
             >
-              <span>Next: Review &amp; Sign</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+              Next: Review &amp; Sign
+            </Button>
+          </Card>
         </div>
       ) : isCurrentSignStep ? (
         /* ------------------------------------------------------------- */
@@ -631,42 +633,37 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
           />
 
           {/* Bottom Back Button */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs flex items-center justify-between">
-            <button
+          <Card className="p-5 flex items-center justify-between">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={handlePrevSection}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+              leftIcon={<ChevronLeft className="w-4 h-4" />}
             >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Back to Documents</span>
-            </button>
-          </div>
+              Back to Documents
+            </Button>
+          </Card>
         </div>
       ) : currentSection ? (
         /* ------------------------------------------------------------- */
         /* DYNAMIC FORM SECTION                                          */
         /* ------------------------------------------------------------- */
-        <div
+        <Card
           id={`section-container-${currentSection.id}`}
-          className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6"
+          className="p-6 space-y-6"
         >
           {/* Section Header */}
-          <div className="border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center">
-                {currentSectionIndex + 1}
-              </span>
-              <h2 className="text-lg font-bold text-slate-900">{currentSection.title}</h2>
-              {currentSection.urdu_title && (
-                <span className="text-xs text-slate-500 font-urdu" dir="rtl">
-                  ({currentSection.urdu_title})
-                </span>
-              )}
-            </div>
-            {currentSection.description && (
-              <p className="text-xs text-slate-500 mt-1">{currentSection.description}</p>
-            )}
-          </div>
+          <PageHeader
+            title={currentSection.title}
+            description={currentSection.description}
+            roleContext={
+              currentSection.urdu_title
+                ? `Section ${currentSectionIndex + 1} of ${totalWizardSteps} • ${currentSection.urdu_title}`
+                : `Section ${currentSectionIndex + 1} of ${totalWizardSteps}`
+            }
+            className="mb-4 pb-4 border-b border-slate-100"
+          />
 
           {/* Official Signing Notice for Declaration Section */}
           {(currentSection.id === 'sec-exec-declaration' ||
@@ -724,54 +721,42 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
 
                   {/* 1. TEXT INPUT */}
                   {field.field_type === 'text' && (
-                    <input
+                    <Input
                       type="text"
                       disabled={isLocked}
                       value={fieldValue}
                       placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
                       onChange={(e) => handleFieldChange(currentSection, field.field_key, e.target.value)}
-                      className={`w-full h-11 sm:h-12 px-4 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all font-medium shadow-2xs disabled:opacity-60 ${
-                        fieldError ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300'
-                      }`}
                     />
                   )}
 
                   {/* 2. NUMBER INPUT */}
                   {field.field_type === 'number' && (
-                    <input
+                    <Input
                       type="number"
                       disabled={isLocked}
                       value={fieldValue}
                       placeholder={field.placeholder || '0'}
                       onChange={(e) => handleFieldChange(currentSection, field.field_key, e.target.value)}
-                      className={`w-full h-11 sm:h-12 px-4 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all font-medium shadow-2xs disabled:opacity-60 ${
-                        fieldError ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300'
-                      }`}
                     />
                   )}
 
                   {/* 3. DATE INPUT */}
                   {field.field_type === 'date' && (
-                    <input
+                    <Input
                       type="date"
                       disabled={isLocked}
                       value={fieldValue}
                       onChange={(e) => handleFieldChange(currentSection, field.field_key, e.target.value)}
-                      className={`w-full h-11 sm:h-12 px-4 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all font-medium shadow-2xs disabled:opacity-60 ${
-                        fieldError ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300'
-                      }`}
                     />
                   )}
 
                   {/* 4. DROPDOWN */}
                   {field.field_type === 'dropdown' && (
-                    <select
+                    <Select
                       disabled={isLocked}
                       value={fieldValue}
                       onChange={(e) => handleFieldChange(currentSection, field.field_key, e.target.value)}
-                      className={`w-full h-11 sm:h-12 px-4 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all font-medium shadow-2xs disabled:opacity-60 ${
-                        fieldError ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300'
-                      }`}
                     >
                       <option value="">Select option...</option>
                       {field.options?.map((opt, oIdx) => (
@@ -779,7 +764,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                           {opt}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                   )}
 
                   {/* 5. YES / NO TOGGLE WITH CONDITIONAL DETAILS */}
@@ -850,7 +835,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                           <label className="text-xs font-semibold text-slate-600 block mb-1">
                             Please specify full particulars / details:
                           </label>
-                          <textarea
+                          <Textarea
                             rows={3}
                             disabled={isLocked}
                             value={typeof fieldValue === 'object' ? fieldValue.details || '' : ''}
@@ -861,7 +846,6 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                                 details: e.target.value,
                               });
                             }}
-                            className="w-full min-h-[80px] px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 shadow-2xs"
                           />
                         </div>
                       )}
@@ -870,15 +854,12 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
 
                   {/* 6. TEXTAREA */}
                   {field.field_type === 'textarea' && (
-                    <textarea
+                    <Textarea
                       rows={3}
                       disabled={isLocked}
                       value={fieldValue}
                       placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
                       onChange={(e) => handleFieldChange(currentSection, field.field_key, e.target.value)}
-                      className={`w-full min-h-[96px] px-4 py-3 bg-slate-50 border rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all font-medium shadow-2xs disabled:opacity-60 ${
-                        fieldError ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300'
-                      }`}
                     />
                   )}
 
@@ -927,14 +908,16 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                                   ))}
                                   {!isLocked && (
                                     <td className="p-2.5 text-center">
-                                      <button
+                                      <Button
                                         type="button"
+                                        variant="ghost"
+                                        size="sm"
                                         onClick={() => handleDeleteTableRow(currentSection, field, rIdx)}
-                                        className="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 cursor-pointer transition-colors"
+                                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                                         title="Delete row"
                                       >
                                         <Trash2 className="w-4 h-4" />
-                                      </button>
+                                      </Button>
                                     </td>
                                   )}
                                 </tr>
@@ -954,14 +937,16 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                       </div>
 
                       {!isLocked && (
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleAddTableRow(currentSection, field)}
-                          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-colors cursor-pointer"
+                          leftIcon={<Plus className="w-4 h-4" />}
+                          className="text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-200"
                         >
-                          <Plus className="w-4 h-4" />
-                          <span>Add Record</span>
-                        </button>
+                          Add Record
+                        </Button>
                       )}
                     </div>
                   )}
@@ -1012,27 +997,29 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
 
           {/* Navigation Buttons for Dynamic Form Section */}
           <div className="pt-6 border-t border-slate-100 flex items-center justify-between gap-4">
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="md"
               disabled={currentSectionIndex === 0}
               onClick={handlePrevSection}
-              className="flex items-center gap-2 h-11 sm:h-12 px-5 rounded-xl border border-slate-300 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-30 transition-colors cursor-pointer"
+              leftIcon={<ChevronLeft className="w-4 h-4" />}
             >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Previous Section</span>
-            </button>
+              Previous Section
+            </Button>
 
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="md"
               id="wizard-next-section-btn"
               onClick={handleNextSection}
-              className="flex items-center gap-2 h-11 sm:h-12 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-sm font-bold text-white shadow-xs shadow-indigo-600/20 transition-colors cursor-pointer"
+              rightIcon={<ChevronRight className="w-4 h-4" />}
             >
-              <span>Next Section</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
+              Next Section
+            </Button>
           </div>
-        </div>
+        </Card>
       ) : null}
 
       {/* Submission Confirmation Modal */}
