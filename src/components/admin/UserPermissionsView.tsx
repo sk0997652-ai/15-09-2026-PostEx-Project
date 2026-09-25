@@ -216,7 +216,7 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
                 key={s.id}
                 id={`staff-select-btn-${s.id}`}
                 onClick={() => handleSelectStaffForOverride(s)}
-                className={`w-full p-2.5 text-left rounded-xl transition-colors flex items-center justify-between cursor-pointer my-0.5 ${
+                className={`w-full p-2.5 text-left rounded-lg transition-colors flex items-center justify-between cursor-pointer my-0.5 ${
                   selectedStaffForOverride?.id === s.id
                     ? 'bg-indigo-50 border border-indigo-200 text-indigo-950 font-bold'
                     : 'hover:bg-slate-50 text-slate-700'
@@ -325,9 +325,9 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
                         <label
                           key={perm.id}
                           htmlFor={`perm-checkbox-${perm.key}`}
-                          className={`p-3 rounded-xl border text-xs flex items-start gap-3 cursor-pointer transition-all ${
+                          className={`p-3 rounded-lg border text-xs flex items-start gap-3 cursor-pointer transition-all ${
                             isChecked
-                              ? 'bg-white border-indigo-200 shadow-2xs ring-1 ring-indigo-50'
+                              ? 'bg-white border-indigo-200 shadow-xs ring-1 ring-indigo-50'
                               : 'bg-white/60 border-slate-200 opacity-85 hover:opacity-100'
                           }`}
                         >

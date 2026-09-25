@@ -15,10 +15,53 @@ import {
 import { getInitialSeedTemplates } from './seedTemplates';
 
 export class FormTemplatesDbService {
+  // Extended Branding Cache for items backed by Supabase Storage
+  private brandingConfigCache: {
+    login_bg_storage_path?: string | null;
+    login_tagline?: string | null;
+    logo_storage_path?: string | null;
+    isLoaded?: boolean;
+  } = {
+    login_bg_storage_path: null,
+    login_tagline: 'Enterprise Onboarding & Workforce Verification Portal',
+    logo_storage_path: null,
+    isLoaded: false,
+  };
+
+  private async loadBrandingConfigFromStorage(supabase: SupabaseClient) {
+    if (this.brandingConfigCache.isLoaded) return;
+    try {
+      const { data, error } = await supabase.storage
+        .from('branding')
+        .download('branding_config.json');
+      if (data && !error) {
+        const text = await data.text();
+        const parsed = JSON.parse(text);
+        if (parsed) {
+          if (parsed.login_bg_storage_path !== undefined) {
+            this.brandingConfigCache.login_bg_storage_path = parsed.login_bg_storage_path;
+          }
+          if (parsed.login_tagline !== undefined) {
+            this.brandingConfigCache.login_tagline = parsed.login_tagline;
+          }
+          if (parsed.logo_storage_path !== undefined) {
+            this.brandingConfigCache.logo_storage_path = parsed.logo_storage_path;
+          }
+        }
+      }
+    } catch {
+      // Non-fatal, use defaults
+    } finally {
+      this.brandingConfigCache.isLoaded = true;
+    }
+  }
+
   // --------------------------------------------------------------------------
   // 1. Organization Settings
   // --------------------------------------------------------------------------
   async getOrgSettings(supabase: SupabaseClient): Promise<OrganizationSettings> {
+    await this.loadBrandingConfigFromStorage(supabase);
+
     const { data, error } = await supabase
       .from('organization_settings')
       .select('*')
@@ -37,21 +80,36 @@ export class FormTemplatesDbService {
         id: 'default-org-settings',
         company_name: 'PostEx',
         portal_name: 'HR Onboarding Portal',
+        logo_storage_path: this.brandingConfigCache.logo_storage_path || null,
+        login_bg_storage_path: this.brandingConfigCache.login_bg_storage_path || null,
+        login_tagline: this.brandingConfigCache.login_tagline || 'Enterprise Onboarding & Workforce Verification Portal',
         support_email: 'hr-support@postex.pk',
         data_retention_days: 90,
         auto_archive_enabled: true,
         updated_at: new Date().toISOString(),
       };
 
-      await supabase.from('organization_settings').insert(defaultSettings);
+      await supabase.from('organization_settings').insert({
+        id: defaultSettings.id,
+        company_name: defaultSettings.company_name,
+        portal_name: defaultSettings.portal_name,
+        logo_storage_path: defaultSettings.logo_storage_path,
+        support_email: defaultSettings.support_email,
+        data_retention_days: defaultSettings.data_retention_days,
+        auto_archive_enabled: defaultSettings.auto_archive_enabled,
+      });
       return defaultSettings;
     }
+
+    const effectiveLogo = data.logo_storage_path || this.brandingConfigCache.logo_storage_path || null;
 
     return {
       id: data.id,
       company_name: data.company_name || 'PostEx',
       portal_name: data.portal_name || 'HR Onboarding Portal',
-      logo_storage_path: data.logo_storage_path,
+      logo_storage_path: effectiveLogo,
+      login_bg_storage_path: this.brandingConfigCache.login_bg_storage_path || null,
+      login_tagline: this.brandingConfigCache.login_tagline || 'Enterprise Onboarding & Workforce Verification Portal',
       support_email: data.support_email || 'hr-support@postex.pk',
       data_retention_days: data.data_retention_days ?? 90,
       auto_archive_enabled: data.auto_archive_enabled ?? true,
@@ -67,10 +125,41 @@ export class FormTemplatesDbService {
   ): Promise<OrganizationSettings> {
     const existing = await this.getOrgSettings(supabase);
 
-    const updatePayload = {
+    // Update branding cache
+    if (settings.login_bg_storage_path !== undefined) {
+      this.brandingConfigCache.login_bg_storage_path = settings.login_bg_storage_path;
+    }
+    if (settings.login_tagline !== undefined) {
+      this.brandingConfigCache.login_tagline = settings.login_tagline;
+    }
+    if (settings.logo_storage_path !== undefined) {
+      this.brandingConfigCache.logo_storage_path = settings.logo_storage_path;
+    }
+
+    // Persist extended config to Supabase storage branding bucket
+    try {
+      const configToSave = {
+        company_name: settings.company_name ?? existing.company_name,
+        logo_storage_path: settings.logo_storage_path !== undefined ? settings.logo_storage_path : existing.logo_storage_path,
+        login_bg_storage_path: this.brandingConfigCache.login_bg_storage_path,
+        login_tagline: this.brandingConfigCache.login_tagline,
+        updated_at: new Date().toISOString(),
+        updated_by: userId || null,
+      };
+      await supabase.storage
+        .from('branding')
+        .upload('branding_config.json', Buffer.from(JSON.stringify(configToSave)), {
+          upsert: true,
+          contentType: 'application/json',
+        });
+    } catch (storageErr) {
+      console.warn('Could not persist branding_config.json to storage:', storageErr);
+    }
+
+    const updatePayload: Record<string, any> = {
       company_name: settings.company_name ?? existing.company_name,
       portal_name: settings.portal_name ?? existing.portal_name,
-      logo_storage_path: settings.logo_storage_path ?? existing.logo_storage_path,
+      logo_storage_path: settings.logo_storage_path !== undefined ? settings.logo_storage_path : existing.logo_storage_path,
       support_email: settings.support_email ?? existing.support_email,
       data_retention_days: settings.data_retention_days ?? existing.data_retention_days,
       auto_archive_enabled: settings.auto_archive_enabled ?? existing.auto_archive_enabled,
@@ -89,7 +178,19 @@ export class FormTemplatesDbService {
       throw new Error(`Failed to update organization settings in Supabase: ${error.message}`);
     }
 
-    return data;
+    return {
+      id: data.id,
+      company_name: data.company_name,
+      portal_name: data.portal_name,
+      logo_storage_path: data.logo_storage_path,
+      login_bg_storage_path: this.brandingConfigCache.login_bg_storage_path || null,
+      login_tagline: this.brandingConfigCache.login_tagline || 'Enterprise Onboarding & Workforce Verification Portal',
+      support_email: data.support_email,
+      data_retention_days: data.data_retention_days,
+      auto_archive_enabled: data.auto_archive_enabled,
+      updated_at: data.updated_at,
+      updated_by: data.updated_by,
+    };
   }
 
   // --------------------------------------------------------------------------

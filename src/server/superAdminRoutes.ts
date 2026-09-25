@@ -5,6 +5,7 @@
 import { Router } from 'express';
 import { SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
+import multer from 'multer';
 import { formTemplatesService } from './formTemplatesDbService';
 import { notificationService } from './notificationService';
 import { dataRetentionService } from './dataRetentionStore';
@@ -980,25 +981,87 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
     }
   });
 
+  // 7. Organization Settings, Branding & Data Retention Policy
   // --------------------------------------------------------------------------
-  // 7. Organization Settings & Data Retention Policy
-  // --------------------------------------------------------------------------
-  let orgSettingsCache = {
+  let orgSettingsCache: {
+    companyName: string;
+    dataRetentionDaysAfterRejection: number;
+    supportEmail: string;
+    autoArchiveEnabled: boolean;
+    logoUrl?: string | null;
+    loginBgUrl?: string | null;
+    loginTagline?: string;
+    lastUpdated: string;
+  } = {
     companyName: 'PostEx Logistics',
     dataRetentionDaysAfterRejection: 90,
     supportEmail: 'hr-support@postex.pk',
     autoArchiveEnabled: true,
+    logoUrl: null,
+    loginBgUrl: null,
+    loginTagline: 'Enterprise Onboarding & Workforce Verification Portal',
     lastUpdated: new Date().toISOString(),
   };
 
-  router.get('/settings', requireSuperAdmin, (req, res) => {
-    return res.json({ success: true, settings: orgSettingsCache });
+  const brandingLogoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+    fileFilter: (_req, file, cb) => {
+      const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp'];
+      if (allowed.includes(file.mimetype.toLowerCase())) {
+        cb(null, true);
+      } else {
+        cb(new Error('Invalid logo format. Only PNG, JPG, SVG, and WebP images are accepted.'));
+      }
+    },
+  });
+
+  const brandingBgUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (_req, file, cb) => {
+      const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+      if (allowed.includes(file.mimetype.toLowerCase())) {
+        cb(null, true);
+      } else {
+        cb(new Error('Invalid background format. Only PNG, JPG, and WebP images are accepted.'));
+      }
+    },
+  });
+
+  router.get('/settings', requireSuperAdmin, async (req, res) => {
+    try {
+      const orgDb = await formTemplatesService.getOrgSettings(supabaseAdmin);
+      const settingsPayload = {
+        companyName: orgDb.company_name,
+        dataRetentionDaysAfterRejection: orgDb.data_retention_days,
+        supportEmail: orgDb.support_email,
+        autoArchiveEnabled: orgDb.auto_archive_enabled,
+        logoUrl: orgDb.logo_storage_path || null,
+        loginBgUrl: orgDb.login_bg_storage_path || null,
+        loginTagline: orgDb.login_tagline || 'Enterprise Onboarding & Workforce Verification Portal',
+        lastUpdated: orgDb.updated_at,
+      };
+      orgSettingsCache = { ...orgSettingsCache, ...settingsPayload };
+      return res.json({ success: true, settings: orgSettingsCache });
+    } catch {
+      return res.json({ success: true, settings: orgSettingsCache });
+    }
   });
 
   router.put('/settings', requireSuperAdmin, async (req, res) => {
     try {
-      const { dataRetentionDaysAfterRejection, supportEmail, autoArchiveEnabled } = req.body;
-      const days = parseInt(String(dataRetentionDaysAfterRejection), 10);
+      const {
+        companyName,
+        dataRetentionDaysAfterRejection,
+        supportEmail,
+        autoArchiveEnabled,
+        logoUrl,
+        loginBgUrl,
+        loginTagline,
+      } = req.body;
+
+      const days = parseInt(String(dataRetentionDaysAfterRejection ?? orgSettingsCache.dataRetentionDaysAfterRejection), 10);
 
       if (isNaN(days) || days < 1) {
         return res.status(400).json({
@@ -1007,26 +1070,30 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
         });
       }
 
-      orgSettingsCache = {
-        ...orgSettingsCache,
-        companyName: req.body.companyName || orgSettingsCache.companyName,
-        dataRetentionDaysAfterRejection: days,
-        supportEmail: supportEmail || orgSettingsCache.supportEmail,
-        autoArchiveEnabled: autoArchiveEnabled !== undefined ? Boolean(autoArchiveEnabled) : orgSettingsCache.autoArchiveEnabled,
-        lastUpdated: new Date().toISOString(),
-      };
-
-      // Also sync with formTemplatesService
-      await formTemplatesService.updateOrgSettings(
+      const updated = await formTemplatesService.updateOrgSettings(
         {
-          company_name: req.body.companyName || orgSettingsCache.companyName,
-          support_email: supportEmail || orgSettingsCache.supportEmail,
+          company_name: companyName !== undefined ? companyName : orgSettingsCache.companyName,
+          support_email: supportEmail !== undefined ? supportEmail : orgSettingsCache.supportEmail,
           data_retention_days: days,
-          auto_archive_enabled: Boolean(autoArchiveEnabled),
+          auto_archive_enabled: autoArchiveEnabled !== undefined ? Boolean(autoArchiveEnabled) : orgSettingsCache.autoArchiveEnabled,
+          logo_storage_path: logoUrl !== undefined ? (logoUrl || null) : undefined,
+          login_bg_storage_path: loginBgUrl !== undefined ? (loginBgUrl || null) : undefined,
+          login_tagline: loginTagline !== undefined ? loginTagline : undefined,
         },
         req.superAdminUser?.id,
         supabaseAdmin
       );
+
+      orgSettingsCache = {
+        companyName: updated.company_name,
+        dataRetentionDaysAfterRejection: updated.data_retention_days,
+        supportEmail: updated.support_email,
+        autoArchiveEnabled: updated.auto_archive_enabled,
+        logoUrl: updated.logo_storage_path || null,
+        loginBgUrl: updated.login_bg_storage_path || null,
+        loginTagline: updated.login_tagline || 'Enterprise Onboarding & Workforce Verification Portal',
+        lastUpdated: updated.updated_at,
+      };
 
       await supabaseAdmin.from('audit_logs').insert({
         actor_id: req.superAdminUser.id,
@@ -1046,6 +1113,83 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
       const msg = err instanceof Error ? err.message : String(err);
       return res.status(500).json({ success: false, error: msg });
     }
+  });
+
+  // Dedicated Branding Upload Endpoints
+  router.post('/branding/logo', requireSuperAdmin, (req: any, res: any) => {
+    brandingLogoUpload.single('logo')(req, res, async (err: any) => {
+      if (err) {
+        return res.status(400).json({ success: false, error: err.message });
+      }
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No logo file uploaded.' });
+      }
+      try {
+        const ext = req.file.mimetype === 'image/svg+xml' ? 'svg' : (req.file.originalname.split('.').pop() || 'png');
+        const storagePath = `logo_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`;
+        const { error: uploadErr } = await supabaseAdmin.storage
+          .from('branding')
+          .upload(storagePath, req.file.buffer, {
+            contentType: req.file.mimetype,
+            upsert: true,
+          });
+        if (uploadErr) {
+          return res.status(500).json({ success: false, error: uploadErr.message });
+        }
+        const { data: urlData } = supabaseAdmin.storage.from('branding').getPublicUrl(storagePath);
+        const logoUrl = urlData.publicUrl;
+
+        await formTemplatesService.updateOrgSettings(
+          { logo_storage_path: logoUrl },
+          req.superAdminUser?.id,
+          supabaseAdmin
+        );
+
+        orgSettingsCache.logoUrl = logoUrl;
+
+        return res.json({ success: true, logoUrl, storagePath });
+      } catch (uploadEx: any) {
+        return res.status(500).json({ success: false, error: uploadEx.message });
+      }
+    });
+  });
+
+  router.post('/branding/background', requireSuperAdmin, (req: any, res: any) => {
+    brandingBgUpload.single('background')(req, res, async (err: any) => {
+      if (err) {
+        return res.status(400).json({ success: false, error: err.message });
+      }
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No background file uploaded.' });
+      }
+      try {
+        const ext = req.file.originalname.split('.').pop() || 'jpg';
+        const storagePath = `login_bg_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`;
+        const { error: uploadErr } = await supabaseAdmin.storage
+          .from('branding')
+          .upload(storagePath, req.file.buffer, {
+            contentType: req.file.mimetype,
+            upsert: true,
+          });
+        if (uploadErr) {
+          return res.status(500).json({ success: false, error: uploadErr.message });
+        }
+        const { data: urlData } = supabaseAdmin.storage.from('branding').getPublicUrl(storagePath);
+        const bgUrl = urlData.publicUrl;
+
+        await formTemplatesService.updateOrgSettings(
+          { login_bg_storage_path: bgUrl },
+          req.superAdminUser?.id,
+          supabaseAdmin
+        );
+
+        orgSettingsCache.loginBgUrl = bgUrl;
+
+        return res.json({ success: true, bgUrl, storagePath });
+      } catch (uploadEx: any) {
+        return res.status(500).json({ success: false, error: uploadEx.message });
+      }
+    });
   });
 
   // --------------------------------------------------------------------------

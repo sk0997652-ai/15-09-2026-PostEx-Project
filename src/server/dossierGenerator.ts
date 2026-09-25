@@ -7,6 +7,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 
 export interface DossierPayload {
   companyName?: string;
+  logoUrl?: string;
   employeeId: string;
   joiningId: string;
   candidateName: string;
@@ -61,19 +62,49 @@ export async function generateAndUploadPdfDossier(
     color: postexEmerald,
   });
 
-  // Logo text
-  page.drawText((payload.companyName || 'POSTEX').toUpperCase(), {
-    x: 40,
-    y: height - 48,
-    size: 22,
-    font: fontBold,
-    color: rgb(1, 1, 1),
-  });
+  // Logo text or image
+  let logoDrawn = false;
+  if (payload.logoUrl) {
+    try {
+      const resp = await fetch(payload.logoUrl);
+      if (resp.ok) {
+        const logoBuffer = await resp.arrayBuffer();
+        let embeddedLogo;
+        try {
+          embeddedLogo = await pdfDoc.embedPng(logoBuffer);
+        } catch {
+          embeddedLogo = await pdfDoc.embedJpg(logoBuffer);
+        }
+        if (embeddedLogo) {
+          const dims = embeddedLogo.scaleToFit(120, 36);
+          page.drawImage(embeddedLogo, {
+            x: 40,
+            y: height - 58,
+            width: dims.width,
+            height: dims.height,
+          });
+          logoDrawn = true;
+        }
+      }
+    } catch {
+      logoDrawn = false;
+    }
+  }
+
+  if (!logoDrawn) {
+    page.drawText((payload.companyName || 'POSTEX').toUpperCase(), {
+      x: 40,
+      y: height - 48,
+      size: 20,
+      font: fontBold,
+      color: rgb(1, 1, 1),
+    });
+  }
 
   page.drawText('EMPLOYEE ONBOARDING DOSSIER', {
     x: 40,
     y: height - 68,
-    size: 10,
+    size: 9,
     font: fontRegular,
     color: rgb(0.65, 0.72, 0.82),
   });

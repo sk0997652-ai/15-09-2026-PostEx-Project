@@ -87,6 +87,9 @@ export interface OrgSettings {
   dataRetentionDaysAfterRejection: number;
   supportEmail: string;
   autoArchiveEnabled: boolean;
+  logoUrl?: string | null;
+  loginBgUrl?: string | null;
+  loginTagline?: string;
   lastUpdated: string;
 }
 
@@ -388,6 +391,40 @@ export const superAdminApi = {
     const data = await res.json();
     if (!res.ok || !data.success) {
       throw new Error(data.error || 'Failed to execute data retention cleanup');
+    }
+    return data;
+  },
+
+  async uploadLogo(blob: Blob, filename = 'logo.png'): Promise<{ success: boolean; logoUrl: string; storagePath: string }> {
+    const authHeaders = await getAuthHeader();
+    const formData = new FormData();
+    formData.append('logo', blob, filename);
+
+    const res = await fetch('/api/admin/branding/logo', {
+      method: 'POST',
+      headers: { ...authHeaders },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to upload company logo');
+    }
+    return data;
+  },
+
+  async uploadLoginBackground(blob: Blob, filename = 'background.jpg'): Promise<{ success: boolean; bgUrl: string; storagePath: string }> {
+    const authHeaders = await getAuthHeader();
+    const formData = new FormData();
+    formData.append('background', blob, filename);
+
+    const res = await fetch('/api/admin/branding/background', {
+      method: 'POST',
+      headers: { ...authHeaders },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || 'Failed to upload login background image');
     }
     return data;
   },

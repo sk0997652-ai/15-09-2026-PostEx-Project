@@ -3,7 +3,7 @@ import { ShieldCheck, FileText, AlertTriangle, Lock, Check } from 'lucide-react'
 import { useI18n, LanguageSelector } from '../../lib/i18n';
 import { useBranding } from '../../lib/branding';
 import { logCandidateConsent } from '../../lib/candidateApi';
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge, PageHeader } from '../ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, Badge, PageHeader, Checkbox } from '../ui';
 
 interface ConsentScreenProps {
   candidate: {
@@ -121,44 +121,26 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({ candidate, onConse
             Declaration &amp; Electronic Signature
           </h4>
 
-          <label className="flex items-start gap-3 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              id="consent-check-1"
-              checked={check1}
-              onChange={(e) => setCheck1(e.target.checked)}
-              className="w-4 h-4 mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-            />
-            <span className="text-xs text-slate-800 font-medium leading-snug">
-              {t('consent.check1')}
-            </span>
-          </label>
+          <Checkbox
+            id="consent-check-1"
+            checked={check1}
+            onChange={(e) => setCheck1(e.target.checked)}
+            label={t('consent.check1')}
+          />
 
-          <label className="flex items-start gap-3 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              id="consent-check-2"
-              checked={check2}
-              onChange={(e) => setCheck2(e.target.checked)}
-              className="w-4 h-4 mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-            />
-            <span className="text-xs text-slate-800 font-medium leading-snug">
-              {t('consent.check2')}
-            </span>
-          </label>
+          <Checkbox
+            id="consent-check-2"
+            checked={check2}
+            onChange={(e) => setCheck2(e.target.checked)}
+            label={t('consent.check2')}
+          />
 
-          <label className="flex items-start gap-3 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              id="consent-check-3"
-              checked={check3}
-              onChange={(e) => setCheck3(e.target.checked)}
-              className="w-4 h-4 mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-            />
-            <span className="text-xs text-slate-800 font-medium leading-snug">
-              {t('consent.check3')}
-            </span>
-          </label>
+          <Checkbox
+            id="consent-check-3"
+            checked={check3}
+            onChange={(e) => setCheck3(e.target.checked)}
+            label={t('consent.check3')}
+          />
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
             <span className="text-[11px] text-slate-500">

@@ -48,7 +48,7 @@ export function DecisionActionModal({
 
   return (
     <div className="fixed inset-0 z-60 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
             {decisionModal.action === 'approve_enrol' && (
@@ -70,12 +70,15 @@ export function DecisionActionModal({
               </>
             )}
           </div>
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="small"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 cursor-pointer"
+            className="p-1 h-auto text-slate-400 hover:text-slate-600"
           >
             <X className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
 
         <div className="text-xs text-slate-600 space-y-3">
@@ -85,7 +88,7 @@ export function DecisionActionModal({
           </p>
 
           {decisionModal.action === 'approve_enrol' && (
-            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-900 space-y-1">
+            <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-emerald-900 space-y-1">
               <p className="font-bold">On Confirmation:</p>
               <ul className="list-disc list-inside space-y-0.5 text-[11px]">
                 <li>Auto-generates Employee ID: <code className="font-mono">EMP-[BRANCH]-XXXXX</code></li>

@@ -1,7 +1,8 @@
 import React from 'react';
-import { User, Phone, Mail, Home, MapPin, Heart, AlertCircle } from 'lucide-react';
+import { User, Phone, Mail, Home, MapPin, Heart } from 'lucide-react';
 import { useI18n } from '../../lib/i18n';
 import { Step1Data } from '../../lib/candidateApi';
+import { Input, Select } from '../ui';
 
 interface WizardStep1Props {
   data: Step1Data;
@@ -21,170 +22,131 @@ export const WizardStep1: React.FC<WizardStep1Props> = ({ data, onChange, disabl
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Full Name */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            {t('step1.fullName')} <span className="text-rose-500">*</span>
-          </label>
-          <div className="relative">
-            <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              id="step1-full-name"
-              disabled={disabled}
-              value={data.full_name || ''}
-              onChange={(e) => onChange('full_name', e.target.value)}
-              placeholder="e.g. Muhammad Usman Ali"
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50"
-            />
-          </div>
-        </div>
+        <Input
+          id="step1-full-name"
+          label={t('step1.fullName')}
+          required
+          disabled={disabled}
+          value={data.full_name || ''}
+          onChange={(e) => onChange('full_name', e.target.value)}
+          placeholder="e.g. Muhammad Usman Ali"
+          leftIcon={<User className="w-4 h-4" />}
+        />
 
         {/* Father / Husband Name */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            {t('step1.fatherHusbandName')} <span className="text-rose-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="step1-father-name"
-            disabled={disabled}
-            value={data.father_husband_name || ''}
-            onChange={(e) => onChange('father_husband_name', e.target.value)}
-            placeholder="e.g. Tariq Mehmood"
-            className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50"
-          />
-        </div>
+        <Input
+          id="step1-father-name"
+          label={t('step1.fatherHusbandName')}
+          required
+          disabled={disabled}
+          value={data.father_husband_name || ''}
+          onChange={(e) => onChange('father_husband_name', e.target.value)}
+          placeholder="e.g. Tariq Mehmood"
+        />
 
         {/* CNIC */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            {t('step1.cnic')} <span className="text-rose-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="step1-cnic"
-            disabled={disabled}
-            value={data.cnic || ''}
-            onChange={(e) => onChange('cnic', e.target.value)}
-            placeholder="35201-1234567-1"
-            className="w-full px-3 py-2 text-xs font-mono rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50"
-          />
-        </div>
+        <Input
+          id="step1-cnic"
+          label={t('step1.cnic')}
+          required
+          disabled={disabled}
+          value={data.cnic || ''}
+          onChange={(e) => onChange('cnic', e.target.value)}
+          placeholder="35201-1234567-1"
+          className="font-mono"
+        />
 
         {/* DOB */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            {t('step1.dob')} <span className="text-rose-500">*</span>
-          </label>
-          <input
-            type="date"
-            id="step1-dob"
-            disabled={disabled}
-            value={data.dob || ''}
-            onChange={(e) => onChange('dob', e.target.value)}
-            className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50"
-          />
-        </div>
+        <Input
+          id="step1-dob"
+          label={t('step1.dob')}
+          type="date"
+          required
+          disabled={disabled}
+          value={data.dob || ''}
+          onChange={(e) => onChange('dob', e.target.value)}
+        />
 
         {/* Gender */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            {t('step1.gender')} <span className="text-rose-500">*</span>
-          </label>
-          <select
-            id="step1-gender"
-            disabled={disabled}
-            value={data.gender || ''}
-            onChange={(e) => onChange('gender', e.target.value)}
-            className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50 cursor-pointer"
-          >
-            <option value="">{t('common.select')}</option>
-            <option value="male">{t('step1.genderMale')}</option>
-            <option value="female">{t('step1.genderFemale')}</option>
-            <option value="other">{t('step1.genderOther')}</option>
-          </select>
-        </div>
+        <Select
+          id="step1-gender"
+          label={t('step1.gender')}
+          required
+          disabled={disabled}
+          value={data.gender || ''}
+          onChange={(e) => onChange('gender', e.target.value)}
+          options={[
+            { value: '', label: t('common.select') },
+            { value: 'male', label: t('step1.genderMale') },
+            { value: 'female', label: t('step1.genderFemale') },
+            { value: 'other', label: t('step1.genderOther') },
+          ]}
+        />
 
         {/* Marital Status */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            {t('step1.maritalStatus')} <span className="text-rose-500">*</span>
-          </label>
-          <select
-            id="step1-marital-status"
-            disabled={disabled}
-            value={data.marital_status || ''}
-            onChange={(e) => onChange('marital_status', e.target.value)}
-            className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50 cursor-pointer"
-          >
-            <option value="">{t('common.select')}</option>
-            <option value="single">{t('step1.single')}</option>
-            <option value="married">{t('step1.married')}</option>
-            <option value="divorced">{t('step1.divorced')}</option>
-            <option value="widowed">{t('step1.widowed')}</option>
-          </select>
-        </div>
+        <Select
+          id="step1-marital-status"
+          label={t('step1.maritalStatus')}
+          required
+          disabled={disabled}
+          value={data.marital_status || ''}
+          onChange={(e) => onChange('marital_status', e.target.value)}
+          options={[
+            { value: '', label: t('common.select') },
+            { value: 'single', label: t('step1.single') },
+            { value: 'married', label: t('step1.married') },
+            { value: 'divorced', label: t('step1.divorced') },
+            { value: 'widowed', label: t('step1.widowed') },
+          ]}
+        />
 
         {/* Blood Group */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            {t('step1.bloodGroup')} <span className="text-rose-500">*</span>
-          </label>
-          <select
-            id="step1-blood-group"
-            disabled={disabled}
-            value={data.blood_group || ''}
-            onChange={(e) => onChange('blood_group', e.target.value)}
-            className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50 cursor-pointer"
-          >
-            <option value="">{t('common.select')}</option>
-            <option value="A+">A+</option>
-            <option value="A-">A-</option>
-            <option value="B+">B+</option>
-            <option value="B-">B-</option>
-            <option value="AB+">AB+</option>
-            <option value="AB-">AB-</option>
-            <option value="O+">O+</option>
-            <option value="O-">O-</option>
-          </select>
-        </div>
+        <Select
+          id="step1-blood-group"
+          label={t('step1.bloodGroup')}
+          required
+          disabled={disabled}
+          value={data.blood_group || ''}
+          onChange={(e) => onChange('blood_group', e.target.value)}
+          options={[
+            { value: '', label: t('common.select') },
+            { value: 'A+', label: 'A+' },
+            { value: 'A-', label: 'A-' },
+            { value: 'B+', label: 'B+' },
+            { value: 'B-', label: 'B-' },
+            { value: 'AB+', label: 'AB+' },
+            { value: 'AB-', label: 'AB-' },
+            { value: 'O+', label: 'O+' },
+            { value: 'O-', label: 'O-' },
+          ]}
+        />
 
         {/* Mobile */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            {t('step1.mobile')} <span className="text-rose-500">*</span>
-          </label>
-          <div className="relative">
-            <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            <input
-              type="tel"
-              id="step1-mobile"
-              disabled={disabled}
-              value={data.mobile || ''}
-              onChange={(e) => onChange('mobile', e.target.value)}
-              placeholder="03001234567"
-              className="w-full pl-9 pr-3 py-2 text-xs font-mono rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50"
-            />
-          </div>
-        </div>
+        <Input
+          id="step1-mobile"
+          label={t('step1.mobile')}
+          type="tel"
+          required
+          disabled={disabled}
+          value={data.mobile || ''}
+          onChange={(e) => onChange('mobile', e.target.value)}
+          placeholder="03001234567"
+          className="font-mono"
+          leftIcon={<Phone className="w-4 h-4" />}
+        />
 
         {/* Email */}
         <div className="md:col-span-2">
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            {t('step1.email')} <span className="text-slate-400 font-normal">{t('common.optional')}</span>
-          </label>
-          <div className="relative">
-            <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            <input
-              type="email"
-              id="step1-email"
-              disabled={disabled}
-              value={data.email || ''}
-              onChange={(e) => onChange('email', e.target.value)}
-              placeholder="candidate@example.com"
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50"
-            />
-          </div>
+          <Input
+            id="step1-email"
+            label={`${t('step1.email')} (${t('common.optional')})`}
+            type="email"
+            disabled={disabled}
+            value={data.email || ''}
+            onChange={(e) => onChange('email', e.target.value)}
+            placeholder="candidate@example.com"
+            leftIcon={<Mail className="w-4 h-4" />}
+          />
         </div>
       </div>
 
@@ -196,111 +158,87 @@ export const WizardStep1: React.FC<WizardStep1Props> = ({ data, onChange, disabl
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-              {t('step1.emergencyPerson')} <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="step1-emergency-name"
-              disabled={disabled}
-              value={data.emergency_contact_name || ''}
-              onChange={(e) => onChange('emergency_contact_name', e.target.value)}
-              placeholder="e.g. Tariq Mehmood"
-              className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50"
-            />
-          </div>
+          <Input
+            id="step1-emergency-name"
+            label={t('step1.emergencyPerson')}
+            required
+            disabled={disabled}
+            value={data.emergency_contact_name || ''}
+            onChange={(e) => onChange('emergency_contact_name', e.target.value)}
+            placeholder="e.g. Tariq Mehmood"
+          />
 
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-              {t('step1.emergencyRelation')} <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="step1-emergency-relation"
-              disabled={disabled}
-              value={data.emergency_contact_relation || ''}
-              onChange={(e) => onChange('emergency_contact_relation', e.target.value)}
-              placeholder="e.g. Father / Brother"
-              className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50"
-            />
-          </div>
+          <Input
+            id="step1-emergency-relation"
+            label={t('step1.emergencyRelation')}
+            required
+            disabled={disabled}
+            value={data.emergency_contact_relation || ''}
+            onChange={(e) => onChange('emergency_contact_relation', e.target.value)}
+            placeholder="e.g. Father / Brother"
+          />
 
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-              {t('step1.emergencyPhone')} <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="tel"
-              id="step1-emergency-phone"
-              disabled={disabled}
-              value={data.emergency_contact_phone || ''}
-              onChange={(e) => onChange('emergency_contact_phone', e.target.value)}
-              placeholder="03009876543"
-              className="w-full px-3 py-1.5 text-xs font-mono rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50"
-            />
-          </div>
+          <Input
+            id="step1-emergency-phone"
+            label={t('step1.emergencyPhone')}
+            type="tel"
+            required
+            disabled={disabled}
+            value={data.emergency_contact_phone || ''}
+            onChange={(e) => onChange('emergency_contact_phone', e.target.value)}
+            placeholder="03009876543"
+            className="font-mono"
+          />
         </div>
       </div>
 
       {/* Residential Address & Province */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-3">
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            {t('step1.address')} <span className="text-rose-500">*</span>
-          </label>
-          <div className="relative">
-            <Home className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              id="step1-address"
-              disabled={disabled}
-              value={data.residential_address || ''}
-              onChange={(e) => onChange('residential_address', e.target.value)}
-              placeholder="House #, Street, Sector / Area"
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50"
-            />
-          </div>
+          <Input
+            id="step1-address"
+            label={t('step1.address')}
+            required
+            disabled={disabled}
+            value={data.residential_address || ''}
+            onChange={(e) => onChange('residential_address', e.target.value)}
+            placeholder="House #, Street, Sector / Area"
+            leftIcon={<Home className="w-4 h-4" />}
+          />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            {t('step1.city')} <span className="text-rose-500">*</span>
-          </label>
-          <div className="relative">
-            <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              id="step1-city"
-              disabled={disabled}
-              value={data.city || ''}
-              onChange={(e) => onChange('city', e.target.value)}
-              placeholder="e.g. Lahore, Karachi, Rawalpindi"
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50"
-            />
-          </div>
+          <Input
+            id="step1-city"
+            label={t('step1.city')}
+            required
+            disabled={disabled}
+            value={data.city || ''}
+            onChange={(e) => onChange('city', e.target.value)}
+            placeholder="e.g. Lahore, Karachi, Rawalpindi"
+            leftIcon={<MapPin className="w-4 h-4" />}
+          />
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-xs font-bold text-slate-700 mb-1">
-            {t('step1.province')} <span className="text-rose-500">*</span>
-          </label>
-          <select
+          <Select
             id="step1-province"
+            label={t('step1.province')}
+            required
             disabled={disabled}
             value={data.province || ''}
             onChange={(e) => onChange('province', e.target.value)}
-            className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-50 cursor-pointer"
-          >
-            <option value="">{t('common.select')}</option>
-            <option value="Punjab">{t('step1.provPunjab')}</option>
-            <option value="Sindh">{t('step1.provSindh')}</option>
-            <option value="KPK">{t('step1.provKpk')}</option>
-            <option value="Balochistan">{t('step1.provBalochistan')}</option>
-            <option value="Islamabad">{t('step1.provIslamabad')}</option>
-            <option value="AJK">{t('step1.provAjk')}</option>
-            <option value="Gilgit-Baltistan">{t('step1.provGb')}</option>
-          </select>
+            options={[
+              { value: '', label: t('common.select') },
+              { value: 'Punjab', label: t('step1.provPunjab') },
+              { value: 'Sindh', label: t('step1.provSindh') },
+              { value: 'KPK', label: t('step1.provKpk') },
+              { value: 'Balochistan', label: t('step1.provBalochistan') },
+              { value: 'Islamabad', label: t('step1.provIslamabad') },
+              { value: 'AJK', label: t('step1.provAjk') },
+              { value: 'Gilgit-Baltistan', label: t('step1.provGb') },
+            ]}
+          />
         </div>
       </div>
     </div>

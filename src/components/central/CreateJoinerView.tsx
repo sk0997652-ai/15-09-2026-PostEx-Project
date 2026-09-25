@@ -158,7 +158,7 @@ export function CreateJoinerView({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label
                 id="track-option-executive"
-                className={`relative flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                className={`relative flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
                   joinerForm.track === 'executive'
                     ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-500/20'
                     : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
@@ -185,7 +185,7 @@ export function CreateJoinerView({
 
               <label
                 id="track-option-non-executive"
-                className={`relative flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                className={`relative flex items-start gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${
                   joinerForm.track === 'non_executive'
                     ? 'bg-indigo-50/70 border-indigo-600 ring-2 ring-indigo-500/20'
                     : 'bg-slate-50 border-slate-200 hover:bg-slate-100/70'
@@ -243,7 +243,7 @@ export function CreateJoinerView({
 
           {/* Duplicate CNIC Warning & Override Box */}
           {duplicateWarning?.exists && (
-            <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 space-y-3">
+            <div className="p-4 rounded-lg bg-amber-50 border border-amber-300 space-y-3">
               <div className="flex items-start gap-2.5">
                 <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
                 <div>

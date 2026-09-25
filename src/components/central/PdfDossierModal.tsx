@@ -27,7 +27,7 @@ export function PdfDossierModal({
 
   return (
     <div className="fixed inset-0 z-70 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-3xl w-full p-8 shadow-2xl border border-slate-200 text-slate-900 space-y-6">
+      <div className="bg-white rounded-2xl max-w-3xl w-full p-8 shadow-xl border border-slate-200 text-slate-900 space-y-6">
         <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold">
@@ -59,17 +59,20 @@ export function PdfDossierModal({
             >
               Print View
             </Button>
-            <button
+            <Button
+              type="button"
+              variant="ghost"
+              size="small"
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+              className="p-1.5 h-auto text-slate-400 hover:text-slate-600 rounded-lg"
             >
               <X className="w-5 h-5" />
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Certificate Body */}
-        <div className="p-6 bg-slate-50/70 rounded-xl border border-slate-200 space-y-5 text-xs">
+        <div className="p-6 bg-slate-50/70 rounded-2xl border border-slate-200 space-y-5 text-xs">
           <div className="flex items-center justify-between bg-white p-4 rounded-lg border border-slate-200">
             <div>
               <span className="text-[10px] font-bold text-slate-400">Assigned Corporate ID</span>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, CheckCircle2, XCircle, Play, AlertTriangle, Lock, Users, MapPin, Eye } from 'lucide-react';
 import { RBAC_TEST_SCENARIOS, TestResult } from '../lib/rbacTestScenarios';
+import { Button } from './ui';
 
 export function RbacTestingPanel() {
   const [isRunning, setIsRunning] = useState(false);
@@ -317,7 +318,7 @@ export function RbacTestingPanel() {
       <div className="bg-slate-900 text-white p-6 border-b border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 text-xs font-semibold mb-2">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs font-semibold mb-2">
               <Shield className="w-3.5 h-3.5" />
               <span>Step 4 Verification &bull; RBAC &amp; RLS Policies</span>
             </div>
@@ -328,39 +329,46 @@ export function RbacTestingPanel() {
             </p>
           </div>
 
-          <button
+          <Button
             id="run-rbac-suite-btn"
             onClick={runAllTests}
+            isLoading={isRunning}
             disabled={isRunning}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
+            variant="primary"
+            size="small"
+            className="bg-emerald-600 hover:bg-emerald-500 font-bold"
+            leftIcon={<Play className={`w-3.5 h-3.5 ${isRunning ? 'animate-spin' : ''}`} />}
           >
-            <Play className={`w-4 h-4 ${isRunning ? 'animate-spin' : ''}`} />
-            <span>{isRunning ? 'Executing Suite...' : 'Execute RBAC Self-Test'}</span>
-          </button>
+            {isRunning ? 'Executing Suite...' : 'Execute RBAC Self-Test'}
+          </Button>
         </div>
 
         {/* Tab switcher */}
         <div className="flex gap-2 mt-6">
-          <button
+          <Button
+            size="small"
+            variant={activeTab === 'runner' ? 'secondary' : 'secondary'}
             onClick={() => setActiveTab('runner')}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+            className={`border text-xs ${
               activeTab === 'runner'
-                ? 'bg-slate-800 text-white border border-slate-700'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-850'
+                : 'bg-transparent text-slate-400 border-transparent hover:text-white hover:bg-slate-800/50'
             }`}
           >
             Test Execution Runner {totalCount > 0 && `(${passedCount}/${totalCount} Passed)`}
-          </button>
-          <button
+          </Button>
+          <Button
+            size="small"
+            variant={activeTab === 'matrix' ? 'secondary' : 'secondary'}
             onClick={() => setActiveTab('matrix')}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+            className={`border text-xs ${
               activeTab === 'matrix'
-                ? 'bg-slate-800 text-white border border-slate-700'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-850'
+                : 'bg-transparent text-slate-400 border-transparent hover:text-white hover:bg-slate-800/50'
             }`}
           >
             Role Permission Matrix
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -369,7 +377,7 @@ export function RbacTestingPanel() {
         {activeTab === 'runner' ? (
           <div>
             {results.length === 0 ? (
-              <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-xl">
+              <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg">
                 <Shield className="w-10 h-10 text-slate-400 mx-auto mb-3" />
                 <h3 className="text-sm font-bold text-slate-800">RBAC Suite Ready</h3>
                 <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
@@ -434,11 +442,11 @@ export function RbacTestingPanel() {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                        <span className="text-[10px] font-mono uppercase px-2 py-1 rounded-sm bg-slate-100 text-slate-600">
+                        <span className="text-[10px] font-mono uppercase px-2 py-1 rounded-lg bg-slate-100 text-slate-600">
                           Expect: {res.expected}
                         </span>
                         <span
-                          className={`text-[10px] font-mono uppercase px-2 py-1 rounded-sm font-bold ${
+                          className={`text-[10px] font-mono uppercase px-2 py-1 rounded-lg font-bold ${
                             res.status === 'passed'
                               ? 'bg-emerald-100 text-emerald-800'
                               : 'bg-rose-100 text-rose-800'
@@ -490,14 +498,14 @@ export function RbacTestingPanel() {
                 </tr>
                 <tr className="hover:bg-slate-50/50">
                   <td className="p-3 font-bold text-slate-900">branch_manager</td>
-                  <td className="p-3 text-blue-700 font-semibold">Assigned Branch Only</td>
+                  <td className="p-3 text-indigo-700 font-semibold">Assigned Branch Only</td>
                   <td className="p-3 text-slate-700">Scoped to Assigned Branch</td>
                   <td className="p-3 text-rose-600 font-semibold">&cross; Blocked</td>
                   <td className="p-3 text-rose-600 font-semibold">&cross; Blocked</td>
                 </tr>
                 <tr className="hover:bg-slate-50/50">
                   <td className="p-3 font-bold text-slate-900">candidate</td>
-                  <td className="p-3 text-purple-700 font-semibold">Own Application Only</td>
+                  <td className="p-3 text-indigo-700 font-semibold">Own Application Only</td>
                   <td className="p-3 text-slate-700">Scoped to Own Record</td>
                   <td className="p-3 text-rose-600 font-semibold">&cross; Blocked</td>
                   <td className="p-3 text-rose-600 font-semibold">&cross; Blocked</td>

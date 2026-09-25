@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '../../lib/i18n';
 import { VerificationStampSeal } from '../common/VerificationStampSeal';
+import { Button } from '../ui';
 
 interface SubmissionConfirmationModalProps {
   candidate: {
@@ -33,7 +34,7 @@ export const SubmissionConfirmationModal: React.FC<SubmissionConfirmationModalPr
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div
         id="candidate-submission-confirmation-card"
-        className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100"
+        className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-xl animate-in zoom-in-95 duration-200 border border-slate-100"
       >
         {/* Top Header Banner */}
         <div className="p-8 bg-gradient-to-b from-indigo-50/60 to-white text-center border-b border-indigo-100 flex flex-col items-center">
@@ -109,15 +110,17 @@ export const SubmissionConfirmationModal: React.FC<SubmissionConfirmationModalPr
             </p>
           </div>
 
-          <button
+          <Button
             type="button"
             id="modal-proceed-to-tracker-btn"
+            variant="primary"
+            size="large"
             onClick={onProceedToTracker}
-            className="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-200 flex items-center justify-center gap-2 cursor-pointer transition-colors"
+            rightIcon={<ArrowRight className="w-4 h-4" />}
+            className="w-full"
           >
-            <span>Track Application Progress</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+            Track Application Progress
+          </Button>
         </div>
       </div>
     </div>

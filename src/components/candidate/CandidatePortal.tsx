@@ -9,6 +9,7 @@ import { ConsentScreen } from './ConsentScreen';
 import { WelcomeScreen } from './WelcomeScreen';
 import { CandidateWizard } from './CandidateWizard';
 import { StatusTracker } from './StatusTracker';
+import { Button } from '../ui';
 
 interface CandidatePortalProps {
   session: CandidateSessionState;
@@ -68,7 +69,7 @@ const PortalInner: React.FC<CandidatePortalProps> = ({ session, onSignOut }) => 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Top Application Navbar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-2xs">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
@@ -83,15 +84,17 @@ const PortalInner: React.FC<CandidatePortalProps> = ({ session, onSignOut }) => 
 
           <div className="flex items-center gap-3">
             {currentView !== 'language' && currentView !== 'consent' && currentView !== 'welcome' && (
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="small"
                 onClick={() => setCurrentView('welcome')}
                 id="candidate-nav-welcome-btn"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
+                leftIcon={<Sparkles className="w-3.5 h-3.5 text-indigo-600" />}
+                className="text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-200"
               >
-                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                <span>{t('welcome.portalHome', 'Welcome')}</span>
-              </button>
+                {t('welcome.portalHome', 'Welcome')}
+              </Button>
             )}
 
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-xs">
@@ -102,14 +105,16 @@ const PortalInner: React.FC<CandidatePortalProps> = ({ session, onSignOut }) => 
 
             <LanguageSelector />
 
-            <button
+            <Button
+              variant="ghost"
+              size="small"
               onClick={onSignOut}
               id="candidate-portal-signout-btn"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+              leftIcon={<LogOut className="w-3.5 h-3.5" />}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>{t('common.logout')}</span>
-            </button>
+              {t('common.logout')}
+            </Button>
           </div>
         </div>
       </header>

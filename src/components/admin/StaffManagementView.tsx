@@ -530,16 +530,14 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
               onChange={(e) => setEditingStaff({ ...editingStaff, name: e.target.value })}
             />
 
-            <div>
-              <label className="text-xs font-semibold text-slate-700 block mb-1">Email Address</label>
-              <input
-                type="email"
-                disabled
-                value={editingStaff.email}
-                className="w-full text-xs p-2.5 rounded-lg border border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed"
-              />
-              <span className="text-[10px] text-slate-400 mt-1 block">Email is locked for security integrity.</span>
-            </div>
+            <Input
+              id="edit-staff-email"
+              label="Email Address"
+              type="email"
+              disabled
+              value={editingStaff.email}
+              hint="Email is locked for security integrity."
+            />
 
             <Select
               id="edit-staff-role"

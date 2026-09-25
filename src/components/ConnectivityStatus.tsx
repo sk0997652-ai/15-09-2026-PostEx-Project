@@ -20,6 +20,7 @@ import {
   supabaseUrl,
   supabaseAnonKey,
 } from '../lib/supabase';
+import { Button } from './ui';
 
 export const ConnectivityStatus: React.FC = () => {
   const [diagnostic, setDiagnostic] = useState<ConnectivityDiagnostic | null>(null);
@@ -55,7 +56,7 @@ export const ConnectivityStatus: React.FC = () => {
       {/* Header Banner */}
       <div
         id="status-banner"
-        className={`p-6 rounded-xl border transition-all ${
+        className={`p-6 rounded-2xl border transition-all ${
           isLoading
             ? 'bg-slate-50 border-slate-200 text-slate-800'
             : diagnostic?.status === 'connected'
@@ -106,22 +107,24 @@ export const ConnectivityStatus: React.FC = () => {
             </div>
           </div>
 
-          <button
+          <Button
             id="refresh-check-btn"
+            variant="secondary"
             onClick={runCheck}
             disabled={isLoading}
-            className="self-start sm:self-center px-4 py-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 rounded-lg text-sm font-medium shadow-2xs hover:shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            isLoading={isLoading}
+            className="self-start sm:self-center bg-white text-slate-800 border-slate-300"
+            leftIcon={<RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />}
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-slate-400' : 'text-slate-600'}`} />
-            <span>{isLoading ? 'Checking...' : 'Recheck Connection'}</span>
-          </button>
+            Recheck Connection
+          </Button>
         </div>
       </div>
 
       {/* Configuration Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Project URL */}
-        <div id="card-supabase-url" className="p-5 bg-white rounded-xl border border-slate-200 shadow-2xs">
+        <div id="card-supabase-url" className="p-5 bg-white rounded-lg border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Project URL</span>
             <Globe className="w-4 h-4 text-slate-400" />
@@ -144,7 +147,7 @@ export const ConnectivityStatus: React.FC = () => {
         </div>
 
         {/* Anon Public Key */}
-        <div id="card-supabase-anon" className="p-5 bg-white rounded-xl border border-slate-200 shadow-2xs">
+        <div id="card-supabase-anon" className="p-5 bg-white rounded-lg border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Anon Public Key</span>
             <Key className="w-4 h-4 text-slate-400" />
@@ -167,7 +170,7 @@ export const ConnectivityStatus: React.FC = () => {
         </div>
 
         {/* Edge Functions Scaffold */}
-        <div id="card-edge-functions" className="p-5 bg-white rounded-xl border border-slate-200 shadow-2xs">
+        <div id="card-edge-functions" className="p-5 bg-white rounded-lg border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Edge Functions</span>
             <Server className="w-4 h-4 text-slate-400" />
@@ -188,13 +191,13 @@ export const ConnectivityStatus: React.FC = () => {
       {!isSupabaseConfigured && (
         <div
           id="config-instructions"
-          className="p-5 bg-blue-50/70 border border-blue-200 rounded-xl text-blue-900"
+          className="p-5 bg-indigo-50/70 border border-indigo-200 rounded-lg text-indigo-900"
         >
           <div className="flex items-start gap-3">
-            <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+            <Info className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
             <div className="space-y-2">
               <h3 className="font-semibold text-sm">How to connect your Supabase project:</h3>
-              <ol className="text-xs space-y-1.5 list-decimal list-inside text-blue-800">
+              <ol className="text-xs space-y-1.5 list-decimal list-inside text-indigo-800">
                 <li>
                   Open your <strong className="font-medium">Supabase Dashboard</strong> &gt; Project Settings &gt; API.
                 </li>
@@ -202,7 +205,7 @@ export const ConnectivityStatus: React.FC = () => {
                   Copy your <strong className="font-medium">Project URL</strong> and <strong className="font-medium">anon / public key</strong>.
                 </li>
                 <li>
-                  Set <code className="bg-blue-100/80 px-1 py-0.5 rounded font-mono">VITE_SUPABASE_URL</code> and <code className="bg-blue-100/80 px-1 py-0.5 rounded font-mono">VITE_SUPABASE_ANON_KEY</code> in your environment / secrets.
+                  Set <code className="bg-indigo-100/80 px-1 py-0.5 rounded font-mono">VITE_SUPABASE_URL</code> and <code className="bg-indigo-100/80 px-1 py-0.5 rounded font-mono">VITE_SUPABASE_ANON_KEY</code> in your environment / secrets.
                 </li>
                 <li>
                   Click the <strong className="font-medium">&quot;Recheck Connection&quot;</strong> button above to verify live connectivity.
@@ -214,7 +217,7 @@ export const ConnectivityStatus: React.FC = () => {
       )}
 
       {/* System Architecture Checklist */}
-      <div id="scaffold-verification" className="bg-white rounded-xl border border-slate-200 p-6 shadow-2xs">
+      <div id="scaffold-verification" className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
         <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
           <Layers className="w-5 h-5 text-slate-600" />
           <span>Step 1 Architecture Checklist</span>

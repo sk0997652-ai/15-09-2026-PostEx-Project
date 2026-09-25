@@ -2,6 +2,7 @@ import React from 'react';
 import { GraduationCap, Briefcase, Building, Calendar, DollarSign, Clock } from 'lucide-react';
 import { useI18n } from '../../lib/i18n';
 import { Step2Data } from '../../lib/candidateApi';
+import { Input, Select } from '../ui';
 
 interface WizardStep2Props {
   data: Step2Data;
@@ -28,78 +29,60 @@ export const WizardStep2: React.FC<WizardStep2Props> = ({ data, onChange, disabl
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Highest Qualification */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              {t('step2.highestEdu')} <span className="text-rose-500">*</span>
-            </label>
-            <select
-              id="step2-highest-edu"
-              disabled={disabled}
-              value={data.highest_qualification || ''}
-              onChange={(e) => onChange('highest_qualification', e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-100 cursor-pointer"
-            >
-              <option value="">{t('common.select')}</option>
-              <option value="matric">{t('step2.matric')}</option>
-              <option value="intermediate">{t('step2.inter')}</option>
-              <option value="bachelor">{t('step2.bachelor')}</option>
-              <option value="master">{t('step2.master')}</option>
-              <option value="diploma">{t('step2.diploma')}</option>
-            </select>
-          </div>
+          <Select
+            id="step2-highest-edu"
+            label={t('step2.highestEdu')}
+            required
+            disabled={disabled}
+            value={data.highest_qualification || ''}
+            onChange={(e) => onChange('highest_qualification', e.target.value)}
+            options={[
+              { value: '', label: t('common.select') },
+              { value: 'matric', label: t('step2.matric') },
+              { value: 'intermediate', label: t('step2.inter') },
+              { value: 'bachelor', label: t('step2.bachelor') },
+              { value: 'master', label: t('step2.master') },
+              { value: 'diploma', label: t('step2.diploma') },
+            ]}
+          />
 
           {/* Degree Title */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              {t('step2.degreeTitle')} <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="step2-degree-title"
-              disabled={disabled}
-              value={data.degree_title || ''}
-              onChange={(e) => onChange('degree_title', e.target.value)}
-              placeholder={t('step2.degreePlaceholder')}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-100"
-            />
-          </div>
+          <Input
+            id="step2-degree-title"
+            label={t('step2.degreeTitle')}
+            required
+            disabled={disabled}
+            value={data.degree_title || ''}
+            onChange={(e) => onChange('degree_title', e.target.value)}
+            placeholder={t('step2.degreePlaceholder')}
+          />
 
           {/* Institute Name */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              {t('step2.institute')} <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="step2-institute"
-              disabled={disabled}
-              value={data.institute_name || ''}
-              onChange={(e) => onChange('institute_name', e.target.value)}
-              placeholder="e.g. University of the Punjab / BISE Lahore"
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-100"
-            />
-          </div>
+          <Input
+            id="step2-institute"
+            label={t('step2.institute')}
+            required
+            disabled={disabled}
+            value={data.institute_name || ''}
+            onChange={(e) => onChange('institute_name', e.target.value)}
+            placeholder="e.g. University of the Punjab / BISE Lahore"
+          />
 
           {/* Graduation Year */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              {t('step2.gradYear')} <span className="text-rose-500">*</span>
-            </label>
-            <div className="relative">
-              <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input
-                type="number"
-                min="1980"
-                max="2030"
-                id="step2-grad-year"
-                disabled={disabled}
-                value={data.graduation_year || ''}
-                onChange={(e) => onChange('graduation_year', e.target.value)}
-                placeholder="e.g. 2023"
-                className="w-full pl-9 pr-3 py-2 text-xs font-mono rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-100"
-              />
-            </div>
-          </div>
+          <Input
+            id="step2-grad-year"
+            label={t('step2.gradYear')}
+            type="number"
+            min="1980"
+            max="2030"
+            required
+            disabled={disabled}
+            value={data.graduation_year || ''}
+            onChange={(e) => onChange('graduation_year', e.target.value)}
+            placeholder="e.g. 2023"
+            className="font-mono"
+            leftIcon={<Calendar className="w-4 h-4 text-slate-400" />}
+          />
         </div>
       </div>
 
@@ -112,107 +95,83 @@ export const WizardStep2: React.FC<WizardStep2Props> = ({ data, onChange, disabl
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Total Experience */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              {t('step2.totalExp')} <span className="text-rose-500">*</span>
-            </label>
-            <select
-              id="step2-total-exp"
-              disabled={disabled}
-              value={data.total_experience || ''}
-              onChange={(e) => onChange('total_experience', e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-100 cursor-pointer"
-            >
-              <option value="">{t('common.select')}</option>
-              <option value="fresh">{t('step2.fresh')}</option>
-              <option value="1-2">{t('step2.exp1to2')}</option>
-              <option value="3-5">{t('step2.exp3to5')}</option>
-              <option value="5+">{t('step2.exp5plus')}</option>
-            </select>
-          </div>
+          <Select
+            id="step2-total-exp"
+            label={t('step2.totalExp')}
+            required
+            disabled={disabled}
+            value={data.total_experience || ''}
+            onChange={(e) => onChange('total_experience', e.target.value)}
+            options={[
+              { value: '', label: t('common.select') },
+              { value: 'fresh', label: t('step2.fresh') },
+              { value: '1-2', label: t('step2.exp1to2') },
+              { value: '3-5', label: t('step2.exp3to5') },
+              { value: '5+', label: t('step2.exp5plus') },
+            ]}
+          />
 
           {/* Availability / Notice Period */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              {t('step2.noticePeriod')} <span className="text-rose-500">*</span>
-            </label>
-            <div className="relative">
-              <Clock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <select
-                id="step2-notice-period"
-                disabled={disabled}
-                value={data.notice_period || ''}
-                onChange={(e) => onChange('notice_period', e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-100 cursor-pointer"
-              >
-                <option value="">{t('common.select')}</option>
-                <option value="immediate">{t('step2.immediate')}</option>
-                <option value="15_days">{t('step2.notice15')}</option>
-                <option value="30_days">{t('step2.notice30')}</option>
-              </select>
-            </div>
-          </div>
+          <Select
+            id="step2-notice-period"
+            label={t('step2.noticePeriod')}
+            required
+            disabled={disabled}
+            value={data.notice_period || ''}
+            onChange={(e) => onChange('notice_period', e.target.value)}
+            leftIcon={<Clock className="w-4 h-4 text-slate-400" />}
+            options={[
+              { value: '', label: t('common.select') },
+              { value: 'immediate', label: t('step2.immediate') },
+              { value: '15_days', label: t('step2.notice15') },
+              { value: '30_days', label: t('step2.notice30') },
+            ]}
+          />
 
           {/* Current / Last Employer */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              {t('step2.lastEmployer')}{' '}
-              {data.total_experience === 'fresh' ? (
-                <span className="text-slate-400 font-normal">{t('common.optional')}</span>
-              ) : (
-                <span className="text-rose-500">*</span>
-              )}
-            </label>
-            <div className="relative">
-              <Building className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                id="step2-last-employer"
-                disabled={disabled}
-                value={data.last_employer || ''}
-                onChange={(e) => onChange('last_employer', e.target.value)}
-                placeholder="e.g. TCS, Leopard, Daraz, or N/A (Fresh)"
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-100"
-              />
-            </div>
-          </div>
+          <Input
+            id="step2-last-employer"
+            label={
+              data.total_experience === 'fresh'
+                ? `${t('step2.lastEmployer')} (${t('common.optional')})`
+                : t('step2.lastEmployer')
+            }
+            required={data.total_experience !== 'fresh'}
+            disabled={disabled}
+            value={data.last_employer || ''}
+            onChange={(e) => onChange('last_employer', e.target.value)}
+            placeholder="e.g. TCS, Leopard, Daraz, or N/A (Fresh)"
+            leftIcon={<Building className="w-4 h-4 text-slate-400" />}
+          />
 
           {/* Last Job Title */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              {t('step2.lastTitle')}{' '}
-              {data.total_experience === 'fresh' ? (
-                <span className="text-slate-400 font-normal">{t('common.optional')}</span>
-              ) : (
-                <span className="text-rose-500">*</span>
-              )}
-            </label>
-            <input
-              type="text"
-              id="step2-last-title"
-              disabled={disabled}
-              value={data.last_designation || ''}
-              onChange={(e) => onChange('last_designation', e.target.value)}
-              placeholder="e.g. Courier Associate, Hub Coordinator"
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-100"
-            />
-          </div>
+          <Input
+            id="step2-last-title"
+            label={
+              data.total_experience === 'fresh'
+                ? `${t('step2.lastTitle')} (${t('common.optional')})`
+                : t('step2.lastTitle')
+            }
+            required={data.total_experience !== 'fresh'}
+            disabled={disabled}
+            value={data.last_designation || ''}
+            onChange={(e) => onChange('last_designation', e.target.value)}
+            placeholder="e.g. Courier Associate, Hub Coordinator"
+          />
 
           {/* Last Monthly Salary */}
           <div className="md:col-span-2">
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              {t('step2.lastSalary')} <span className="text-slate-400 font-normal">{t('common.optional')}</span>
-            </label>
-            <div className="relative max-w-xs">
-              <DollarSign className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input
-                type="number"
+            <div className="max-w-xs">
+              <Input
                 id="step2-last-salary"
+                label={`${t('step2.lastSalary')} (${t('common.optional')})`}
+                type="number"
                 disabled={disabled}
                 value={data.last_salary || ''}
                 onChange={(e) => onChange('last_salary', e.target.value)}
                 placeholder="e.g. 45000"
-                className="w-full pl-9 pr-3 py-2 text-xs font-mono rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white disabled:bg-slate-100"
+                className="font-mono"
+                leftIcon={<DollarSign className="w-4 h-4 text-slate-400" />}
               />
             </div>
           </div>

@@ -16,8 +16,11 @@ import { checkStaffSession, signOutStaff } from './lib/staffAuth';
 import { supabase } from './lib/supabase';
 import { Building2, Shield, Users, Smartphone, Activity, Lock, Wrench, ChevronDown, UserCheck, LogOut, Sparkles } from 'lucide-react';
 import { ComponentLibraryShowcase } from './components/ui/ComponentLibraryShowcase';
+import { Button } from './components/ui';
+import { useBranding } from './lib/branding';
 
 export default function App() {
+  const { companyName, portalName, logoUrl, loginBgUrl, defaultLoginBg } = useBranding();
   const [currentUser, setCurrentUser] = useState<{
     id: string;
     email: string;
@@ -41,8 +44,6 @@ export default function App() {
   const [authPortalType, setAuthPortalType] = useState<'staff' | 'candidate'>('staff');
   const [showDevMenu, setShowDevMenu] = useState(false);
 
-  const [portalName, setPortalName] = useState('PostEx');
-
   const [isDevToolsEnabled, setIsDevToolsEnabled] = useState(
     ['true', '1', 'yes'].includes(
       String(import.meta.env.VITE_ENABLE_DEV_TOOLS || '').trim().toLowerCase()
@@ -65,9 +66,6 @@ export default function App() {
     fetch('/api/organization-settings')
       .then((res) => res.json())
       .then((data) => {
-        if (data?.settings?.company_name) {
-          setPortalName(data.settings.company_name);
-        }
         if (typeof data?.enableDevTools === 'boolean') {
           setIsDevToolsEnabled(data.enableDevTools);
         }
@@ -98,12 +96,21 @@ export default function App() {
       <header className="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400">
-              <Building2 className="w-5 h-5" />
-            </div>
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={companyName || 'Company Logo'}
+                className="h-9 max-w-[140px] object-contain rounded bg-white/10 p-1 border border-white/20"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400">
+                <Building2 className="w-5 h-5" />
+              </div>
+            )}
             <div>
               <span className="text-base font-bold tracking-tight text-white flex items-center gap-2">
-                {portalName} <span className="text-slate-400 font-normal">| HR Onboarding Portal</span>
+                {companyName || portalName}{' '}
+                <span className="text-slate-400 font-normal">| HR Onboarding Portal</span>
               </span>
             </div>
           </div>
@@ -129,7 +136,7 @@ export default function App() {
                 <button
                   id="dev-tools-menu-btn"
                   onClick={() => setShowDevMenu(!showDevMenu)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 transition-colors cursor-pointer"
                 >
                   <Wrench className="w-3.5 h-3.5" />
                   <span>Dev Verification Tools</span>
@@ -146,7 +153,7 @@ export default function App() {
                         setActiveDevTab('none');
                         setShowDevMenu(false);
                       }}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer ${
                         activeDevTab === 'none' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
                       }`}
                     >
@@ -158,7 +165,7 @@ export default function App() {
                         setActiveDevTab('ui-library');
                         setShowDevMenu(false);
                       }}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer ${
                         activeDevTab === 'ui-library' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
                       }`}
                     >
@@ -170,7 +177,7 @@ export default function App() {
                         setActiveDevTab('rbac');
                         setShowDevMenu(false);
                       }}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer ${
                         activeDevTab === 'rbac' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
                       }`}
                     >
@@ -182,7 +189,7 @@ export default function App() {
                         setActiveDevTab('auth');
                         setShowDevMenu(false);
                       }}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer ${
                         activeDevTab === 'auth' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
                       }`}
                     >
@@ -194,7 +201,7 @@ export default function App() {
                         setActiveDevTab('connectivity');
                         setShowDevMenu(false);
                       }}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2 cursor-pointer ${
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2 cursor-pointer ${
                         activeDevTab === 'connectivity' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-300 hover:bg-slate-700'
                       }`}
                     >
@@ -284,7 +291,7 @@ export default function App() {
             />
           ) : currentUser ? (
             <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
-              <div className="bg-white rounded-xl border border-slate-200 p-8 shadow-xs text-center space-y-4">
+              <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-xs text-center space-y-4">
                 <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
                   <UserCheck className="w-7 h-7" />
                 </div>
@@ -300,66 +307,85 @@ export default function App() {
                   You are authenticated with an active enterprise session. Your account does not have a designated workstation role assigned. Please contact the Super Admin for role assignment.
                 </p>
                 <div className="pt-4 border-t border-slate-100 flex justify-center">
-                  <button
+                  <Button
+                    variant="danger"
+                    size="small"
                     onClick={handleSignOut}
-                    className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors cursor-pointer"
+                    leftIcon={<LogOut className="w-3.5 h-3.5" />}
                   >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Sign Out</span>
-                  </button>
+                    Sign Out
+                  </Button>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-              <div className="text-center max-w-xl mx-auto mb-6">
-                <div className="inline-flex p-1 bg-slate-200/80 rounded-xl border border-slate-300 mb-4">
-                  <button
-                    id="portal-toggle-candidate"
-                    onClick={() => setAuthPortalType('candidate')}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      authPortalType === 'candidate' ? 'bg-white text-indigo-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <Smartphone className="w-4 h-4 text-indigo-600" />
-                    <span>Candidate Onboarding</span>
-                  </button>
-                  <button
-                    id="portal-toggle-staff"
-                    onClick={() => setAuthPortalType('staff')}
-                    className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      authPortalType === 'staff' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    <Users className="w-4 h-4 text-emerald-600" />
-                    <span>Staff &amp; Admin Login</span>
-                  </button>
+            <div className="relative min-h-[calc(100vh-4rem)] flex flex-col justify-between overflow-hidden">
+              {/* Full-bleed background image with soft fade */}
+              <div
+                className="absolute inset-0 bg-cover bg-center transition-all duration-700 pointer-events-none"
+                style={{
+                  backgroundImage: `url(${loginBgUrl || defaultLoginBg})`,
+                }}
+              />
+              <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] pointer-events-none" />
+
+              {/* Centered glass card login */}
+              <div className="relative z-10 max-w-xl mx-auto px-4 py-8 sm:py-12 w-full flex-1 flex flex-col justify-center">
+                {/* Switcher segmented tabs */}
+                <div className="text-center mb-6">
+                  <div className="inline-flex p-1 bg-slate-900/75 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl">
+                    <button
+                      id="portal-toggle-candidate"
+                      onClick={() => setAuthPortalType('candidate')}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        authPortalType === 'candidate'
+                          ? 'bg-white text-indigo-950 shadow-md'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      <Smartphone className="w-4 h-4 text-indigo-600" />
+                      <span>Candidate Onboarding</span>
+                    </button>
+                    <button
+                      id="portal-toggle-staff"
+                      onClick={() => setAuthPortalType('staff')}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        authPortalType === 'staff'
+                          ? 'bg-white text-slate-950 shadow-md'
+                          : 'text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      <Users className="w-4 h-4 text-emerald-600" />
+                      <span>Staff &amp; Admin Sign In</span>
+                    </button>
+                  </div>
                 </div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                  {authPortalType === 'candidate' ? 'Candidate Onboarding Portal' : 'Staff & Super Admin Login'}
-                </h2>
-                <p className="text-xs text-slate-600 mt-1">
-                  {authPortalType === 'candidate'
-                    ? 'Log in with your Joining ID and Mobile Number to complete onboarding.'
-                    : 'Log in with your PostEx staff credentials to access your administrative dashboard.'}
-                </p>
+
+                {/* Form Card */}
+                <div className="w-full">
+                  {authPortalType === 'candidate' ? (
+                    <CandidateLoginForm />
+                  ) : (
+                    <StaffLoginForm onLoginSuccess={refreshSession} />
+                  )}
+                </div>
               </div>
-              <div className={authPortalType === 'candidate' ? 'max-w-4xl mx-auto' : 'max-w-md mx-auto'}>
-                {authPortalType === 'candidate' ? (
-                  <CandidateLoginForm />
-                ) : (
-                  <StaffLoginForm onLoginSuccess={refreshSession} />
-                )}
+
+              {/* Subtle Footer Bar */}
+              <div className="relative z-10 py-3 text-center text-xs text-slate-300/80 bg-slate-950/40 backdrop-blur-xs border-t border-white/10">
+                {companyName || 'PostEx'} &bull; Enterprise HR Onboarding &amp; Dossier Verification Portal
               </div>
             </div>
           )
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-500">
-        PostEx HR Onboarding Portal &bull; Enterprise HR System
-      </footer>
+      {/* Footer (shown when authenticated) */}
+      {currentUser && (
+        <footer className="border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-500">
+          {companyName || 'PostEx'} HR Onboarding Portal &bull; Enterprise HR System
+        </footer>
+      )}
     </div>
   );
 }

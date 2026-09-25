@@ -124,7 +124,7 @@ export function ZoneOverviewView({
               <h3 className="text-sm font-bold text-slate-900">Operational Branches in Zone</h3>
               <p className="text-xs text-slate-500">Branches authorized for local candidate document verification.</p>
             </div>
-            <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-xs font-mono font-bold">
+            <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-mono font-bold">
               {zoneBranches.length} Branches
             </span>
           </div>
@@ -171,12 +171,14 @@ export function ZoneOverviewView({
         <Card className="p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-slate-900">Zone HR Staff</h3>
-            <button
+            <Button
+              variant="link"
+              size="small"
               onClick={onNavigateToStaff}
-              className="text-xs text-indigo-600 font-bold hover:underline cursor-pointer"
+              className="text-xs text-indigo-600 font-bold p-0 h-auto"
             >
               Manage
-            </button>
+            </Button>
           </div>
 
           <div className="space-y-3">

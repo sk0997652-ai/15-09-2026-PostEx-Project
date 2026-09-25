@@ -431,7 +431,7 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
                       <div
                         key={doc.id || idx}
                         id={`uploaded-doc-${doc.id}`}
-                        className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between gap-3 shadow-2xs group hover:border-indigo-300 transition-all"
+                        className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between gap-3 shadow-xs group hover:border-indigo-300 transition-all"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
                           <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden">
@@ -468,25 +468,29 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
 
                         <div className="flex items-center gap-1 shrink-0">
                           {/* Preview Button */}
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="small"
                             onClick={() => setPreviewModalDoc(doc)}
-                            className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg h-auto"
                             title="Preview Document"
                           >
                             <Eye className="w-4 h-4" />
-                          </button>
+                          </Button>
 
                           {/* Delete Button */}
                           {!isReadOnly && (
-                            <button
+                            <Button
                               type="button"
+                              variant="ghost"
+                              size="small"
                               onClick={() => handleDelete(doc.id, slot.type)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg h-auto"
                               title="Delete & Re-upload"
                             >
                               <Trash2 className="w-4 h-4" />
-                            </button>
+                            </Button>
                           )}
                         </div>
                       </div>
@@ -529,7 +533,7 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
                 <img
                   src={previewModalDoc.preview_url}
                   alt="Preview"
-                  className="max-h-[450px] max-w-full rounded-xl object-contain shadow-sm border border-slate-200"
+                  className="max-h-[450px] max-w-full rounded-xl object-contain shadow-xs border border-slate-200"
                 />
               )
             ) : (

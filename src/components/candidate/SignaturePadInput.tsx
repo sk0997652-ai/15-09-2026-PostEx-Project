@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { PenTool, Eraser, RotateCcw, Type, Check, ShieldCheck } from 'lucide-react';
+import { Button, Input } from '../ui';
 
 export interface SignaturePadInputProps {
   id?: string;
@@ -258,7 +259,7 @@ export const SignaturePadInput: React.FC<SignaturePadInputProps> = ({
               onClick={() => setMode('draw')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 mode === 'draw'
-                  ? 'bg-white text-indigo-700 shadow-2xs'
+                  ? 'bg-white text-indigo-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -271,7 +272,7 @@ export const SignaturePadInput: React.FC<SignaturePadInputProps> = ({
               onClick={() => setMode('type')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 mode === 'type'
-                  ? 'bg-white text-indigo-700 shadow-2xs'
+                  ? 'bg-white text-indigo-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -315,27 +316,31 @@ export const SignaturePadInput: React.FC<SignaturePadInputProps> = ({
 
           {/* Action Toolbar */}
           {!disabled && (
-            <div className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-white/90 backdrop-blur-xs p-1 rounded-lg border border-slate-200 shadow-2xs">
-              <button
+            <div className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-white/90 backdrop-blur-xs p-1 rounded-lg border border-slate-200 shadow-xs">
+              <Button
                 type="button"
+                variant="ghost"
+                size="small"
                 id={`${id}-undo-btn`}
                 onClick={undo}
                 disabled={!hasDrawn}
-                className="p-1.5 text-slate-500 hover:text-slate-800 rounded disabled:opacity-30 cursor-pointer transition-colors"
+                className="p-1.5 h-auto text-slate-500 hover:text-slate-800 disabled:opacity-30"
                 title="Undo last stroke"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="ghost"
+                size="small"
                 id={`${id}-clear-btn`}
                 onClick={clear}
                 disabled={!hasDrawn}
-                className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded disabled:opacity-30 cursor-pointer transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1 h-auto text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-30"
               >
                 <Eraser className="w-3.5 h-3.5" />
                 <span>Clear</span>
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -343,17 +348,17 @@ export const SignaturePadInput: React.FC<SignaturePadInputProps> = ({
         /* TYPE SIGNATURE MODE */
         <div className="space-y-3">
           <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-            <input
+            <Input
               type="text"
               id={`${id}-typed-input`}
               disabled={disabled}
               value={typedName}
               onChange={(e) => handleTypedChange(e.target.value)}
               placeholder="Type your full legal name"
-              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-xl font-serif italic text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-70 shadow-2xs"
+              className="text-xl font-serif italic text-slate-900"
             />
             {typedName && (
-              <div className="mt-3 p-3 bg-white rounded-xl border border-indigo-100 flex items-center justify-between">
+              <div className="mt-3 p-3 bg-white rounded-lg border border-indigo-100 flex items-center justify-between">
                 <span className="text-2xl font-serif italic font-bold text-indigo-900 select-none">
                   {typedName}
                 </span>

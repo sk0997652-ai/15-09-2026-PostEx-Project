@@ -12,6 +12,7 @@ import {
   Sliders,
   Layers,
   Sparkles,
+  X,
 } from 'lucide-react';
 import { formBuilderApi } from '../../lib/formBuilderApi';
 import {
@@ -22,6 +23,7 @@ import {
   FormTemplateItem,
 } from '../../types/formTemplates';
 import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
+import { Button, Input, Select, Textarea } from '../ui';
 
 export const FormBuilderModule: React.FC = () => {
   const [selectedTrack, setSelectedTrack] = useState<CandidateTrack>('executive');
@@ -316,7 +318,7 @@ export const FormBuilderModule: React.FC = () => {
       {/* Action Notification */}
       {actionMessage && (
         <div
-          className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-medium ${
+          className={`p-3.5 rounded-lg border flex items-center justify-between text-xs font-medium ${
             actionMessage.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
               : 'bg-rose-50 border-rose-200 text-rose-800'
@@ -339,7 +341,7 @@ export const FormBuilderModule: React.FC = () => {
       {/* Track Overview Card */}
       <div className="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold">
             <FileText className="w-5 h-5" />
           </div>
           <div>
@@ -360,23 +362,25 @@ export const FormBuilderModule: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
             id="btn-add-section"
+            variant="primary"
+            size="small"
             onClick={() => setSectionModal({ open: true, title: '', description: '' })}
-            className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            leftIcon={<Plus className="w-3.5 h-3.5" />}
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Section</span>
-          </button>
-          <button
+            Add Section
+          </Button>
+          <Button
             id="btn-reset-defaults"
+            variant="secondary"
+            size="small"
             onClick={handleInitiateReset}
             title="Reset to official company physical form seed"
-            className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            leftIcon={<RotateCcw className="w-3.5 h-3.5 text-slate-500" />}
           >
-            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-            <span>Reset Defaults</span>
-          </button>
+            Reset Defaults
+          </Button>
         </div>
       </div>
 
@@ -402,23 +406,27 @@ export const FormBuilderModule: React.FC = () => {
                 <span className="text-[11px] font-mono text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200">
                   {section.fields.length} {section.fields.length === 1 ? 'field' : 'fields'}
                 </span>
-                <button
+                <Button
                   id={`btn-add-field-${section.id}`}
+                  variant="outline"
+                  size="small"
                   onClick={() => handleOpenAddField(section.id)}
-                  className="px-2.5 py-1 rounded-md bg-white border border-indigo-200 hover:bg-indigo-50 text-indigo-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                  leftIcon={<Plus className="w-3 h-3" />}
+                  className="bg-white border-indigo-200 hover:bg-indigo-50 text-indigo-700"
                 >
-                  <Plus className="w-3 h-3" />
-                  <span>Add Field</span>
-                </button>
-                <button
+                  Add Field
+                </Button>
+                <Button
                   id={`btn-delete-section-${section.id}`}
+                  variant="ghost"
+                  size="small"
                   onClick={() => handleInitiateDeleteSection(section)}
-                  className="px-2.5 py-1 rounded-md bg-white border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                  leftIcon={<Trash2 className="w-3 h-3 text-rose-500" />}
+                  className="bg-white border border-rose-200 hover:bg-rose-50 text-rose-600"
                   title="Delete entire section and all its fields"
                 >
-                  <Trash2 className="w-3 h-3 text-red-500" />
-                  <span>Delete Section</span>
-                </button>
+                  Delete Section
+                </Button>
               </div>
             </div>
 
@@ -515,142 +523,121 @@ export const FormBuilderModule: React.FC = () => {
               <h3 className="text-sm font-bold text-slate-900">
                 {fieldModal.mode === 'create' ? 'Add New Form Field' : 'Edit Form Field'}
               </h3>
-              <button
+              <Button
+                variant="ghost"
+                size="small"
                 onClick={() => setFieldModal((prev) => ({ ...prev, open: false }))}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer"
+                className="p-1 h-auto text-slate-400 hover:text-slate-600 rounded-lg"
               >
-                &times;
-              </button>
+                <X className="w-4 h-4" />
+              </Button>
             </div>
 
             <form onSubmit={handleSaveField} className="space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Field Label <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  id="input-field-label"
-                  type="text"
-                  required
-                  placeholder="e.g. Driving License Number"
-                  value={fieldModal.form.label}
+              <Input
+                id="input-field-label"
+                label="Field Label *"
+                type="text"
+                required
+                placeholder="e.g. Driving License Number"
+                value={fieldModal.form.label}
+                onChange={(e) =>
+                  setFieldModal({
+                    ...fieldModal,
+                    form: {
+                      ...fieldModal.form,
+                      label: e.target.value,
+                      field_key:
+                        fieldModal.mode === 'create' && !fieldModal.form.field_key
+                          ? e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '_')
+                          : fieldModal.form.field_key,
+                    },
+                  })
+                }
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <Select
+                  id="select-field-type"
+                  label="Field Type"
+                  value={fieldModal.form.field_type}
                   onChange={(e) =>
                     setFieldModal({
                       ...fieldModal,
-                      form: {
-                        ...fieldModal.form,
-                        label: e.target.value,
-                        field_key:
-                          fieldModal.mode === 'create' && !fieldModal.form.field_key
-                            ? e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '_')
-                            : fieldModal.form.field_key,
-                      },
+                      form: { ...fieldModal.form, field_type: e.target.value as FormFieldType },
                     })
                   }
-                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                >
+                  <option value="text">Single-line Text</option>
+                  <option value="number">Number</option>
+                  <option value="date">Date Picker</option>
+                  <option value="dropdown">Dropdown Options</option>
+                  <option value="yes_no">Yes / No Switch</option>
+                  <option value="textarea">Multi-line Textarea</option>
+                  <option value="repeatable_table">Repeatable Data Table</option>
+                  <option value="signature">Candidate Signature</option>
+                </Select>
+
+                <Input
+                  id="input-field-key"
+                  label="Field Key (Unique Identifier) *"
+                  type="text"
+                  required
+                  placeholder="e.g. driving_license_no"
+                  value={fieldModal.form.field_key}
+                  onChange={(e) =>
+                    setFieldModal({
+                      ...fieldModal,
+                      form: { ...fieldModal.form, field_key: e.target.value },
+                    })
+                  }
+                  className="font-mono"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Field Type</label>
-                  <select
-                    id="select-field-type"
-                    value={fieldModal.form.field_type}
-                    onChange={(e) =>
-                      setFieldModal({
-                        ...fieldModal,
-                        form: { ...fieldModal.form, field_type: e.target.value as FormFieldType },
-                      })
-                    }
-                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                  >
-                    <option value="text">Single-line Text</option>
-                    <option value="number">Number</option>
-                    <option value="date">Date Picker</option>
-                    <option value="dropdown">Dropdown Options</option>
-                    <option value="yes_no">Yes / No Switch</option>
-                    <option value="textarea">Multi-line Textarea</option>
-                    <option value="repeatable_table">Repeatable Data Table</option>
-                    <option value="signature">Candidate Signature</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Field Key (Unique Identifier)</label>
-                  <input
-                    id="input-field-key"
-                    type="text"
-                    required
-                    placeholder="e.g. driving_license_no"
-                    value={fieldModal.form.field_key}
-                    onChange={(e) =>
-                      setFieldModal({
-                        ...fieldModal,
-                        form: { ...fieldModal.form, field_key: e.target.value },
-                      })
-                    }
-                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                  />
-                </div>
               </div>
 
               {fieldModal.form.field_type === 'dropdown' && (
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Dropdown Options (Comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Male, Female, Other"
-                    value={fieldModal.form.optionsString}
-                    onChange={(e) =>
-                      setFieldModal({
-                        ...fieldModal,
-                        form: { ...fieldModal.form, optionsString: e.target.value },
-                      })
-                    }
-                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                  />
-                </div>
-              )}
-
-              {fieldModal.form.field_type === 'yes_no' && (
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Conditional Details Label (if "Yes" is selected)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. If yes, please specify relative details"
-                    value={fieldModal.form.conditional_label}
-                    onChange={(e) =>
-                      setFieldModal({
-                        ...fieldModal,
-                        form: { ...fieldModal.form, conditional_label: e.target.value },
-                      })
-                    }
-                    className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Placeholder Text (Optional)</label>
-                <input
-                  id="input-field-placeholder"
+                <Input
+                  label="Dropdown Options (Comma separated)"
                   type="text"
-                  placeholder="e.g. Enter registered engine number"
-                  value={fieldModal.form.placeholder}
+                  placeholder="e.g. Male, Female, Other"
+                  value={fieldModal.form.optionsString}
                   onChange={(e) =>
                     setFieldModal({
                       ...fieldModal,
-                      form: { ...fieldModal.form, placeholder: e.target.value },
+                      form: { ...fieldModal.form, optionsString: e.target.value },
                     })
                   }
-                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                 />
-              </div>
+              )}
+
+              {fieldModal.form.field_type === 'yes_no' && (
+                <Input
+                  label='Conditional Details Label (if "Yes" is selected)'
+                  type="text"
+                  placeholder="e.g. If yes, please specify relative details"
+                  value={fieldModal.form.conditional_label}
+                  onChange={(e) =>
+                    setFieldModal({
+                      ...fieldModal,
+                      form: { ...fieldModal.form, conditional_label: e.target.value },
+                    })
+                  }
+                />
+              )}
+
+              <Input
+                id="input-field-placeholder"
+                label="Placeholder Text (Optional)"
+                type="text"
+                placeholder="e.g. Enter registered engine number"
+                value={fieldModal.form.placeholder}
+                onChange={(e) =>
+                  setFieldModal({
+                    ...fieldModal,
+                    form: { ...fieldModal.form, placeholder: e.target.value },
+                  })
+                }
+              />
 
               <div className="pt-2">
                 <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-700">
@@ -671,21 +658,21 @@ export const FormBuilderModule: React.FC = () => {
               </div>
 
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
-                <button
+                <Button
                   id="btn-cancel-field"
                   type="button"
+                  variant="secondary"
                   onClick={() => setFieldModal((prev) => ({ ...prev, open: false }))}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-semibold cursor-pointer hover:bg-slate-50 transition-colors"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   id="btn-save-field"
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold cursor-pointer shadow-xs transition-colors"
+                  variant="primary"
                 >
                   {fieldModal.mode === 'create' ? 'Create Field' : 'Save Changes'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -698,55 +685,51 @@ export const FormBuilderModule: React.FC = () => {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-sm font-bold text-slate-900">Add New Section</h3>
-              <button
+              <Button
+                variant="ghost"
+                size="small"
                 onClick={() => setSectionModal({ open: false, title: '', description: '' })}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer"
+                className="p-1 h-auto text-slate-400 hover:text-slate-600 rounded-lg"
               >
-                &times;
-              </button>
+                <X className="w-4 h-4" />
+              </Button>
             </div>
 
             <form onSubmit={handleSaveSection} className="space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Section Title *</label>
-                <input
-                  id="input-section-title"
-                  type="text"
-                  required
-                  placeholder="e.g. Additional Certifications"
-                  value={sectionModal.title}
-                  onChange={(e) => setSectionModal({ ...sectionModal, title: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                />
-              </div>
+              <Input
+                id="input-section-title"
+                label="Section Title *"
+                type="text"
+                required
+                placeholder="e.g. Additional Certifications"
+                value={sectionModal.title}
+                onChange={(e) => setSectionModal({ ...sectionModal, title: e.target.value })}
+              />
 
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Description / Subtitle</label>
-                <textarea
-                  id="input-section-desc"
-                  rows={2}
-                  placeholder="Brief guidance for candidates filling this section..."
-                  value={sectionModal.description}
-                  onChange={(e) => setSectionModal({ ...sectionModal, description: e.target.value })}
-                  className="w-full p-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
-                />
-              </div>
+              <Textarea
+                id="input-section-desc"
+                label="Description / Subtitle"
+                rows={2}
+                placeholder="Brief guidance for candidates filling this section..."
+                value={sectionModal.description}
+                onChange={(e) => setSectionModal({ ...sectionModal, description: e.target.value })}
+              />
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={() => setSectionModal({ open: false, title: '', description: '' })}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-semibold cursor-pointer hover:bg-slate-50 transition-colors"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   id="btn-create-section-submit"
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold cursor-pointer shadow-xs transition-colors"
+                  variant="primary"
                 >
                   Create Section
-                </button>
+                </Button>
               </div>
             </form>
           </div>

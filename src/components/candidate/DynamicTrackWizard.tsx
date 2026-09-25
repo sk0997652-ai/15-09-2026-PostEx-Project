@@ -516,7 +516,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                     setCurrentSectionIndex(idx);
                   }
                 }}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
                   isCurrent
                     ? 'bg-indigo-600 text-white shadow-xs'
                     : isCompleted
@@ -543,7 +543,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
           {/* Document Upload Tab */}
           <button
             onClick={() => setCurrentSectionIndex(docsStepIndex)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
               isCurrentDocsStep
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : currentSectionIndex > docsStepIndex
@@ -558,7 +558,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
           {/* Sign & Submit Tab */}
           <button
             onClick={() => setCurrentSectionIndex(signStepIndex)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
               isCurrentSignStep
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
@@ -772,7 +772,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3 max-w-sm">
                         <label
-                          className={`flex items-center justify-center gap-2 h-11 sm:h-12 px-4 rounded-xl border text-sm font-bold cursor-pointer transition-all shadow-2xs ${
+                          className={`flex items-center justify-center gap-2 h-11 sm:h-12 px-4 rounded-lg border text-sm font-bold cursor-pointer transition-all shadow-xs ${
                             fieldValue === 'yes' || (typeof fieldValue === 'object' && fieldValue.answer === 'yes')
                               ? 'bg-indigo-50 border-indigo-600 text-indigo-900 ring-2 ring-indigo-500/20'
                               : 'bg-slate-50 border-slate-300 text-slate-700 hover:bg-slate-100'
@@ -801,7 +801,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                         </label>
 
                         <label
-                          className={`flex items-center justify-center gap-2 h-11 sm:h-12 px-4 rounded-xl border text-sm font-bold cursor-pointer transition-all shadow-2xs ${
+                          className={`flex items-center justify-center gap-2 h-11 sm:h-12 px-4 rounded-lg border text-sm font-bold cursor-pointer transition-all shadow-xs ${
                             fieldValue === 'no' || (typeof fieldValue === 'object' && fieldValue.answer === 'no')
                               ? 'bg-indigo-50 border-indigo-600 text-indigo-900 ring-2 ring-indigo-500/20'
                               : 'bg-slate-50 border-slate-300 text-slate-700 hover:bg-slate-100'
@@ -888,8 +888,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                                   </td>
                                   {field.table_columns?.map((col) => (
                                     <td key={col.key} className="p-2.5">
-                                      <input
-                                        type="text"
+                                      <Input
                                         disabled={isLocked}
                                         value={row[col.key] || ''}
                                         placeholder={`Enter ${col.label.toLowerCase()}`}
@@ -902,7 +901,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                                             e.target.value
                                           )
                                         }
-                                        className="w-full h-10 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-600"
+                                        className="h-10 text-sm"
                                       />
                                     </td>
                                   ))}
@@ -953,7 +952,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
 
                   {/* 8. LEGAL DECLARATION CHECKBOX */}
                   {field.field_type === 'declaration' && (
-                    <div className="p-4 rounded-xl bg-slate-50 border border-slate-300 space-y-3">
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-300 space-y-3">
                       <label className="flex items-start gap-3 cursor-pointer">
                         <input
                           type="checkbox"

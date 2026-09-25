@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useId, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   MapPin,
   Users,
@@ -11,18 +11,10 @@ import {
   Shield,
   CheckCircle2,
   AlertTriangle,
-  ArrowRightLeft,
-  KeyRound,
-  UserPlus,
-  RefreshCw,
-  Copy,
-  Check,
   LogOut,
   Sparkles,
   BarChart3,
   Layers,
-  Lock,
-  Edit,
 } from 'lucide-react';
 import {
   getZonalMetrics,
@@ -40,11 +32,18 @@ import {
   CentralHrStaffMember,
 } from '../lib/zonalHrApi';
 import { DeleteConfirmationModal } from './common/DeleteConfirmationModal';
-import { ZoneOverviewView } from './zonal/ZoneOverviewView';
-import { ZoneStaffView } from './zonal/ZoneStaffView';
-import { ApplicationsPipelineView } from './zonal/ApplicationsPipelineView';
-import { ZoneAnalyticsView } from './zonal/ZoneAnalyticsView';
-import { Modal, Button, Input, Select, Textarea } from './ui';
+import {
+  ZoneOverviewView,
+  ZoneStaffView,
+  ApplicationsPipelineView,
+  ZoneAnalyticsView,
+  AddStaffModal,
+  EditStaffModal,
+  PasswordRevealModal,
+  ReassignModal,
+  OverrideDecisionModal,
+} from './zonal';
+import { Button } from './ui';
 
 interface ZonalHrDashboardProps {
   currentUser: {
@@ -85,7 +84,6 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
     email: string;
     password: string;
   } | null>(null);
-  const [copiedPassword, setCopiedPassword] = useState(false);
 
   // Edit Staff modal
   const [editStaffModal, setEditStaffModal] = useState<{
@@ -157,12 +155,6 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
   const [appPage, setAppPage] = useState(1);
   const [appTotalPages, setAppTotalPages] = useState(1);
   const [appTotalCount, setAppTotalCount] = useState(0);
-
-  // Unique IDs for accessibility
-  const staffRoleSelectId = useId();
-  const staffBranchSelectId = useId();
-  const reassignSelectId = useId();
-  const overrideSelectId = useId();
 
   // Load Dashboard Data
   const loadDashboardData = async () => {
@@ -458,12 +450,6 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedPassword(true);
-    setTimeout(() => setCopiedPassword(false), 2000);
-  };
-
   const zoneDisplayName = metrics?.zoneName || zoneInfo?.name || 'Assigned Zone';
 
   return (
@@ -473,16 +459,16 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
         {/* Zonal Header / Scope Identity */}
         <div className="p-5 border-b border-slate-800">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-teal-500/20 border border-teal-400/40 flex items-center justify-center text-teal-400">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-400">
               <MapPin className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-semibold text-teal-400">Zonal Operations</div>
+              <div className="text-xs font-semibold text-indigo-400">Zonal Operations</div>
               <div className="text-sm font-bold text-white truncate">{zoneDisplayName}</div>
             </div>
           </div>
-          <div className="mt-3 text-[11px] text-slate-400 flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700/60">
-            <Shield className="w-3.5 h-3.5 text-teal-400" />
+          <div className="mt-3 text-[11px] text-slate-400 flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60">
+            <Shield className="w-3.5 h-3.5 text-indigo-400" />
             <span>RLS Zone-Scoped Access</span>
           </div>
         </div>
@@ -494,7 +480,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
             onClick={() => setActiveTab('overview')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'overview'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
@@ -507,7 +493,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
             onClick={() => setActiveTab('staff')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'staff'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
@@ -525,7 +511,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
             onClick={() => setActiveTab('applications')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'applications'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
@@ -543,7 +529,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
             onClick={() => setActiveTab('reports')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'reports'
-                ? 'bg-indigo-600 text-white shadow-sm'
+                ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
@@ -686,367 +672,73 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
       </main>
 
       {/* MODAL 1: ADD ZONE STAFF */}
-      {showAddStaffModal && (
-        <Modal
-          isOpen={showAddStaffModal}
-          onClose={() => setShowAddStaffModal(false)}
-          title="Create Zone Staff Account"
-          description={`Scoped to ${zoneDisplayName}`}
-          size="md"
-        >
-          <form onSubmit={handleCreateStaff} className="space-y-4">
-            <div>
-              <Select
-                id={staffRoleSelectId}
-                label="Role in Zone *"
-                value={newStaffRole}
-                onChange={(e) => setNewStaffRole(e.target.value as any)}
-                options={[
-                  { value: 'central_hr', label: 'Central HR (Review & Dossier Approval)' },
-                  { value: 'branch_manager', label: 'Branch Manager (In-Person Verification)' },
-                ]}
-                helperText="* Zonal HR is authorized to provision Central HR and Branch Managers only."
-              />
-            </div>
-
-            {newStaffRole === 'branch_manager' && (
-              <div>
-                <Select
-                  id={staffBranchSelectId}
-                  label={`Branch in ${zoneDisplayName} *`}
-                  value={newStaffBranchId}
-                  onChange={(e) => setNewStaffBranchId(e.target.value)}
-                  required
-                  options={zoneBranches.map((br) => ({ value: br.id, label: br.name }))}
-                />
-              </div>
-            )}
-
-            <div>
-              <Input
-                id="zonal-new-staff-name"
-                label="Full Name *"
-                type="text"
-                required
-                value={newStaffName}
-                onChange={(e) => setNewStaffName(e.target.value)}
-                placeholder="e.g. Usman Tariq"
-              />
-            </div>
-
-            <div>
-              <Input
-                id="zonal-new-staff-email"
-                label="Email Address *"
-                type="email"
-                required
-                value={newStaffEmail}
-                onChange={(e) => setNewStaffEmail(e.target.value)}
-                placeholder="e.g. usman.tariq@postex.pk"
-              />
-            </div>
-
-            <div>
-              <Input
-                id="zonal-new-staff-phone"
-                label="Phone Number (Optional)"
-                type="text"
-                value={newStaffPhone}
-                onChange={(e) => setNewStaffPhone(e.target.value)}
-                placeholder="e.g. 03001234567"
-              />
-            </div>
-
-            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-[11px] text-slate-600 flex items-start gap-2">
-              <Lock className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
-              <span>
-                A random 14-character password meeting company policy will be generated. The user will be required to change it on their first login.
-              </span>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setShowAddStaffModal(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                id="zonal-submit-create-staff-btn"
-                type="submit"
-                variant="primary"
-                disabled={creatingStaff}
-                isLoading={creatingStaff}
-              >
-                Generate Credentials
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      )}
+      <AddStaffModal
+        isOpen={showAddStaffModal}
+        onClose={() => setShowAddStaffModal(false)}
+        zoneDisplayName={zoneDisplayName}
+        zoneBranches={zoneBranches}
+        newStaffRole={newStaffRole}
+        setNewStaffRole={setNewStaffRole}
+        newStaffBranchId={newStaffBranchId}
+        setNewStaffBranchId={setNewStaffBranchId}
+        newStaffName={newStaffName}
+        setNewStaffName={setNewStaffName}
+        newStaffEmail={newStaffEmail}
+        setNewStaffEmail={setNewStaffEmail}
+        newStaffPhone={newStaffPhone}
+        setNewStaffPhone={setNewStaffPhone}
+        creatingStaff={creatingStaff}
+        onSubmit={handleCreateStaff}
+      />
 
       {/* MODAL 1b: EDIT ZONE STAFF */}
-      {editStaffModal.isOpen && (
-        <Modal
-          isOpen={editStaffModal.isOpen}
-          onClose={() => setEditStaffModal((prev) => ({ ...prev, isOpen: false }))}
-          title="Edit Zone Staff Member"
-          description={editStaffModal.email}
-          size="md"
-        >
-          <form onSubmit={handleSaveEditStaff} className="space-y-4">
-            <div>
-              <Input
-                id="zonal-edit-staff-name"
-                label="Full Name *"
-                type="text"
-                required
-                value={editStaffModal.name}
-                onChange={(e) => setEditStaffModal({ ...editStaffModal, name: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Select
-                id="zonal-edit-staff-role"
-                label="Role Track *"
-                value={editStaffModal.roleName}
-                onChange={(e) =>
-                  setEditStaffModal({
-                    ...editStaffModal,
-                    roleName: e.target.value as 'central_hr' | 'branch_manager',
-                  })
-                }
-                options={[
-                  { value: 'central_hr', label: 'Central HR (Reviewer)' },
-                  { value: 'branch_manager', label: 'Branch Manager (Verification)' },
-                ]}
-              />
-            </div>
-
-            <div>
-              <Select
-                id="zonal-edit-staff-branch"
-                label={editStaffModal.roleName === 'branch_manager' ? 'Branch Hub Assignment *' : 'Branch Hub Assignment (Optional)'}
-                value={editStaffModal.branchId}
-                onChange={(e) => setEditStaffModal({ ...editStaffModal, branchId: e.target.value })}
-                options={[
-                  ...(editStaffModal.roleName === 'central_hr'
-                    ? [{ value: '', label: 'Zone-Wide HQ (No specific branch)' }]
-                    : []),
-                  ...zoneBranches.map((br) => ({ value: br.id, label: br.name })),
-                ]}
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setEditStaffModal((prev) => ({ ...prev, isOpen: false }))}
-              >
-                Cancel
-              </Button>
-              <Button
-                id="zonal-save-edit-staff-btn"
-                type="submit"
-                variant="primary"
-                disabled={editStaffModal.submitting}
-                isLoading={editStaffModal.submitting}
-              >
-                Save Changes
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      )}
+      <EditStaffModal
+        isOpen={editStaffModal.isOpen}
+        onClose={() => setEditStaffModal((prev) => ({ ...prev, isOpen: false }))}
+        staffData={editStaffModal}
+        setStaffData={setEditStaffModal}
+        zoneBranches={zoneBranches}
+        onSubmit={handleSaveEditStaff}
+      />
 
       {/* MODAL 2: ONE-TIME PASSWORD REVEAL */}
-      {createdPasswordModal?.isOpen && (
-        <Modal
+      {createdPasswordModal && (
+        <PasswordRevealModal
           isOpen={createdPasswordModal.isOpen}
           onClose={() => setCreatedPasswordModal(null)}
-          title="One-Time Credentials Generated"
-          size="md"
-        >
-          <div className="text-center">
-            <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
-              <KeyRound className="w-6 h-6" />
-            </div>
-            <p className="text-xs text-slate-600">
-              Provide these temporary credentials to <strong>{createdPasswordModal.staffName}</strong>.
-            </p>
-          </div>
-
-          <div className="mt-5 space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
-            <div>
-              <span className="text-[10px] font-bold uppercase text-slate-400">Email Address</span>
-              <div className="text-xs font-mono font-bold text-slate-800">{createdPasswordModal.email}</div>
-            </div>
-
-            <div>
-              <span className="text-[10px] font-bold uppercase text-slate-400">Temporary Password</span>
-              <div className="flex items-center justify-between mt-1 p-2.5 rounded-lg bg-white border border-slate-300 font-mono text-xs font-bold text-slate-900">
-                <span className="select-all tracking-wider">{createdPasswordModal.password}</span>
-                <button
-                  id="zonal-copy-pwd-btn"
-                  onClick={() => copyToClipboard(createdPasswordModal.password)}
-                  className="flex items-center gap-1 px-2 py-1 text-[11px] rounded bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
-                >
-                  {copiedPassword ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedPassword ? 'Copied' : 'Copy'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-800 flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-            <span>
-              <strong>Mandatory Password Change:</strong> This password is valid only for the initial sign-in. The user will be prompted to choose a new password immediately upon login.
-            </span>
-          </div>
-
-          <Button
-            id="zonal-close-pwd-modal-btn"
-            variant="primary"
-            className="mt-5 w-full"
-            onClick={() => setCreatedPasswordModal(null)}
-          >
-            Done &amp; Dismiss
-          </Button>
-        </Modal>
+          staffName={createdPasswordModal.staffName}
+          email={createdPasswordModal.email}
+          password={createdPasswordModal.password}
+        />
       )}
 
       {/* MODAL 3: REASSIGNMENT MODAL */}
-      {reassignModal.isOpen && (
-        <Modal
-          isOpen={reassignModal.isOpen}
-          onClose={() => setReassignModal((prev) => ({ ...prev, isOpen: false }))}
-          title="Reassign Candidate Application"
-          description={`Zone: ${zoneDisplayName}`}
-          size="md"
-        >
-          <form onSubmit={handleExecuteReassignment} className="space-y-4">
-            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-              <div className="text-xs font-bold text-slate-900">
-                {reassignModal.application?.candidate?.full_name}
-              </div>
-              <div className="text-[11px] text-slate-500 font-mono">
-                ID: {reassignModal.application?.candidate?.joining_id} &bull; Current:{' '}
-                {reassignModal.application?.assigned_central_hr_name}
-              </div>
-            </div>
-
-            <div>
-              <Select
-                id={reassignSelectId}
-                label="Target Central HR Staff *"
-                value={reassignModal.targetHrId}
-                onChange={(e) => setReassignModal((prev) => ({ ...prev, targetHrId: e.target.value }))}
-                required
-                options={centralHrList.map((hr) => ({
-                  value: hr.id,
-                  label: `${hr.name} (${hr.email})`,
-                }))}
-              />
-            </div>
-
-            <div>
-              <Textarea
-                id="zonal-reassign-reason"
-                label="Reassignment Reason / Note"
-                rows={3}
-                value={reassignModal.reason}
-                onChange={(e) => setReassignModal((prev) => ({ ...prev, reason: e.target.value }))}
-                placeholder="e.g. Workload balancing across Central HR team..."
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setReassignModal((prev) => ({ ...prev, isOpen: false }))}
-              >
-                Cancel
-              </Button>
-              <Button
-                id="zonal-submit-reassign-btn"
-                type="submit"
-                variant="primary"
-                disabled={reassignModal.submitting}
-                isLoading={reassignModal.submitting}
-              >
-                Confirm Reassignment
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      )}
+      <ReassignModal
+        isOpen={reassignModal.isOpen}
+        onClose={() => setReassignModal((prev) => ({ ...prev, isOpen: false }))}
+        zoneDisplayName={zoneDisplayName}
+        application={reassignModal.application}
+        targetHrId={reassignModal.targetHrId}
+        setTargetHrId={(targetHrId) => setReassignModal((prev) => ({ ...prev, targetHrId }))}
+        reason={reassignModal.reason}
+        setReason={(reason) => setReassignModal((prev) => ({ ...prev, reason }))}
+        centralHrList={centralHrList}
+        submitting={reassignModal.submitting}
+        onSubmit={handleExecuteReassignment}
+      />
 
       {/* MODAL 4: OVERRIDE DECISION HOOK */}
-      {overrideModal.isOpen && (
-        <Modal
-          isOpen={overrideModal.isOpen}
-          onClose={() => setOverrideModal((prev) => ({ ...prev, isOpen: false }))}
-          title="Zonal HR Override Decision"
-          description={`Candidate: ${overrideModal.application?.candidate?.full_name}`}
-          size="md"
-        >
-          <form onSubmit={handleExecuteOverrideDecision} className="space-y-4">
-            <div>
-              <Select
-                id={overrideSelectId}
-                label="Override Decision *"
-                value={overrideModal.decision}
-                onChange={(e) => setOverrideModal((prev) => ({ ...prev, decision: e.target.value as any }))}
-                options={[
-                  { value: 'approved', label: 'Approve Application (Final Approval)' },
-                  { value: 'correction_needed', label: 'Return for Candidate Correction' },
-                  { value: 'rejected', label: 'Reject Application' },
-                ]}
-              />
-            </div>
-
-            <div>
-              <Textarea
-                id="zonal-override-reason"
-                label="Mandatory Justification / Reason *"
-                required
-                rows={4}
-                value={overrideModal.reason}
-                onChange={(e) => setOverrideModal((prev) => ({ ...prev, reason: e.target.value }))}
-                placeholder="State the justification for this Zonal HR override decision (logged into permanent audit trail)..."
-              />
-            </div>
-
-            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-[11px] text-slate-600">
-              This action is recorded in the permanent audit trail and overrides any pending reviewer stages.
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setOverrideModal((prev) => ({ ...prev, isOpen: false }))}
-              >
-                Cancel
-              </Button>
-              <Button
-                id="zonal-submit-override-btn"
-                type="submit"
-                variant="primary"
-                disabled={overrideModal.submitting}
-                isLoading={overrideModal.submitting}
-              >
-                Execute Override
-              </Button>
-            </div>
-          </form>
-        </Modal>
-      )}
+      <OverrideDecisionModal
+        isOpen={overrideModal.isOpen}
+        onClose={() => setOverrideModal((prev) => ({ ...prev, isOpen: false }))}
+        application={overrideModal.application}
+        decision={overrideModal.decision}
+        setDecision={(decision) => setOverrideModal((prev) => ({ ...prev, decision }))}
+        reason={overrideModal.reason}
+        setReason={(reason) => setOverrideModal((prev) => ({ ...prev, reason }))}
+        submitting={overrideModal.submitting}
+        onSubmit={handleExecuteOverrideDecision}
+      />
 
       {/* Dedicated Confirmation Modal for Password Regeneration & Staff Status Toggle */}
       {confirmActionModal.staff && (

@@ -9,42 +9,22 @@ import {
   ClipboardList,
   CheckCircle2,
   AlertCircle,
-  XCircle,
-  RotateCcw,
-  Search,
-  Filter,
-  FileText,
   UserCheck,
   Building2,
-  Phone,
-  Mail,
   Shield,
-  Clock,
-  Eye,
-  Check,
-  ChevronRight,
-  AlertTriangle,
-  Send,
-  Download,
-  Printer,
-  ChevronLeft,
-  X,
-  Lock,
-  Unlock,
-  KeyRound,
-  FileCheck,
   LogOut,
-  RefreshCw,
-  BadgeAlert,
   IdCard,
+  X,
 } from 'lucide-react';
-import { CentralOverviewView } from './central/CentralOverviewView';
-import { CreateJoinerView } from './central/CreateJoinerView';
-import { ReviewQueueView } from './central/ReviewQueueView';
-import { EnrolledRosterView } from './central/EnrolledRosterView';
-import { DossierModal } from './central/DossierModal';
-import { DecisionActionModal } from './central/DecisionActionModal';
-import { PdfDossierModal } from './central/PdfDossierModal';
+import {
+  CentralOverviewView,
+  CreateJoinerView,
+  ReviewQueueView,
+  EnrolledRosterView,
+  DossierModal,
+  DecisionActionModal,
+  PdfDossierModal,
+} from './central';
 
 interface CentralHrDashboardProps {
   currentUser: {
@@ -710,11 +690,11 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <UserCheck className="w-4 h-4 text-teal-400" />
+                <UserCheck className="w-4 h-4 text-indigo-400" />
                 <span>Enrolled Employees</span>
               </div>
               {metrics && metrics.enrolledCount > 0 && (
-                <span className="bg-slate-800 text-teal-300 text-[10px] px-2 py-0.5 rounded-full border border-teal-500/30">
+                <span className="bg-slate-800 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/30">
                   {metrics.enrolledCount}
                 </span>
               )}
@@ -747,28 +727,28 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
       <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
         {/* Global Notifications */}
         {errorMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-start justify-between shadow-xs">
+          <div className="mb-6 p-4 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-start justify-between shadow-xs">
             <div className="flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" />
               <div>
                 <span className="font-bold">Error:</span> {errorMessage}
               </div>
             </div>
-            <button onClick={() => setErrorMessage(null)} className="text-rose-600 hover:text-rose-900">
+            <button onClick={() => setErrorMessage(null)} className="text-rose-600 hover:text-rose-900 cursor-pointer">
               <X className="w-4 h-4" />
             </button>
           </div>
         )}
 
         {successMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-start justify-between shadow-xs">
+          <div className="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-start justify-between shadow-xs">
             <div className="flex items-start gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
               <div>
                 <span className="font-bold">Success:</span> {successMessage}
               </div>
             </div>
-            <button onClick={() => setSuccessMessage(null)} className="text-emerald-600 hover:text-emerald-900">
+            <button onClick={() => setSuccessMessage(null)} className="text-emerald-600 hover:text-emerald-900 cursor-pointer">
               <X className="w-4 h-4" />
             </button>
           </div>

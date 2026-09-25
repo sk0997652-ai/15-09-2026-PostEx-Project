@@ -57,7 +57,9 @@ export interface OrganizationSettings {
   id: string;
   company_name: string;
   portal_name: string;
-  logo_storage_path?: string;
+  logo_storage_path?: string | null;
+  login_bg_storage_path?: string | null;
+  login_tagline?: string | null;
   support_email: string;
   data_retention_days: number;
   auto_archive_enabled: boolean;

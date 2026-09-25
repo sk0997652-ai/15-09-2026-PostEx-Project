@@ -11,6 +11,7 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
+  Building2,
 } from 'lucide-react';
 import {
   signInStaff,
@@ -19,6 +20,8 @@ import {
   signOutStaff,
 } from '../lib/staffAuth';
 import { validateStaffPassword } from '../lib/passwordPolicy';
+import { useBranding } from '../lib/branding';
+import { Button, Input } from './ui';
 
 interface StaffLoginFormProps {
   onLoginSuccess?: () => void;
@@ -26,6 +29,7 @@ interface StaffLoginFormProps {
 }
 
 export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }) => {
+  const { companyName, logoUrl, loginTagline } = useBranding();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -152,11 +156,14 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
   // Password policy live verification for forced change
   const policyCheck = validateStaffPassword(newPassword);
 
-  // Forced Password Change Screen
+  // Forced Password Change Screen (Glass Card)
   if (isForcedChange) {
     return (
-      <div id="staff-forced-password-card" className="bg-white rounded-xl border border-amber-200 p-6 shadow-xs max-w-lg mx-auto">
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+      <div
+        id="staff-forced-password-card"
+        className="backdrop-blur-md bg-white/90 border border-white/60 shadow-xl rounded-2xl p-6 sm:p-8 max-w-lg mx-auto"
+      >
+        <div className="flex items-center gap-3 pb-4 border-b border-slate-200/80">
           <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center">
             <KeyRound className="w-5 h-5" />
           </div>
@@ -181,43 +188,37 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
         )}
 
         <form onSubmit={handleUpdatePassword} className="mt-4 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">New Password</label>
-            <div className="relative">
-              <input
-                id="new-staff-password-input"
-                type={showNewPassword ? 'text' : 'password'}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-                placeholder="Enter new password"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg pr-10 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-              />
+          <Input
+            id="new-staff-password-input"
+            label="New Password"
+            type={showNewPassword ? 'text' : 'password'}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+            placeholder="Enter new password"
+            rightIcon={
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                className="pointer-events-auto text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
-            </div>
-          </div>
+            }
+          />
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Confirm New Password</label>
-            <input
-              id="confirm-staff-password-input"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              placeholder="Re-enter new password"
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-            />
-          </div>
+          <Input
+            id="confirm-staff-password-input"
+            label="Confirm New Password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            placeholder="Re-enter new password"
+          />
 
           {/* Password Policy Live Requirements */}
-          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs space-y-1.5">
+          <div className="p-3 bg-slate-50/80 rounded-lg border border-slate-200 text-xs space-y-1.5">
             <span className="font-semibold text-slate-700 block mb-1">Password Policy Requirements:</span>
             <div className={`flex items-center gap-1.5 ${policyCheck.rules.minLength ? 'text-emerald-700' : 'text-slate-500'}`}>
               <CheckCircle className={`w-3.5 h-3.5 ${policyCheck.rules.minLength ? 'text-emerald-600' : 'text-slate-300'}`} />
@@ -233,24 +234,29 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
             </div>
           </div>
 
-          <button
+          <Button
             id="submit-new-password-btn"
             type="submit"
+            variant="primary"
+            isLoading={isLoading}
             disabled={isLoading || !policyCheck.isValid || newPassword !== confirmPassword}
-            className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="w-full bg-emerald-600 hover:bg-emerald-700"
           >
-            {isLoading ? 'Updating Password...' : 'Save New Password & Continue'}
-          </button>
+            Save New Password &amp; Continue
+          </Button>
         </form>
       </div>
     );
   }
 
-  // Authenticated State View (If already signed in)
+  // Authenticated State View (If already signed in) (Glass Card)
   if (sessionUser && !isForcedChange) {
     return (
-      <div id="staff-auth-session-card" className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs max-w-lg mx-auto">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div
+        id="staff-auth-session-card"
+        className="backdrop-blur-md bg-white/90 border border-white/60 shadow-xl rounded-2xl p-6 sm:p-8 max-w-lg mx-auto"
+      >
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200/80">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
               <UserCheck className="w-5 h-5" />
@@ -260,31 +266,32 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
               <span className="text-xs text-slate-500 font-mono">8-Hour Active Session</span>
             </div>
           </div>
-          <button
+          <Button
             id="staff-logout-btn"
+            variant="secondary"
+            size="small"
             onClick={handleLogout}
             disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
+            leftIcon={<LogOut className="w-3.5 h-3.5" />}
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
-          </button>
+            Sign Out
+          </Button>
         </div>
 
         <div className="mt-4 space-y-2.5 text-xs">
-          <div className="flex justify-between py-1.5 border-b border-slate-50">
+          <div className="flex justify-between py-1.5 border-b border-slate-100">
             <span className="text-slate-500 font-medium">Name</span>
             <span className="text-slate-900 font-semibold">{sessionUser.name}</span>
           </div>
-          <div className="flex justify-between py-1.5 border-b border-slate-50">
+          <div className="flex justify-between py-1.5 border-b border-slate-100">
             <span className="text-slate-500 font-medium">Email</span>
             <span className="text-slate-900 font-mono">{sessionUser.email}</span>
           </div>
-          <div className="flex justify-between py-1.5 border-b border-slate-50">
+          <div className="flex justify-between py-1.5 border-b border-slate-100">
             <span className="text-slate-500 font-medium">Staff ID</span>
             <span className="text-slate-900 font-mono truncate max-w-[200px]">{sessionUser.id}</span>
           </div>
-          <div className="flex justify-between py-1.5 border-b border-slate-50">
+          <div className="flex justify-between py-1.5 border-b border-slate-100">
             <span className="text-slate-500 font-medium">Assigned Role</span>
             <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-mono font-medium uppercase text-[11px] border border-emerald-200">
               {sessionUser.role}
@@ -300,17 +307,18 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
 
         {onLoginSuccess && (
           <div className="mt-5">
-            <button
+            <Button
               onClick={() => onLoginSuccess()}
-              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+              variant="primary"
+              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              rightIcon={<ArrowRight className="w-4 h-4" />}
             >
-              <span>Open Role Dashboard</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+              Open Role Dashboard
+            </Button>
           </div>
         )}
 
-        <div className="mt-4 p-3 rounded-lg bg-emerald-50/70 border border-emerald-200 text-emerald-900 text-xs">
+        <div className="mt-4 p-3 rounded-lg bg-emerald-50/80 border border-emerald-200 text-emerald-900 text-xs">
           <p className="font-medium flex items-center gap-1.5">
             <CheckCircle className="w-4 h-4 text-emerald-600" />
             <span>Identity verified via Supabase Auth</span>
@@ -323,17 +331,29 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
     );
   }
 
-  // Standard Login Screen
+  // Standard Login Screen (Modern Glass Card Layout)
   return (
-    <div id="staff-login-card" className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs max-w-lg mx-auto">
-      <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-        <div className="w-10 h-10 rounded-lg bg-slate-900 text-white flex items-center justify-center">
-          <Shield className="w-5 h-5 text-emerald-400" />
-        </div>
-        <div>
-          <h3 className="font-bold text-slate-900 text-base">Staff &amp; Admin Sign In</h3>
-          <p className="text-xs text-slate-500">Super Admin, Zonal HR, Central HR, Branch Managers</p>
-        </div>
+    <div
+      id="staff-login-card"
+      className="backdrop-blur-md bg-white/90 border border-white/60 shadow-xl rounded-2xl p-6 sm:p-8 max-w-lg mx-auto"
+    >
+      {/* Brand Header */}
+      <div className="text-center pb-5 border-b border-slate-200/80">
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={companyName}
+            className="h-10 max-h-12 max-w-[180px] object-contain mx-auto mb-2"
+          />
+        ) : (
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-slate-900 text-white mb-2 shadow-xs">
+            <Shield className="w-6 h-6 text-emerald-400" />
+          </div>
+        )}
+        <h2 className="text-lg font-bold text-slate-900 tracking-tight">Staff &amp; Admin Sign In</h2>
+        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+          {loginTagline || 'Sign in with your corporate credentials to manage your team and operations.'}
+        </p>
       </div>
 
       {errorMessage && (
@@ -350,47 +370,39 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
         </div>
       )}
 
-      <form onSubmit={handleLogin} className="mt-4 space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Corporate Email</label>
-          <div className="relative">
-            <input
-              id="staff-email-input"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="e.g. syedwaqarahmed@postex.pk"
-              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-            />
-            <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-          </div>
-        </div>
+      <form onSubmit={handleLogin} className="mt-5 space-y-4">
+        <Input
+          id="staff-email-input"
+          label="Corporate Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          placeholder="e.g. admin@postex.pk"
+          leftIcon={<Mail className="w-4 h-4" />}
+        />
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Password</label>
-          <div className="relative">
-            <input
-              id="staff-password-input"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Enter account password"
-              className="w-full pl-9 pr-10 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
-            />
-            <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+        <Input
+          id="staff-password-input"
+          label="Password"
+          type={showPassword ? 'text' : 'password'}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          placeholder="Enter account password"
+          leftIcon={<Lock className="w-4 h-4" />}
+          rightIcon={
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+              className="pointer-events-auto text-slate-400 hover:text-slate-600 cursor-pointer"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg text-xs text-slate-500 space-y-1">
+        <div className="p-3 bg-slate-50/80 border border-slate-200 rounded-lg text-xs text-slate-500 space-y-1">
           <p className="font-semibold text-slate-700">Seed Super Admin Credentials:</p>
           <p>
             Email: <code className="text-slate-800 font-mono font-medium">admin@postex.pk</code>
@@ -400,14 +412,15 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
           </p>
         </div>
 
-        <button
+        <Button
           id="staff-submit-btn"
           type="submit"
-          disabled={isLoading}
-          className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          variant="primary"
+          isLoading={isLoading}
+          className="w-full bg-slate-900 hover:bg-slate-800"
         >
-          {isLoading ? 'Verifying Identity...' : 'Sign In as Staff'}
-        </button>
+          Sign In as Staff
+        </Button>
       </form>
     </div>
   );

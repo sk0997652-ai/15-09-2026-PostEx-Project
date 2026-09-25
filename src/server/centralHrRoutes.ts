@@ -1030,16 +1030,18 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
         const employeeId = await generateEmployeeId(branchName);
 
         // Fetch documents, verification remarks, and organization settings for official PDF dossier
-        const [{ data: docs }, { data: remarks }, { data: orgSettings }] = await Promise.all([
+        const [{ data: docs }, { data: remarks }, orgSettings] = await Promise.all([
           supabaseAdmin.from('documents').select('type, verification_status, remark').eq('application_id', id),
           supabaseAdmin.from('verification_remarks').select('remark').eq('application_id', id).limit(1),
-          supabaseAdmin.from('organization_settings').select('company_name').limit(1).maybeSingle(),
+          formTemplatesService.getOrgSettings(supabaseAdmin),
         ]);
         const companyName = orgSettings?.company_name || 'PostEx';
+        const logoUrl = orgSettings?.logo_storage_path || undefined;
 
         // Generate real PDF Dossier file and upload to Supabase Storage
         const { storagePath: pdfStoragePath } = await generateAndUploadPdfDossier(supabaseAdmin, {
           companyName,
+          logoUrl,
           employeeId,
           joiningId: candidate.joining_id,
           candidateName: candidate.full_name,
@@ -1390,15 +1392,17 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
       }
 
       // Generate on-the-fly if needed
-      const [{ data: docs }, { data: remarks }, { data: orgSettings }] = await Promise.all([
+      const [{ data: docs }, { data: remarks }, orgSettings] = await Promise.all([
         supabaseAdmin.from('documents').select('type, verification_status, remark').eq('application_id', app.id),
         supabaseAdmin.from('verification_remarks').select('remark').eq('application_id', app.id).limit(1),
-        supabaseAdmin.from('organization_settings').select('company_name').limit(1).maybeSingle(),
+        formTemplatesService.getOrgSettings(supabaseAdmin),
       ]);
       const companyName = orgSettings?.company_name || 'PostEx';
+      const logoUrl = orgSettings?.logo_storage_path || undefined;
 
       const result = await generateAndUploadPdfDossier(supabaseAdmin, {
         companyName,
+        logoUrl,
         employeeId: employee.employee_id,
         joiningId: cand?.joining_id || 'PX-2026-000000',
         candidateName: cand?.full_name || 'PostEx Candidate',

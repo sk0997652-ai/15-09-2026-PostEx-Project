@@ -63,7 +63,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   return (
     <div id="candidate-welcome-screen" className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 animate-in fade-in-50 duration-300">
       {/* Top Header Card */}
-      <Card className="rounded-3xl border-slate-200/80 p-6 sm:p-8 mb-6 relative overflow-hidden">
+      <Card className="rounded-2xl border-slate-200/80 p-6 sm:p-8 mb-6 relative overflow-hidden">
         {/* Subtle decorative background glow */}
         <div className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none" />
         <div className="absolute -left-16 -bottom-16 w-56 h-56 rounded-full bg-indigo-600/5 blur-3xl pointer-events-none" />
@@ -144,7 +144,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       {/* Two Column Section: Document Checklist & Process Guide */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {/* Document Checklist (Span 2) */}
-        <Card className="md:col-span-2 rounded-3xl border-slate-200/80 p-6 sm:p-7">
+        <Card className="md:col-span-2 rounded-2xl border-slate-200/80 p-6 sm:p-7">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2.5">
               <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
@@ -204,7 +204,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         </Card>
 
         {/* Process & Time Card (Span 1) */}
-        <Card className="rounded-3xl border-slate-200/80 p-6 sm:p-7 flex flex-col justify-between">
+        <Card className="rounded-2xl border-slate-200/80 p-6 sm:p-7 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
@@ -242,7 +242,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       </div>
 
       {/* Action Footer Card */}
-      <Card className="rounded-3xl border-slate-200/80 p-6">
+      <Card className="rounded-2xl border-slate-200/80 p-6">
         {isSubmitted ? (
           <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -289,14 +289,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
             <div className="flex items-center gap-4 w-full sm:w-auto">
               {application && hasStarted && (
-                <button
+                <Button
                   type="button"
+                  variant="link"
+                  size="small"
                   onClick={onViewStatusTracker}
                   id="candidate-check-status-btn"
-                  className="text-xs font-bold text-indigo-700 hover:text-indigo-900 cursor-pointer underline underline-offset-4"
+                  className="text-xs font-bold text-indigo-700 hover:text-indigo-900 p-0 h-auto"
                 >
                   View Status
-                </button>
+                </Button>
               )}
 
               <Button

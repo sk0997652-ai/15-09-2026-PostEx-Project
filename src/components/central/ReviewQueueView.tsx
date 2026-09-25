@@ -5,7 +5,7 @@ import {
   ClipboardList,
   FileText,
 } from 'lucide-react';
-import { PageHeader, Button, Card, StatusBadge, Badge } from '../ui';
+import { PageHeader, Button, Card, StatusBadge, Badge, Input, Select } from '../ui';
 
 interface ReviewQueueViewProps {
   applications: any[];
@@ -66,51 +66,52 @@ export function ReviewQueueView({
       <Card className="p-4 sm:p-5">
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="relative min-w-[220px] flex-1">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
-            <input
+          <div className="min-w-[220px] flex-1">
+            <Input
               type="text"
               placeholder="Search candidate, CNIC, PX-ID..."
               value={queueSearch}
               onChange={(e) => setQueueSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && fetchApplications(1)}
-              className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              leftIcon={<Search className="w-3.5 h-3.5 text-slate-400" />}
             />
           </div>
 
           <Button
             variant="primary"
-            size="sm"
+            size="default"
             onClick={() => fetchApplications(1)}
             leftIcon={<Search className="w-3.5 h-3.5" />}
           >
             Search
           </Button>
 
-          <select
-            value={queueStatusFilter}
-            onChange={(e) => setQueueStatusFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-700 font-semibold focus:outline-none cursor-pointer"
-          >
-            <option value="all">All Statuses</option>
-            <option value="hr_review">Awaiting HR Review</option>
-            <option value="needs_correction">Returned for Correction</option>
-            <option value="approved">Approved &amp; Enrolled</option>
-            <option value="rejected">Rejected</option>
-          </select>
+          <div className="min-w-[170px]">
+            <Select
+              value={queueStatusFilter}
+              onChange={(e) => setQueueStatusFilter(e.target.value)}
+            >
+              <option value="all">All Statuses</option>
+              <option value="hr_review">Awaiting HR Review</option>
+              <option value="needs_correction">Returned for Correction</option>
+              <option value="approved">Approved &amp; Enrolled</option>
+              <option value="rejected">Rejected</option>
+            </Select>
+          </div>
 
-          <select
-            value={queueBranchFilter}
-            onChange={(e) => setQueueBranchFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-700 font-semibold focus:outline-none cursor-pointer"
-          >
-            <option value="">All Branches</option>
-            {formOptions.branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+          <div className="min-w-[170px]">
+            <Select
+              value={queueBranchFilter}
+              onChange={(e) => setQueueBranchFilter(e.target.value)}
+            >
+              <option value="">All Branches</option>
+              {formOptions.branches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </Select>
+          </div>
 
           {(queueSearch || queueStatusFilter !== 'all' || queueBranchFilter) && (
             <Button

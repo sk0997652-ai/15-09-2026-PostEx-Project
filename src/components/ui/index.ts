@@ -8,3 +8,4 @@ export * from './StatusBadge';
 export * from './Table';
 export * from './PageHeader';
 export * from './Modal';
+export * from './Checkbox';

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Languages, Check, ArrowRight, Globe, ShieldCheck } from 'lucide-react';
 import { Language, useI18n } from '../../lib/i18n';
 import { useBranding } from '../../lib/branding';
+import { Button } from '../ui';
 
 interface LanguageScreenProps {
   candidateName: string;
@@ -70,7 +71,7 @@ export const LanguageScreen: React.FC<LanguageScreenProps> = ({
           }`}
         >
           <div className="flex items-start justify-between mb-4">
-            <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-indigo-600 font-bold text-base shadow-2xs">
+            <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-indigo-600 font-bold text-base shadow-xs">
               EN
             </div>
             {selectedLanguage === 'en' && (
@@ -107,7 +108,7 @@ export const LanguageScreen: React.FC<LanguageScreenProps> = ({
                 <Check className="w-4 h-4" />
               </div>
             )}
-            <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-indigo-600 font-bold text-base shadow-2xs ml-auto font-urdu">
+            <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-indigo-600 font-bold text-base shadow-xs ml-auto font-urdu">
               اردو
             </div>
           </div>
@@ -125,7 +126,7 @@ export const LanguageScreen: React.FC<LanguageScreenProps> = ({
       {/* Confirmation & Proceed Action */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
@@ -140,15 +141,17 @@ export const LanguageScreen: React.FC<LanguageScreenProps> = ({
           </div>
         </div>
 
-        <button
+        <Button
           type="button"
           id="candidate-language-proceed-btn"
+          variant="primary"
+          size="medium"
           onClick={handleProceed}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm cursor-pointer transition-colors"
+          rightIcon={<ArrowRight className="w-4 h-4" />}
+          className="w-full sm:w-auto px-8"
         >
-          <span>{selectedLanguage === 'en' ? 'Continue to Consent' : 'جاری رکھیں (شرائط و ضوابط)'}</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
+          {selectedLanguage === 'en' ? 'Continue to Consent' : 'جاری رکھیں (شرائط و ضوابط)'}
+        </Button>
       </div>
     </div>
   );
