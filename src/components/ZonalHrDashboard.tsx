@@ -28,10 +28,13 @@ import {
   overrideZonalApplicationDecision,
   ZonalMetrics,
   ZonalStaffProfile,
+  ZonalDepartmentOption,
+  ZonalDesignationOption,
   ZonalApplication,
   CentralHrStaffMember,
 } from '../lib/zonalHrApi';
 import { DeleteConfirmationModal } from './common/DeleteConfirmationModal';
+import { HeadcountManagementView } from './common/HeadcountManagementView';
 import {
   ZoneOverviewView,
   ZoneStaffView,
@@ -57,7 +60,7 @@ interface ZonalHrDashboardProps {
 }
 
 export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'staff' | 'applications' | 'reports'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'headcount' | 'staff' | 'applications' | 'reports'>('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -68,13 +71,20 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
 
   // Staff state
   const [staffList, setStaffList] = useState<ZonalStaffProfile[]>([]);
-  const [zoneBranches, setZoneBranches] = useState<Array<{ id: string; name: string }>>([]);
+  const [zoneBranches, setZoneBranches] = useState<Array<{ id: string; name: string; branch_code?: string; branch_type?: string }>>([]);
+  const [zonalDepartments, setZonalDepartments] = useState<ZonalDepartmentOption[]>([]);
+  const [zonalDesignations, setZonalDesignations] = useState<ZonalDesignationOption[]>([]);
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [newStaffRole, setNewStaffRole] = useState<'central_hr' | 'branch_manager'>('central_hr');
   const [newStaffEmail, setNewStaffEmail] = useState('');
+  const [newStaffPersonalEmail, setNewStaffPersonalEmail] = useState('');
   const [newStaffName, setNewStaffName] = useState('');
   const [newStaffPhone, setNewStaffPhone] = useState('');
+  const [newStaffEmployeeId, setNewStaffEmployeeId] = useState('PX-STAFF-1001');
+  const [newStaffDepartmentId, setNewStaffDepartmentId] = useState('');
+  const [newStaffDesignationId, setNewStaffDesignationId] = useState('');
   const [newStaffBranchId, setNewStaffBranchId] = useState('');
+  const [newStaffBranchIds, setNewStaffBranchIds] = useState<string[]>([]);
   const [creatingStaff, setCreatingStaff] = useState(false);
 
   // Password reveal modal
@@ -169,11 +179,16 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
         setZoneInfo({ id: m.zone.id, name: m.zone.name });
       }
 
-      // Fetch Zone-Scoped Staff & Branches
+      // Fetch Zone-Scoped Staff, Branches, Departments, Designations & nextStaffEmployeeId
       const staffRes = await getZonalStaff();
       setStaffList(staffRes.staff || []);
       setZoneBranches(staffRes.branches || []);
-      if (staffRes.branches?.length > 0) {
+      setZonalDepartments(staffRes.departments || []);
+      setZonalDesignations(staffRes.designations || []);
+      if (staffRes.nextStaffEmployeeId) {
+        setNewStaffEmployeeId(staffRes.nextStaffEmployeeId);
+      }
+      if (staffRes.branches?.length > 0 && !newStaffBranchId) {
         setNewStaffBranchId(staffRes.branches[0].id);
       }
     } catch (err: unknown) {
@@ -239,12 +254,24 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newStaffEmail || !newStaffName) {
-      setError('Staff name and valid email are mandatory.');
+      setError('Staff full name and official work email are mandatory.');
       return;
     }
 
-    if (newStaffRole === 'branch_manager' && !newStaffBranchId) {
-      setError('Branch Managers must be assigned to a specific branch in this zone.');
+    if (!newStaffDepartmentId || !newStaffDesignationId) {
+      setError('Department and Designation are required in Section B.');
+      return;
+    }
+
+    const effectiveBranches =
+      newStaffBranchIds.length > 0
+        ? newStaffBranchIds
+        : newStaffBranchId
+        ? [newStaffBranchId]
+        : [];
+
+    if (newStaffRole === 'branch_manager' && effectiveBranches.length === 0) {
+      setError('Branch Managers must be assigned to at least one branch in this zone.');
       return;
     }
 
@@ -255,9 +282,15 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
       const res = await createZonalStaff({
         email: newStaffEmail.trim().toLowerCase(),
         name: newStaffName.trim(),
-        role_name: newStaffRole,
+        personal_email: newStaffPersonalEmail.trim() || null,
+        phone_number: newStaffPhone.trim() || null,
         phone: newStaffPhone.trim() || undefined,
-        branch_id: newStaffRole === 'branch_manager' ? newStaffBranchId : undefined,
+        staff_employee_id: newStaffEmployeeId.trim() || null,
+        department_id: newStaffDepartmentId,
+        designation_id: newStaffDesignationId,
+        role_name: newStaffRole,
+        branch_id: effectiveBranches[0] || undefined,
+        branch_ids: effectiveBranches,
       });
 
       setSuccessMessage(`Staff member ${newStaffName} successfully provisioned.`);
@@ -273,8 +306,12 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
 
       // Reset form
       setNewStaffEmail('');
+      setNewStaffPersonalEmail('');
       setNewStaffName('');
       setNewStaffPhone('');
+      setNewStaffDepartmentId('');
+      setNewStaffDesignationId('');
+      setNewStaffBranchIds([]);
       setShowAddStaffModal(false);
 
       // Refresh list
@@ -489,6 +526,19 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
           </button>
 
           <button
+            id="zonal-tab-headcount"
+            onClick={() => setActiveTab('headcount')}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === 'headcount'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Headcount Management</span>
+          </button>
+
+          <button
             id="zonal-tab-staff"
             onClick={() => setActiveTab('staff')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -610,6 +660,9 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
           />
         )}
 
+        {/* TAB 1B: HEADCOUNT MANAGEMENT */}
+        {activeTab === 'headcount' && <HeadcountManagementView />}
+
         {/* TAB 2: ZONE STAFF MANAGEMENT */}
         {activeTab === 'staff' && (
           <ZoneStaffView
@@ -677,16 +730,28 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
         onClose={() => setShowAddStaffModal(false)}
         zoneDisplayName={zoneDisplayName}
         zoneBranches={zoneBranches}
+        departments={zonalDepartments}
+        designations={zonalDesignations}
         newStaffRole={newStaffRole}
         setNewStaffRole={setNewStaffRole}
         newStaffBranchId={newStaffBranchId}
         setNewStaffBranchId={setNewStaffBranchId}
+        newStaffBranchIds={newStaffBranchIds}
+        setNewStaffBranchIds={setNewStaffBranchIds}
         newStaffName={newStaffName}
         setNewStaffName={setNewStaffName}
+        newStaffPersonalEmail={newStaffPersonalEmail}
+        setNewStaffPersonalEmail={setNewStaffPersonalEmail}
         newStaffEmail={newStaffEmail}
         setNewStaffEmail={setNewStaffEmail}
         newStaffPhone={newStaffPhone}
         setNewStaffPhone={setNewStaffPhone}
+        newStaffEmployeeId={newStaffEmployeeId}
+        setNewStaffEmployeeId={setNewStaffEmployeeId}
+        newStaffDepartmentId={newStaffDepartmentId}
+        setNewStaffDepartmentId={setNewStaffDepartmentId}
+        newStaffDesignationId={newStaffDesignationId}
+        setNewStaffDesignationId={setNewStaffDesignationId}
         creatingStaff={creatingStaff}
         onSubmit={handleCreateStaff}
       />

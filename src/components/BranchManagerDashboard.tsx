@@ -29,8 +29,10 @@ import {
   LogOut,
   RefreshCw,
   Send,
+  Users,
   X,
 } from 'lucide-react';
+import { HeadcountManagementView } from './common/HeadcountManagementView';
 import {
   BranchOverviewView,
   ApplicationsQueueView,
@@ -55,7 +57,7 @@ interface BranchManagerDashboardProps {
 
 export function BranchManagerDashboard({ currentUser, onSignOut }: BranchManagerDashboardProps) {
   // Navigation tabs
-  const [activeTab, setActiveTab] = useState<'pending_queue' | 'corrections_queue' | 'forwarded_queue' | 'branch_overview'>('pending_queue');
+  const [activeTab, setActiveTab] = useState<'pending_queue' | 'corrections_queue' | 'forwarded_queue' | 'branch_overview' | 'headcount'>('pending_queue');
 
   // Dashboard state
   const [metrics, setMetrics] = useState<BranchMetrics | null>(null);
@@ -470,6 +472,22 @@ export function BranchManagerDashboard({ currentUser, onSignOut }: BranchManager
             <Shield className="w-4 h-4" />
             <span>Branch Overview &amp; Stats</span>
           </button>
+
+          <button
+            id="bm-nav-headcount"
+            onClick={() => {
+              setActiveTab('headcount');
+              setSelectedAppId(null);
+            }}
+            className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === 'headcount'
+                ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Headcount Management</span>
+          </button>
         </nav>
 
         {/* User Profile Footer */}
@@ -536,12 +554,14 @@ export function BranchManagerDashboard({ currentUser, onSignOut }: BranchManager
                 {activeTab === 'corrections_queue' && 'Branch Manager — Corrections & Resubmissions Queue'}
                 {activeTab === 'forwarded_queue' && 'Branch Manager — Forwarded Applications'}
                 {activeTab === 'branch_overview' && 'Branch Manager — Branch Performance & Telemetry'}
+                {activeTab === 'headcount' && 'Branch Manager — Branch Headcount (Read-Only)'}
               </h1>
               <p className="text-xs text-slate-500 mt-0.5">
                 {activeTab === 'pending_queue' && 'Conduct in-person document verification, apply digital signature attestation, and forward to Central HR.'}
                 {activeTab === 'corrections_queue' && 'Review corrected candidate documents returned by Central HR for re-verification.'}
                 {activeTab === 'forwarded_queue' && 'Track applications verified by this branch currently awaiting final Central HR enrollment decision.'}
                 {activeTab === 'branch_overview' && 'Branch operational throughput, document verification metrics, and Postgres RLS telemetry.'}
+                {activeTab === 'headcount' && 'Read-only view of approved designation headcount targets, active enrolled employees, and open vacancies for your branch.'}
               </p>
             </div>
 
@@ -618,6 +638,10 @@ export function BranchManagerDashboard({ currentUser, onSignOut }: BranchManager
               zone_id: currentUser.zone_id || 'N/A',
             }}
           />
+        ) : activeTab === 'headcount' ? (
+          <div className="p-6">
+            <HeadcountManagementView />
+          </div>
         ) : (
           <ApplicationsQueueView
             applications={uniqueApplications}

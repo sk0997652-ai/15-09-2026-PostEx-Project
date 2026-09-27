@@ -340,7 +340,7 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
       const zoneId = req.centralUser.zone_id;
 
       const [{ data: designations }, { data: branches }] = await Promise.all([
-        supabaseAdmin.from('designations').select('id, name, department_id, departments(id, name)').order('name'),
+        supabaseAdmin.from('designations').select('id, name, department_id, employment_category, is_active, departments(id, name)').order('name'),
         supabaseAdmin.from('branches').select('id, name, address').eq('zone_id', zoneId).order('name'),
       ]);
 
@@ -542,7 +542,21 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
       const candidateId = crypto.randomUUID();
       let newCandidate: any = null;
 
-      // 8. Create Candidate in Supabase (valid schema columns only)
+      // Resolve designation title if designation_id was provided
+      let resolvedDesignationId: string | null = designation_id && String(designation_id).trim() ? String(designation_id).trim() : null;
+      let resolvedDesignationName: string | null = null;
+      if (resolvedDesignationId) {
+        const { data: desigRow } = await supabaseAdmin
+          .from('designations')
+          .select('id, name')
+          .eq('id', resolvedDesignationId)
+          .maybeSingle();
+        if (desigRow) {
+          resolvedDesignationName = desigRow.name;
+        }
+      }
+
+      // 8. Create Candidate in Supabase (including designation_id FK)
       const candidatePayload: any = {
         id: candidateId,
         full_name: String(full_name).trim(),
@@ -552,6 +566,7 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
         joining_id: joiningId,
         zone_id: zoneId,
         branch_id: targetBranchId,
+        designation_id: resolvedDesignationId,
         created_by: req.centralUser.id,
       };
 
@@ -560,6 +575,17 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
         .insert(candidatePayload)
         .select()
         .single();
+
+      if (candErr && candErr.message.includes('designation_id')) {
+        delete candidatePayload.designation_id;
+        const retryWithoutDesig = await supabaseAdmin
+          .from('candidates')
+          .insert(candidatePayload)
+          .select()
+          .single();
+        candData = retryWithoutDesig.data;
+        candErr = retryWithoutDesig.error;
+      }
 
       if (candErr && candErr.message.includes('foreign key')) {
         candidatePayload.created_by = null;
@@ -619,7 +645,9 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
             cnic: formattedCnic,
             mobile: cleanMobile,
             email: email || '',
-            designation_id: designation_id || null,
+            designation_id: resolvedDesignationId,
+            designation_applied: resolvedDesignationName || '',
+            position_applied: resolvedDesignationName || '',
             track: assignedTrack,
           },
           completed: false,
@@ -987,7 +1015,7 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
 
       const { data: candidate, error: candErr } = await supabaseAdmin
         .from('candidates')
-        .select('id, full_name, cnic, mobile, email, joining_id, zone_id, branch_id, branches(name)')
+        .select('*, branches(name)')
         .eq('id', application.candidate_id)
         .single();
 
@@ -1062,16 +1090,44 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
           bmRemarks: remarks?.[0]?.remark,
         });
 
-        // 1. Create or upsert Employee record
-        const { data: empRecord, error: empErr } = await supabaseAdmin
+        // Resolve designation_id from candidate or step 1 data to preserve FK link on employees
+        let enrolledDesignationId: string | null = (candidate as any).designation_id || null;
+        if (!enrolledDesignationId) {
+          const { data: step1Row } = await supabaseAdmin
+            .from('application_steps')
+            .select('data')
+            .eq('application_id', id)
+            .eq('step_number', 1)
+            .maybeSingle();
+          if (step1Row?.data?.designation_id) {
+            enrolledDesignationId = step1Row.data.designation_id;
+          }
+        }
+
+        // 1. Create or upsert Employee record (preserving designation_id link)
+        const empInsertPayload: Record<string, any> = {
+          application_id: id,
+          employee_id: employeeId,
+          pdf_dossier_storage_path: pdfStoragePath,
+          designation_id: enrolledDesignationId,
+        };
+
+        let { data: empRecord, error: empErr } = await supabaseAdmin
           .from('employees')
-          .insert({
-            application_id: id,
-            employee_id: employeeId,
-            pdf_dossier_storage_path: pdfStoragePath,
-          })
+          .insert(empInsertPayload)
           .select()
           .single();
+
+        if (empErr && empErr.message.includes('designation_id')) {
+          delete empInsertPayload.designation_id;
+          const retryEmp = await supabaseAdmin
+            .from('employees')
+            .insert(empInsertPayload)
+            .select()
+            .single();
+          empRecord = retryEmp.data;
+          empErr = retryEmp.error;
+        }
 
         if (empErr) {
           throw new Error(`Failed to create employee record: ${empErr.message}`);

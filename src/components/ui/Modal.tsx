@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
-export type ModalSize = 'small' | 'default' | 'large';
+export type ModalSize = 'small' | 'sm' | 'default' | 'md' | 'large' | 'lg' | 'xl';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -43,13 +43,14 @@ export const Modal: React.FC<ModalProps> = ({
 
   if (!isOpen) return null;
 
-  let sizeClasses = 'max-w-lg'; // default
-  if (size === 'small') sizeClasses = 'max-w-md';
-  if (size === 'large') sizeClasses = 'max-w-2xl';
+  let sizeClasses = 'max-w-lg'; // default / md
+  if (size === 'small' || size === 'sm') sizeClasses = 'max-w-md';
+  if (size === 'large' || size === 'lg') sizeClasses = 'max-w-3xl';
+  if (size === 'xl') sizeClasses = 'max-w-4xl';
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-150"
       onClick={(e) => {
         if (closeOnBackdropClick && e.target === e.currentTarget) {
           onClose();
@@ -59,26 +60,26 @@ export const Modal: React.FC<ModalProps> = ({
       aria-modal="true"
     >
       <div
-        className={`bg-white rounded-2xl border border-slate-200 shadow-xl w-full ${sizeClasses} overflow-hidden transition-all transform ${className}`}
+        className={`bg-white rounded-2xl border border-slate-200 shadow-xl w-full ${sizeClasses} max-h-[90vh] flex flex-col overflow-hidden my-auto transition-all transform ${className}`}
       >
-        {/* Header */}
+        {/* Sticky Header */}
         {(title || description) && (
-          <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4">
+          <div className="px-6 py-4 border-b border-slate-200 bg-white shrink-0 flex items-start justify-between gap-4">
             <div>
-              {title && (
-                typeof title === 'string' ? (
-                  <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+              {title &&
+                (typeof title === 'string' ? (
+                  <h2 className="text-lg font-bold text-slate-900">{title}</h2>
                 ) : (
                   title
-                )
-              )}
-              {description && (
-                typeof description === 'string' ? (
-                  <p className="text-sm font-normal text-slate-500 mt-0.5">{description}</p>
+                ))}
+              {description &&
+                (typeof description === 'string' ? (
+                  <p className="text-xs sm:text-sm font-normal text-slate-500 mt-0.5">
+                    {description}
+                  </p>
                 ) : (
                   description
-                )
-              )}
+                ))}
             </div>
             <button
               type="button"
@@ -91,12 +92,12 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
         )}
 
-        {/* Content Body */}
-        <div className="p-6">{children}</div>
+        {/* Scrollable Content Body */}
+        <div className="p-6 overflow-y-auto flex-1 min-h-0">{children}</div>
 
-        {/* Footer */}
+        {/* Sticky Footer */}
         {footer && (
-          <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+          <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 shrink-0 flex items-center justify-end gap-3">
             {footer}
           </div>
         )}

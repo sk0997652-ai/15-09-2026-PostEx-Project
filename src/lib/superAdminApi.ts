@@ -23,10 +23,44 @@ export interface DashboardMetrics {
 }
 
 export interface OrgStructure {
-  zones: Array<{ id: string; name: string; created_at: string }>;
-  branches: Array<{ id: string; name: string; zone_id: string; address: string | null; zones?: { name: string } }>;
-  departments: Array<{ id: string; name: string; created_at: string }>;
-  designations: Array<{ id: string; name: string; department_id: string; departments?: { name: string } }>;
+  zones: Array<{
+    id: string;
+    name: string;
+    zone_code?: string;
+    region?: string;
+    is_active?: boolean;
+    created_at: string;
+  }>;
+  branches: Array<{
+    id: string;
+    name: string;
+    branch_code?: string;
+    zone_id: string;
+    branch_type?: 'Hub' | 'Sub-Hub' | 'Warehouse' | 'Franchise' | string;
+    city_address?: string;
+    address: string | null;
+    contact_number?: string | null;
+    is_active?: boolean;
+    created_at?: string;
+    zones?: { name: string };
+  }>;
+  departments: Array<{
+    id: string;
+    name: string;
+    department_code?: string;
+    department_category?: 'Field Operations' | 'Corporate (Head Office)' | string;
+    is_active?: boolean;
+    created_at: string;
+  }>;
+  designations: Array<{
+    id: string;
+    name: string;
+    department_id: string;
+    employment_category?: 'Rider' | 'In-House Staff' | string;
+    is_active?: boolean;
+    created_at?: string;
+    departments?: { name: string };
+  }>;
   roles: Array<{ id: string; name: string }>;
 }
 
@@ -34,15 +68,24 @@ export interface StaffUserItem {
   id: string;
   name: string;
   email: string;
+  personal_email?: string | null;
+  phone_number?: string | null;
+  staff_employee_id?: string | null;
+  department_id?: string | null;
+  designation_id?: string | null;
   role_id: string;
   zone_id: string | null;
   branch_id: string | null;
+  branch_ids?: string[];
+  tagged_branches?: Array<{ id: string; name: string; branch_code?: string }>;
   is_active: boolean;
   must_change_password: boolean;
   created_at: string;
   roles?: { name: string };
   zones?: { name: string };
   branches?: { name: string };
+  departments?: { id: string; name: string; department_code?: string } | null;
+  designations?: { id: string; name: string; employment_category?: string; department_id?: string } | null;
 }
 
 export interface PermissionOverrideItem {
@@ -159,6 +202,16 @@ export const superAdminApi = {
     return true;
   },
 
+  async getNextStaffEmployeeId(): Promise<string> {
+    const headers = await getAuthHeader();
+    const res = await fetch('/api/admin/staff/next-employee-id', { headers });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return 'PX-STAFF-1001';
+    }
+    return data.nextStaffEmployeeId || 'PX-STAFF-1001';
+  },
+
   async getStaff(): Promise<StaffUserItem[]> {
     const headers = await getAuthHeader();
     const res = await fetch('/api/admin/staff', { headers });
@@ -172,9 +225,15 @@ export const superAdminApi = {
   async createStaff(payload: {
     email: string;
     name: string;
+    personal_email?: string | null;
+    phone_number?: string | null;
+    staff_employee_id?: string | null;
+    department_id?: string | null;
+    designation_id?: string | null;
     role_id: string;
     zone_id?: string | null;
     branch_id?: string | null;
+    branch_ids?: string[];
   }): Promise<{ staff: StaffUserItem; one_time_temporary_password: string }> {
     const headers = { 'Content-Type': 'application/json', ...(await getAuthHeader()) };
     const res = await fetch('/api/admin/staff', {
@@ -191,9 +250,15 @@ export const superAdminApi = {
 
   async updateStaff(id: string, payload: {
     name: string;
+    personal_email?: string | null;
+    phone_number?: string | null;
+    staff_employee_id?: string | null;
+    department_id?: string | null;
+    designation_id?: string | null;
     role_id: string;
     zone_id?: string | null;
     branch_id?: string | null;
+    branch_ids?: string[];
     is_active?: boolean;
   }) {
     const headers = { 'Content-Type': 'application/json', ...(await getAuthHeader()) };

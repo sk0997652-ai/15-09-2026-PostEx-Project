@@ -64,7 +64,8 @@ export function ZoneStaffView({
       const matchesSearch =
         !query ||
         staff.name?.toLowerCase().includes(query) ||
-        staff.email?.toLowerCase().includes(query);
+        staff.email?.toLowerCase().includes(query) ||
+        (staff.staff_employee_id || '').toLowerCase().includes(query);
 
       const matchesRole = !staffRoleFilter || staff.roles?.name === staffRoleFilter;
 
@@ -73,7 +74,9 @@ export function ZoneStaffView({
         (staffStatusFilter === 'active' ? staff.is_active : !staff.is_active);
 
       const matchesBranch =
-        !staffBranchFilter || staff.branches?.id === staffBranchFilter;
+        !staffBranchFilter ||
+        staff.branches?.id === staffBranchFilter ||
+        (staff.branch_ids && staff.branch_ids.includes(staffBranchFilter));
 
       return matchesSearch && matchesRole && matchesStatus && matchesBranch;
     });
@@ -88,7 +91,7 @@ export function ZoneStaffView({
     <div className="space-y-6">
       <PageHeader
         title="Central HR & Branch Manager Accounts"
-        description="Create accounts strictly within your assigned zone with automated temporary credential generation."
+        description="Create accounts strictly within your assigned zone across 4 structured sections with one-time temporary credentials."
         badge={<Badge variant="primary">Zone-Scoped Staff: {zoneName}</Badge>}
         actions={
           <Button
@@ -108,7 +111,7 @@ export function ZoneStaffView({
         <div className="flex flex-col md:flex-row items-center gap-3 justify-between">
           <div className="w-full md:w-72">
             <Input
-              placeholder="Search staff by name or email..."
+              placeholder="Search by name, email, or PX-STAFF ID..."
               value={staffSearch}
               onChange={(e) => {
                 setStaffSearch(e.target.value);
@@ -196,9 +199,10 @@ export function ZoneStaffView({
         <Table>
           <thead>
             <tr>
-              <th className="py-3 px-4 font-semibold text-left">Staff Member</th>
+              <th className="py-3 px-4 font-semibold text-left">Staff Member &amp; Contact</th>
+              <th className="py-3 px-4 font-semibold text-left">Employment Identity</th>
               <th className="py-3 px-4 font-semibold text-left">Assigned Role</th>
-              <th className="py-3 px-4 font-semibold text-left">Branch Assignment</th>
+              <th className="py-3 px-4 font-semibold text-left">Tagged Branches</th>
               <th className="py-3 px-4 font-semibold text-left">Password Status</th>
               <th className="py-3 px-4 font-semibold text-left">Account Status</th>
               <th className="py-3 px-4 font-semibold text-right">Actions</th>
@@ -207,100 +211,138 @@ export function ZoneStaffView({
           <tbody className="divide-y divide-slate-200">
             {paginatedStaffList.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-slate-500">
+                <td colSpan={7} className="py-8 text-center text-slate-500">
                   No staff accounts matching your search or filters.
                 </td>
               </tr>
             ) : (
-              paginatedStaffList.map((staff) => (
-                <tr key={staff.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3.5 px-4">
-                    <div className="font-bold text-slate-900">{staff.name}</div>
-                    <div className="text-[11px] text-slate-500">{staff.email}</div>
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                        staff.roles?.name === 'central_hr'
-                          ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
-                          : staff.roles?.name === 'branch_manager'
-                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                          : 'bg-slate-100 text-slate-700'
-                      }`}
-                    >
-                      {staff.roles?.name?.replace(/_/g, ' ') || 'Staff'}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-700">
-                    {staff.branches?.name || <span className="text-slate-400 italic">Zone-Wide (Central)</span>}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    {staff.must_change_password ? (
-                      <span className="inline-flex items-center gap-1 text-amber-700 text-[11px] font-medium bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                        <KeyRound className="w-3 h-3 text-amber-600" />
-                        <span>Change Pending</span>
+              paginatedStaffList.map((staff) => {
+                const taggedList =
+                  staff.tagged_branches && staff.tagged_branches.length > 0
+                    ? staff.tagged_branches
+                    : staff.branches?.name
+                    ? [{ id: staff.branches.id, name: staff.branches.name }]
+                    : [];
+
+                return (
+                  <tr key={staff.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-3.5 px-4">
+                      <div className="font-bold text-slate-900">{staff.name}</div>
+                      <div className="text-[11px] text-slate-600 font-mono">{staff.email}</div>
+                      {(staff.personal_email || staff.phone_number || staff.phone) && (
+                        <div className="text-[10px] text-slate-400 mt-0.5">
+                          {[staff.personal_email, staff.phone_number || staff.phone]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="font-mono text-xs font-bold text-indigo-950">
+                        {staff.staff_employee_id || '—'}
+                      </div>
+                      <div className="text-xs text-slate-700">
+                        {staff.designations?.name || 'No Designation'}
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        {staff.departments?.name || 'No Department'}
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          staff.roles?.name === 'central_hr'
+                            ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                            : staff.roles?.name === 'branch_manager'
+                            ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {staff.roles?.name?.replace(/_/g, ' ') || 'Staff'}
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-emerald-700 text-[11px] font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        <Check className="w-3 h-3 text-emerald-600" />
-                        <span>Active &amp; Set</span>
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3.5 px-4">
-                    <StatusBadge status={staff.is_active ? 'active' : 'inactive'} />
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    <div className="inline-flex items-center gap-1.5 justify-end">
-                      <Button
-                        id={`zonal-edit-staff-${staff.id}`}
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => onOpenEditStaff(staff)}
-                        title="Edit staff details and role track"
-                        leftIcon={<Edit className="w-3 h-3 text-indigo-600" />}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        id={`zonal-toggle-status-${staff.id}`}
-                        variant={staff.is_active ? 'danger' : 'secondary'}
-                        size="sm"
-                        onClick={() => onToggleStaffStatus(staff)}
-                        title={staff.is_active ? 'Deactivate staff account' : 'Reactivate staff account'}
-                        leftIcon={
-                          staff.is_active ? (
-                            <UserX className="w-3 h-3 text-rose-600" />
-                          ) : (
-                            <UserCheck className="w-3 h-3 text-emerald-600" />
-                          )
-                        }
-                      >
-                        {staff.is_active ? 'Deactivate' : 'Activate'}
-                      </Button>
-                      <Button
-                        id={`zonal-regen-pwd-${staff.id}`}
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => onRegeneratePassword(staff)}
-                        title="Generate new temporary password"
-                        leftIcon={<KeyRound className="w-3 h-3 text-amber-600" />}
-                      >
-                        Reset Password
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-700 text-xs">
+                      {taggedList.length > 0 ? (
+                        <span>
+                          {taggedList.length === 1
+                            ? taggedList[0].name
+                            : `${taggedList.length} branches: ${taggedList.map((b) => b.name).join(', ')}`}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 italic">Zone-Wide (Central)</span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      {staff.must_change_password ? (
+                        <span className="inline-flex items-center gap-1 text-amber-700 text-[11px] font-medium bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                          <KeyRound className="w-3 h-3 text-amber-600" />
+                          <span>Change Pending</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-emerald-700 text-[11px] font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                          <Check className="w-3 h-3 text-emerald-600" />
+                          <span>Active &amp; Set</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <StatusBadge status={staff.is_active ? 'active' : 'inactive'} />
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="inline-flex items-center gap-1.5">
+                        <Button
+                          id={`zonal-edit-staff-${staff.id}`}
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onOpenEditStaff(staff)}
+                          leftIcon={<Edit className="w-3 h-3" />}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          id={`zonal-toggle-staff-${staff.id}`}
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onToggleStaffStatus(staff)}
+                          className={
+                            staff.is_active
+                              ? 'text-rose-600 hover:bg-rose-50'
+                              : 'text-emerald-700 hover:bg-emerald-50'
+                          }
+                          leftIcon={
+                            staff.is_active ? (
+                              <UserX className="w-3 h-3" />
+                            ) : (
+                              <UserCheck className="w-3 h-3" />
+                            )
+                          }
+                        >
+                          {staff.is_active ? 'Deactivate' : 'Activate'}
+                        </Button>
+                        <Button
+                          id={`zonal-regen-password-${staff.id}`}
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => onRegeneratePassword(staff)}
+                          leftIcon={<KeyRound className="w-3 h-3" />}
+                        >
+                          Reset Password
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </Table>
 
+        {/* Staff Pagination */}
         {filteredStaffList.length > 0 && (
           <TablePagination
-            currentPage={staffPage}
-            totalPages={Math.ceil(filteredStaffList.length / staffLimit)}
-            totalItems={filteredStaffList.length}
+            page={staffPage}
+            totalPages={Math.max(1, Math.ceil(filteredStaffList.length / staffLimit))}
+            total={filteredStaffList.length}
             pageSize={staffLimit}
             onPageChange={setStaffPage}
             onPageSizeChange={(size) => {

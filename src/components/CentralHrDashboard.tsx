@@ -14,8 +14,10 @@ import {
   Shield,
   LogOut,
   IdCard,
+  Users,
   X,
 } from 'lucide-react';
+import { HeadcountManagementView } from './common/HeadcountManagementView';
 import {
   CentralOverviewView,
   CreateJoinerView,
@@ -84,7 +86,7 @@ interface EnrolledEmployee {
 }
 
 export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'create_joiner' | 'review_queue' | 'enrolled_roster'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'headcount' | 'create_joiner' | 'review_queue' | 'enrolled_roster'>('overview');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -634,6 +636,24 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
             </button>
 
             <button
+              id="central-nav-headcount"
+              onClick={() => {
+                setActiveTab('headcount');
+                setSelectedApplicationId(null);
+              }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                activeTab === 'headcount'
+                  ? 'bg-indigo-600 text-white shadow-xs font-bold'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Users className="w-4 h-4 text-indigo-300" />
+                <span>Headcount Management</span>
+              </div>
+            </button>
+
+            <button
               id="central-nav-create-joiner"
               onClick={() => {
                 setActiveTab('create_joiner');
@@ -764,6 +784,9 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
             onRefresh={fetchMetrics}
           />
         )}
+
+        {/* VIEW 1B: HEADCOUNT MANAGEMENT */}
+        {activeTab === 'headcount' && <HeadcountManagementView />}
 
         {/* VIEW 2: CREATE NEW JOINER FORM */}
         {activeTab === 'create_joiner' && (

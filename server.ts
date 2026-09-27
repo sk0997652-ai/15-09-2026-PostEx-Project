@@ -8,6 +8,7 @@ import { createSuperAdminRouter } from './src/server/superAdminRoutes';
 import { createZonalHrRouter } from './src/server/zonalHrRoutes';
 import { createCentralHrRouter } from './src/server/centralHrRoutes';
 import { createBranchManagerRouter } from './src/server/branchManagerRoutes';
+import { createHeadcountRouter } from './src/server/headcountRoutes';
 import { formTemplatesService } from './src/server/formTemplatesDbService';
 import { validateStatusTransition } from './src/server/workflowStateMachine';
 import { notificationService } from './src/server/notificationService';
@@ -1823,6 +1824,7 @@ app.use('/api/admin', createSuperAdminRouter(supabaseAdmin));
 app.use('/api/zonal', createZonalHrRouter(supabaseAdmin));
 app.use('/api/central', createCentralHrRouter(supabaseAdmin));
 app.use('/api/branch', createBranchManagerRouter(supabaseAdmin));
+app.use('/api/headcount', createHeadcountRouter(supabaseAdmin));
 
 // ==============================================================================
 // 5. Vite Middleware Setup

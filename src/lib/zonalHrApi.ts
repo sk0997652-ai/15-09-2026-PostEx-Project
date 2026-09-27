@@ -23,13 +23,40 @@ export interface ZonalStaffProfile {
   id: string;
   name: string;
   email: string;
+  personal_email?: string | null;
   phone?: string | null;
+  phone_number?: string | null;
+  staff_employee_id?: string | null;
+  department_id?: string | null;
+  designation_id?: string | null;
+  branch_id?: string | null;
+  branch_ids?: string[];
+  tagged_branches?: Array<{ id: string; name: string; branch_code?: string }>;
   is_active: boolean;
   must_change_password: boolean;
   created_at: string;
   roles?: { id: string; name: string } | null;
   zones?: { id: string; name: string } | null;
   branches?: { id: string; name: string } | null;
+  departments?: { id: string; name: string; department_code?: string } | null;
+  designations?: { id: string; name: string; employment_category?: string; department_id?: string } | null;
+}
+
+export interface ZonalDepartmentOption {
+  id: string;
+  name: string;
+  department_code?: string;
+  department_category?: string;
+  is_active?: boolean;
+}
+
+export interface ZonalDesignationOption {
+  id: string;
+  name: string;
+  department_id: string;
+  employment_category?: string;
+  is_active?: boolean;
+  departments?: { id: string; name: string } | null;
 }
 
 export interface ZonalCandidate {
@@ -93,8 +120,14 @@ export async function getZonalMetrics(zoneId?: string): Promise<{ zone: any; met
   return { zone: data.zone, metrics: data.metrics };
 }
 
-// 2. Get Zone-scoped staff list & branches
-export async function getZonalStaff(zoneId?: string): Promise<{ staff: ZonalStaffProfile[]; branches: Array<{ id: string; name: string }> }> {
+// 2. Get Zone-scoped staff list, branches, departments, designations, and nextStaffEmployeeId
+export async function getZonalStaff(zoneId?: string): Promise<{
+  staff: ZonalStaffProfile[];
+  branches: Array<{ id: string; name: string; branch_code?: string; branch_type?: string }>;
+  departments: ZonalDepartmentOption[];
+  designations: ZonalDesignationOption[];
+  nextStaffEmployeeId: string;
+}> {
   const headers = await getAuthHeaders();
   const query = zoneId ? `?zone_id=${encodeURIComponent(zoneId)}` : '';
   const res = await fetch(`/api/zonal/staff${query}`, { headers });
@@ -102,16 +135,28 @@ export async function getZonalStaff(zoneId?: string): Promise<{ staff: ZonalStaf
   if (!res.ok || !data.success) {
     throw new Error(data.error || 'Failed to load zonal staff');
   }
-  return { staff: data.staff, branches: data.branches };
+  return {
+    staff: data.staff || [],
+    branches: data.branches || [],
+    departments: data.departments || [],
+    designations: data.designations || [],
+    nextStaffEmployeeId: data.nextStaffEmployeeId || 'PX-STAFF-1001',
+  };
 }
 
 // 3. Create staff in zone (strictly Central HR or Branch Manager)
 export async function createZonalStaff(payload: {
   email: string;
   name: string;
+  personal_email?: string | null;
+  phone_number?: string | null;
+  phone?: string;
+  staff_employee_id?: string | null;
+  department_id?: string | null;
+  designation_id?: string | null;
   role_name: 'central_hr' | 'branch_manager';
   branch_id?: string;
-  phone?: string;
+  branch_ids?: string[];
   zone_id?: string;
 }): Promise<{ staff: ZonalStaffProfile; one_time_temporary_password: string }> {
   const headers = await getAuthHeaders();
@@ -141,10 +186,20 @@ export async function regenerateZonalStaffPassword(staffId: string): Promise<{ t
   return { temporary_password: data.temporary_password };
 }
 
-// 4b. Update staff profile in zone (name, branch_id, role_name)
+// 4b. Update staff profile in zone
 export async function updateZonalStaff(
   staffId: string,
-  payload: { name?: string; branch_id?: string | null; role_name?: 'central_hr' | 'branch_manager' }
+  payload: {
+    name?: string;
+    personal_email?: string | null;
+    phone_number?: string | null;
+    staff_employee_id?: string | null;
+    department_id?: string | null;
+    designation_id?: string | null;
+    branch_id?: string | null;
+    branch_ids?: string[];
+    role_name?: 'central_hr' | 'branch_manager';
+  }
 ): Promise<ZonalStaffProfile> {
   const headers = await getAuthHeaders();
   const res = await fetch(`/api/zonal/staff/${encodeURIComponent(staffId)}`, {

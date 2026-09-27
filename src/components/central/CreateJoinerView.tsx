@@ -321,14 +321,15 @@ export function CreateJoinerView({
             <div>
               <Select
                 id="joiner-designation-select"
-                label="Designation / Role Track"
+                label="Designation Applied For *"
+                required
                 value={joinerForm.designation_id}
                 onChange={(e) => setJoinerForm({ ...joinerForm, designation_id: e.target.value })}
                 options={[
                   { value: '', label: 'Select Designation...' },
-                  ...formOptions.designations.map((d) => ({
+                  ...formOptions.designations.map((d: any) => ({
                     value: d.id,
-                    label: `${d.name} ${d.departments ? `(${d.departments.name})` : ''}`,
+                    label: `${d.name}${d.departments ? ` (${d.departments.name})` : ''}${d.employment_category ? ` — ${d.employment_category}` : ''}`,
                   })),
                 ]}
               />

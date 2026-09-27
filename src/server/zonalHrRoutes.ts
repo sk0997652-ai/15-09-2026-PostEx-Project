@@ -241,6 +241,49 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
   // --------------------------------------------------------------------------
   // 2. Zone-Scoped Staff Management (Strictly Central HR & Branch Manager)
   // --------------------------------------------------------------------------
+  async function computeNextStaffEmployeeId(): Promise<string> {
+    try {
+      const { data: rows, error } = await supabaseAdmin
+        .from('staff_profiles')
+        .select('id, staff_employee_id');
+
+      if (error || !rows) {
+        const { count } = await supabaseAdmin
+          .from('staff_profiles')
+          .select('*', { count: 'exact', head: true });
+        return `PX-STAFF-${1000 + (count || 0) + 1}`;
+      }
+
+      let maxNum = 1000;
+      for (const r of rows as any[]) {
+        const val = String(r.staff_employee_id || '').trim();
+        const m = val.match(/^PX-STAFF-(\d+)$/i);
+        if (m) {
+          const parsed = parseInt(m[1], 10);
+          if (!Number.isNaN(parsed) && parsed > maxNum) {
+            maxNum = parsed;
+          }
+        }
+      }
+      if (maxNum === 1000 && rows.length > 1) {
+        maxNum = 1000 + rows.length;
+      }
+      return `PX-STAFF-${maxNum + 1}`;
+    } catch {
+      return 'PX-STAFF-1001';
+    }
+  }
+
+  router.get('/staff/next-employee-id', requireZonalHr, async (_req: any, res) => {
+    try {
+      const nextStaffEmployeeId = await computeNextStaffEmployeeId();
+      return res.json({ success: true, nextStaffEmployeeId });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ success: false, error: msg });
+    }
+  });
+
   router.get('/staff', requireZonalHr, async (req: any, res) => {
     try {
       if (req.query.zone_id && req.query.zone_id !== req.zonalUser.zone_id && req.zonalUser.role !== 'super_admin') {
@@ -256,44 +299,104 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
 
       // [HARD RULE]: Filter strictly to subordinate roles (central_hr, branch_manager) in this zone.
       // Zonal HR Managers and Super Admins MUST NEVER be returned.
-      const { data: staffList, error } = await supabaseAdmin
+      let { data: staffList, error } = await supabaseAdmin
         .from('staff_profiles')
         .select(`
           id,
           name,
+          personal_email,
+          phone_number,
+          staff_employee_id,
+          department_id,
+          designation_id,
           is_active,
           must_change_password,
           created_at,
           roles!inner ( id, name ),
           zones ( id, name ),
-          branches ( id, name )
+          branches ( id, name ),
+          departments ( id, name, department_code ),
+          designations ( id, name, employment_category, department_id )
         `)
         .eq('zone_id', zoneId)
         .in('roles.name', ['central_hr', 'branch_manager'])
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        const fallback = await supabaseAdmin
+          .from('staff_profiles')
+          .select(`
+            id,
+            name,
+            is_active,
+            must_change_password,
+            created_at,
+            roles!inner ( id, name ),
+            zones ( id, name ),
+            branches ( id, name )
+          `)
+          .eq('zone_id', zoneId)
+          .in('roles.name', ['central_hr', 'branch_manager'])
+          .order('created_at', { ascending: false });
+        if (fallback.error) throw fallback.error;
+        staffList = fallback.data as any;
+      }
+
+      // Fetch tagged branches from staff_branch_assignments
+      const taggedBranchesByStaff = new Map<string, Array<{ id: string; name: string; branch_code?: string }>>();
+      const { data: sbaRows, error: sbaErr } = await supabaseAdmin
+        .from('staff_branch_assignments')
+        .select('staff_profile_id, branch_id, branches(id, name, branch_code)');
+
+      if (!sbaErr && sbaRows) {
+        for (const row of sbaRows as any[]) {
+          const brObj = Array.isArray(row.branches) ? row.branches[0] : row.branches;
+          if (row.staff_profile_id && brObj?.id) {
+            const list = taggedBranchesByStaff.get(row.staff_profile_id) || [];
+            if (!list.some((b) => b.id === brObj.id)) {
+              list.push({ id: brObj.id, name: brObj.name, branch_code: brObj.branch_code });
+            }
+            taggedBranchesByStaff.set(row.staff_profile_id, list);
+          }
+        }
+      }
 
       // Fetch emails from auth.users
       const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
       const emailMap = new Map((authUsers?.users || []).map((u) => [u.id, u.email]));
 
-      const enriched = (staffList || []).map((s) => ({
-        ...s,
-        email: emailMap.get(s.id) || 'staff@postex.pk',
-      }));
+      const enriched = (staffList || []).map((s: any) => {
+        const tagged =
+          taggedBranchesByStaff.get(s.id) ||
+          (s.branches?.id ? [{ id: s.branches.id, name: s.branches.name }] : []);
+        return {
+          ...s,
+          email: emailMap.get(s.id) || 'staff@postex.pk',
+          phone: s.phone_number || null,
+          tagged_branches: tagged,
+          branch_ids: tagged.map((b) => b.id),
+        };
+      });
 
-      // Also return list of branches in this zone for UI dropdowns
-      const { data: branches } = await supabaseAdmin
-        .from('branches')
-        .select('id, name')
-        .eq('zone_id', zoneId)
-        .order('name');
+      // Also return list of branches in this zone, departments, designations, and nextStaffEmployeeId
+      const [{ data: branches }, { data: departments }, { data: designations }, nextStaffEmployeeId] =
+        await Promise.all([
+          supabaseAdmin.from('branches').select('id, name, branch_code, branch_type').eq('zone_id', zoneId).order('name'),
+          supabaseAdmin.from('departments').select('id, name, department_code, department_category, is_active').order('name'),
+          supabaseAdmin
+            .from('designations')
+            .select('id, name, department_id, employment_category, is_active, departments(id, name)')
+            .order('name'),
+          computeNextStaffEmployeeId(),
+        ]);
 
       return res.json({
         success: true,
         staff: enriched,
         branches: branches || [],
+        departments: departments || [],
+        designations: designations || [],
+        nextStaffEmployeeId,
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -304,7 +407,19 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
   // Create Staff scoped strictly to this Zone (Roles restricted: central_hr or branch_manager)
   router.post('/staff', requireZonalHr, async (req: any, res) => {
     try {
-      const { email, name, role_name, branch_id } = req.body;
+      const {
+        email,
+        name,
+        personal_email,
+        phone_number,
+        phone,
+        staff_employee_id,
+        department_id,
+        designation_id,
+        role_name,
+        branch_id,
+        branch_ids,
+      } = req.body || {};
 
       if (!email || !name || !role_name) {
         return res.status(400).json({ success: false, error: 'Email, name, and role are required.' });
@@ -322,22 +437,80 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
         ? String(req.body.zone_id)
         : req.zonalUser.zone_id;
 
-      // If branch_manager, branch_id is mandatory and MUST belong to this zone
-      if (role_name === 'branch_manager') {
-        if (!branch_id) {
-          return res.status(400).json({ success: false, error: 'Branch is required for Branch Manager.' });
+      // Validate Department -> Designation link if both are provided
+      const cleanDeptId = department_id && String(department_id).trim() ? String(department_id).trim() : null;
+      const cleanDesigId = designation_id && String(designation_id).trim() ? String(designation_id).trim() : null;
+
+      if (cleanDesigId) {
+        const { data: desigRow } = await supabaseAdmin
+          .from('designations')
+          .select('id, name, department_id')
+          .eq('id', cleanDesigId)
+          .maybeSingle();
+        if (!desigRow) {
+          return res.status(400).json({ success: false, error: 'Selected Designation does not exist.' });
         }
-        const { data: br } = await supabaseAdmin
+        if (cleanDeptId && desigRow.department_id !== cleanDeptId) {
+          return res.status(400).json({
+            success: false,
+            error: 'Selected Designation does not belong to the selected Department.',
+          });
+        }
+      }
+
+      // Normalize Branch Tagging
+      const rawBranchIds: string[] = Array.isArray(branch_ids)
+        ? branch_ids.map((b: any) => String(b).trim()).filter(Boolean)
+        : branch_id && String(branch_id).trim()
+        ? [String(branch_id).trim()]
+        : [];
+      const uniqueBranchIds = Array.from(new Set(rawBranchIds));
+
+      // If branch_manager, at least one branch is mandatory and MUST belong to this zone
+      if (role_name === 'branch_manager' && uniqueBranchIds.length === 0) {
+        return res.status(400).json({ success: false, error: 'Branch is required for Branch Manager.' });
+      }
+
+      if (uniqueBranchIds.length > 0) {
+        const { data: brList } = await supabaseAdmin
           .from('branches')
           .select('id, zone_id')
-          .eq('id', branch_id)
-          .single();
-        if (!br || br.zone_id !== zoneId) {
+          .in('id', uniqueBranchIds);
+        const invalidBr = (brList || []).find((b) => b.zone_id !== zoneId);
+        if (invalidBr || (brList || []).length !== uniqueBranchIds.length) {
           return res.status(403).json({
             success: false,
             error: 'Branch does not belong to your assigned zone.',
           });
         }
+      }
+
+      const primaryBranchId =
+        role_name === 'branch_manager'
+          ? uniqueBranchIds[0] || null
+          : branch_id && String(branch_id).trim()
+          ? String(branch_id).trim()
+          : uniqueBranchIds.length === 1
+          ? uniqueBranchIds[0]
+          : null;
+
+      // Resolve or auto-generate Staff Employee ID (PX-STAFF-XXXX)
+      const resolvedStaffEmpId =
+        staff_employee_id && String(staff_employee_id).trim()
+          ? String(staff_employee_id).trim()
+          : await computeNextStaffEmployeeId();
+
+      const { data: existingEmpId } = await supabaseAdmin
+        .from('staff_profiles')
+        .select('id')
+        .eq('staff_employee_id', resolvedStaffEmpId)
+        .maybeSingle();
+
+      if (existingEmpId) {
+        return res.status(400).json({
+          success: false,
+          error: `Staff Employee ID "${resolvedStaffEmpId}" already exists. Please enter a unique Employee ID.`,
+        });
       }
 
       // Get role ID
@@ -351,14 +524,20 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
       }
 
       const tempPassword = generateSecureTempPassword(14);
+      const cleanEmail = String(email).trim().toLowerCase();
+      const cleanName = String(name).trim();
+      const cleanPersonalEmail =
+        personal_email && String(personal_email).trim() ? String(personal_email).trim().toLowerCase() : null;
+      const rawPhone = phone_number ?? phone ?? '';
+      const cleanPhone = rawPhone && String(rawPhone).trim() ? String(rawPhone).trim() : null;
 
       // Create Supabase Auth user
       const { data: authUser, error: createAuthErr } = await supabaseAdmin.auth.admin.createUser({
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         password: tempPassword,
         email_confirm: true,
         user_metadata: {
-          name,
+          name: cleanName,
           role: role_name,
           must_change_password: true,
           zone_id: zoneId,
@@ -372,32 +551,85 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
         });
       }
 
+      const profileUpsertPayload: Record<string, any> = {
+        id: authUser.user.id,
+        name: cleanName,
+        personal_email: cleanPersonalEmail,
+        phone_number: cleanPhone,
+        staff_employee_id: resolvedStaffEmpId,
+        department_id: cleanDeptId,
+        designation_id: cleanDesigId,
+        role_id: roleRow.id,
+        zone_id: zoneId,
+        branch_id: primaryBranchId,
+        is_active: true,
+        must_change_password: true,
+        created_by: req.zonalUser.id,
+      };
+
       // Upsert profile in staff_profiles with mandatory must_change_password = true
-      const { data: profile, error: profErr } = await supabaseAdmin
+      let { data: profile, error: profErr } = await supabaseAdmin
         .from('staff_profiles')
-        .upsert({
-          id: authUser.user.id,
-          name,
-          role_id: roleRow.id,
-          zone_id: zoneId,
-          branch_id: role_name === 'branch_manager' ? branch_id : null,
-          is_active: true,
-          must_change_password: true,
-        })
+        .upsert(profileUpsertPayload)
         .select(`
           id,
           name,
+          personal_email,
+          phone_number,
+          staff_employee_id,
+          department_id,
+          designation_id,
           is_active,
           must_change_password,
           zone_id,
           branch_id,
           roles(name),
-          branches(name)
+          branches(name),
+          departments(id, name, department_code),
+          designations(id, name, employment_category, department_id)
         `)
         .single();
 
+      if (profErr && (profErr.message.includes('staff_employee_id') || profErr.message.includes('personal_email') || profErr.message.includes('department_id'))) {
+        const retry = await supabaseAdmin
+          .from('staff_profiles')
+          .upsert({
+            id: authUser.user.id,
+            name: cleanName,
+            role_id: roleRow.id,
+            zone_id: zoneId,
+            branch_id: primaryBranchId,
+            is_active: true,
+            must_change_password: true,
+          })
+          .select(`
+            id,
+            name,
+            is_active,
+            must_change_password,
+            zone_id,
+            branch_id,
+            roles(name),
+            branches(name)
+          `)
+          .single();
+        profile = retry.data as any;
+        profErr = retry.error;
+      }
+
       if (profErr) {
+        await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
         return res.status(500).json({ success: false, error: profErr.message });
+      }
+
+      if (uniqueBranchIds.length > 0) {
+        await supabaseAdmin.from('staff_branch_assignments').upsert(
+          uniqueBranchIds.map((bId) => ({
+            staff_profile_id: authUser.user.id,
+            branch_id: bId,
+          })),
+          { onConflict: 'staff_profile_id,branch_id' }
+        );
       }
 
       // Log in audit trail
@@ -407,14 +639,31 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
         action: 'ZONAL_STAFF_CREATED',
         entity_type: 'staff_profiles',
         entity_id: authUser.user.id,
-        metadata: { email, role: role_name, zone_id: zoneId, branch_id },
+        metadata: {
+          email: cleanEmail,
+          staff_employee_id: resolvedStaffEmpId,
+          personal_email: cleanPersonalEmail,
+          phone_number: cleanPhone,
+          department_id: cleanDeptId,
+          designation_id: cleanDesigId,
+          role: role_name,
+          zone_id: zoneId,
+          branch_id: primaryBranchId,
+          branch_ids: uniqueBranchIds,
+        },
       });
 
       return res.status(201).json({
         success: true,
         staff: {
           ...profile,
-          email,
+          email: cleanEmail,
+          staff_employee_id: (profile as any)?.staff_employee_id || resolvedStaffEmpId,
+          personal_email: (profile as any)?.personal_email ?? cleanPersonalEmail,
+          phone_number: (profile as any)?.phone_number ?? cleanPhone,
+          department_id: (profile as any)?.department_id ?? cleanDeptId,
+          designation_id: (profile as any)?.designation_id ?? cleanDesigId,
+          branch_ids: uniqueBranchIds,
         },
         one_time_temporary_password: tempPassword,
       });
@@ -428,7 +677,18 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
   router.put('/staff/:id', requireZonalHr, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { name, branch_id, role_name } = req.body;
+      const {
+        name,
+        personal_email,
+        phone_number,
+        phone,
+        staff_employee_id,
+        department_id,
+        designation_id,
+        branch_id,
+        branch_ids,
+        role_name,
+      } = req.body || {};
       const zoneId = req.zonalUser.role === 'super_admin' ? null : req.zonalUser.zone_id;
 
       // Confirm target belongs to their zone
@@ -453,6 +713,25 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
       if (name && typeof name === 'string' && name.trim()) {
         updateData.name = name.trim();
       }
+      if (personal_email !== undefined) {
+        updateData.personal_email =
+          personal_email && String(personal_email).trim() ? String(personal_email).trim().toLowerCase() : null;
+      }
+      if (phone_number !== undefined || phone !== undefined) {
+        const rawPhone = phone_number ?? phone ?? '';
+        updateData.phone_number = rawPhone && String(rawPhone).trim() ? String(rawPhone).trim() : null;
+      }
+      if (staff_employee_id !== undefined && String(staff_employee_id).trim()) {
+        updateData.staff_employee_id = String(staff_employee_id).trim();
+      }
+      if (department_id !== undefined) {
+        updateData.department_id =
+          department_id && String(department_id).trim() ? String(department_id).trim() : null;
+      }
+      if (designation_id !== undefined) {
+        updateData.designation_id =
+          designation_id && String(designation_id).trim() ? String(designation_id).trim() : null;
+      }
 
       if (branch_id !== undefined) {
         if (branch_id) {
@@ -471,6 +750,29 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
         }
       }
 
+      if (Array.isArray(branch_ids)) {
+        const cleanIds = Array.from(new Set(branch_ids.map((b: any) => String(b).trim()).filter(Boolean)));
+        if (cleanIds.length > 0 && zoneId) {
+          const { data: bList } = await supabaseAdmin
+            .from('branches')
+            .select('id, zone_id')
+            .in('id', cleanIds);
+          const invalidBr = (bList || []).find((b) => b.zone_id !== zoneId);
+          if (invalidBr || (bList || []).length !== cleanIds.length) {
+            return res.status(400).json({ success: false, error: 'One or more branches do not belong to your zone.' });
+          }
+        }
+        if (branch_id === undefined) {
+          updateData.branch_id = cleanIds[0] || null;
+        }
+        await supabaseAdmin.from('staff_branch_assignments').delete().eq('staff_profile_id', id);
+        if (cleanIds.length > 0) {
+          await supabaseAdmin.from('staff_branch_assignments').insert(
+            cleanIds.map((bId) => ({ staff_profile_id: id, branch_id: bId }))
+          );
+        }
+      }
+
       if (role_name) {
         if (!['central_hr', 'branch_manager'].includes(role_name)) {
           return res.status(400).json({ success: false, error: 'Only Central HR and Branch Manager roles can be assigned.' });
@@ -481,14 +783,35 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
         }
       }
 
-      const { data: updated, error: updErr } = await supabaseAdmin
+      let { data: updated, error: updErr } = await supabaseAdmin
         .from('staff_profiles')
         .update(updateData)
         .eq('id', id)
-        .select('*, roles(name), branches(name)')
+        .select('*, roles(name), branches(name), departments(id, name, department_code), designations(id, name, employment_category, department_id)')
         .single();
 
+      if (updErr && (updErr.message.includes('staff_employee_id') || updErr.message.includes('personal_email') || updErr.message.includes('department_id'))) {
+        const fallbackData: any = {};
+        if (updateData.name !== undefined) fallbackData.name = updateData.name;
+        if (updateData.branch_id !== undefined) fallbackData.branch_id = updateData.branch_id;
+        if (updateData.role_id !== undefined) fallbackData.role_id = updateData.role_id;
+        const retry = await supabaseAdmin
+          .from('staff_profiles')
+          .update(fallbackData)
+          .eq('id', id)
+          .select('*, roles(name), branches(name)')
+          .single();
+        updated = retry.data as any;
+        updErr = retry.error;
+      }
+
       if (updErr) {
+        if (updErr.message.toLowerCase().includes('staff_profiles_staff_employee_id_key')) {
+          return res.status(400).json({
+            success: false,
+            error: `Staff Employee ID "${staff_employee_id}" already exists. Please enter a unique Employee ID.`,
+          });
+        }
         return res.status(400).json({ success: false, error: updErr.message });
       }
 
