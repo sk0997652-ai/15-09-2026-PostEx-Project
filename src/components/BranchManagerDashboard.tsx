@@ -553,14 +553,14 @@ export function BranchManagerDashboard({ currentUser, onSignOut }: BranchManager
                 {activeTab === 'pending_queue' && 'Branch Manager — Pending Verification Queue'}
                 {activeTab === 'corrections_queue' && 'Branch Manager — Corrections & Resubmissions Queue'}
                 {activeTab === 'forwarded_queue' && 'Branch Manager — Forwarded Applications'}
-                {activeTab === 'branch_overview' && 'Branch Manager — Branch Performance & Telemetry'}
+                {activeTab === 'branch_overview' && 'Branch Manager — Branch Overview & Operations'}
                 {activeTab === 'headcount' && 'Branch Manager — Branch Headcount (Read-Only)'}
               </h1>
               <p className="text-xs text-slate-500 mt-0.5">
                 {activeTab === 'pending_queue' && 'Conduct in-person document verification, apply digital signature attestation, and forward to Central HR.'}
                 {activeTab === 'corrections_queue' && 'Review corrected candidate documents returned by Central HR for re-verification.'}
                 {activeTab === 'forwarded_queue' && 'Track applications verified by this branch currently awaiting final Central HR enrollment decision.'}
-                {activeTab === 'branch_overview' && 'Branch operational throughput, document verification metrics, and Postgres RLS telemetry.'}
+                {activeTab === 'branch_overview' && 'You can only view and manage records, document verifications, and headcount for your assigned branch.'}
                 {activeTab === 'headcount' && 'Read-only view of approved designation headcount targets, active enrolled employees, and open vacancies for your branch.'}
               </p>
             </div>
@@ -636,6 +636,10 @@ export function BranchManagerDashboard({ currentUser, onSignOut }: BranchManager
               branch_id: currentUser.branch_id || 'N/A',
               zone_name: currentUser.zone_name || 'Assigned Zone',
               zone_id: currentUser.zone_id || 'N/A',
+            }}
+            onNavigateToHeadcount={() => {
+              setActiveTab('headcount');
+              setSelectedAppId(null);
             }}
           />
         ) : activeTab === 'headcount' ? (

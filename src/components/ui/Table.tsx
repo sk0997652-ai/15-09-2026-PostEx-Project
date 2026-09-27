@@ -8,8 +8,8 @@ export interface TableProps extends React.TableHTMLAttributes<HTMLTableElement> 
 
 export const Table = React.forwardRef<HTMLTableElement, TableProps>(
   ({ className = '', wrapperClassName = '', children, ...props }, ref) => (
-    <div className={`w-full overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-xs ${wrapperClassName}`}>
-      <table ref={ref} className={`w-full text-left border-collapse ${className}`} {...props}>
+    <div className={`w-full overflow-x-auto border border-slate-200/90 rounded-2xl bg-white shadow-xs ${wrapperClassName}`}>
+      <table ref={ref} className={`w-full text-left border-collapse tabular-nums ${className}`} {...props}>
         {children}
       </table>
     </div>
@@ -21,7 +21,7 @@ export const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className = '', children, ...props }, ref) => (
-  <thead ref={ref} className={`bg-slate-50 border-b border-slate-200 ${className}`} {...props}>
+  <thead ref={ref} className={`bg-slate-50/90 border-b border-slate-200/90 ${className}`} {...props}>
     {children}
   </thead>
 ));
@@ -43,7 +43,7 @@ export const TableRow = React.forwardRef<
 >(({ className = '', children, ...props }, ref) => (
   <tr
     ref={ref}
-    className={`hover:bg-slate-50/70 transition-colors ${className}`}
+    className={`hover:bg-slate-50/80 transition-colors duration-150 group ${className}`}
     {...props}
   >
     {children}
@@ -57,7 +57,7 @@ export const TableHead = React.forwardRef<
 >(({ className = '', children, ...props }, ref) => (
   <th
     ref={ref}
-    className={`px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider ${className}`}
+    className={`px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap select-none ${className}`}
     {...props}
   >
     {children}
@@ -71,7 +71,7 @@ export const TableCell = React.forwardRef<
 >(({ className = '', children, ...props }, ref) => (
   <td
     ref={ref}
-    className={`px-4 py-3.5 text-sm font-normal text-slate-900 ${className}`}
+    className={`px-4 py-3.5 text-xs sm:text-[13px] font-normal text-slate-800 align-middle ${className}`}
     {...props}
   >
     {children}

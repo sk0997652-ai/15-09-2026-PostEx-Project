@@ -727,7 +727,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
           <div className="text-[11px] text-slate-400 px-1 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <Shield className="w-3 h-3 text-emerald-400" />
-              <span>Zone RLS Enforced</span>
+              <span>Zone-Scoped Access</span>
             </span>
           </div>
           <button
@@ -781,6 +781,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
             zoneName={currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
             onNavigateToCreateJoiner={() => setActiveTab('create_joiner')}
             onNavigateToReviewQueue={() => setActiveTab('review_queue')}
+            onNavigateToHeadcount={() => setActiveTab('headcount')}
             onRefresh={fetchMetrics}
           />
         )}

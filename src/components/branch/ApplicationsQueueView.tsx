@@ -100,7 +100,7 @@ export function ApplicationsQueueView({
         {loading ? (
           <div className="p-12 text-center">
             <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-3" />
-            <p className="text-xs text-slate-600 font-medium">Querying branch applications via Postgres RLS...</p>
+            <p className="text-xs text-slate-600 font-medium">Loading branch applications...</p>
           </div>
         ) : applications.length === 0 ? (
           <div className="p-12 text-center space-y-3">

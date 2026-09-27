@@ -189,9 +189,8 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
   return (
     <div id="super-admin-org-structure-view" className="space-y-6">
       <PageHeader
-        title="Super Admin — Organization Structure"
-        description="Manage and configure PostEx operating Zones, Branches, Departments, and Designations."
-        roleContext="Hierarchy Manager"
+        title="Organization Structure"
+        description="Manage and configure operating Zones, Branches, Departments, and Designations."
         actions={
           <Button
             id="add-org-entity-btn"

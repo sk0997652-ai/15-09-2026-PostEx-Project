@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Users,
   Bike,
@@ -7,6 +7,10 @@ import {
   Info,
   Building2,
   MapPin,
+  ArrowRight,
+  Search,
+  BarChart3,
+  UserCheck,
 } from 'lucide-react';
 import {
   FillRateStatus,
@@ -22,6 +26,8 @@ import {
   Badge,
   Modal,
   Button,
+  Input,
+  Select,
   Table,
   TableHeader,
   TableBody,
@@ -61,11 +67,24 @@ export const FillRateStatusBadge: React.FC<{
 // ============================================================================
 export const TrendIndicator: React.FC<{
   trend?: OverviewTrendInfo | null;
-}> = ({ trend }) => {
+  pill?: boolean;
+}> = ({ trend, pill = false }) => {
   if (!trend || !trend.has_historical_data || trend.direction === 'none') {
+    if (pill) {
+      return (
+        <span
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-500 border border-slate-200/80 font-mono tabular-nums"
+          title="No prior-month historical data exists yet"
+          data-testid="trend-indicator-empty"
+        >
+          <span>—</span>
+          <span className="font-sans text-[10px] text-slate-500">Current baseline</span>
+        </span>
+      );
+    }
     return (
       <span
-        className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-slate-400"
+        className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-slate-400 tabular-nums"
         title="No prior-month historical data exists yet"
         data-testid="trend-indicator-empty"
       >
@@ -75,9 +94,22 @@ export const TrendIndicator: React.FC<{
   }
 
   if (trend.direction === 'up') {
+    if (pill) {
+      return (
+        <span
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-mono tabular-nums"
+          title={`Current Active (${trend.current_active}) vs Last Month (${trend.last_month_active})`}
+          data-testid="trend-indicator-up"
+        >
+          <span>▲</span>
+          {typeof trend.delta === 'number' && <span>+{trend.delta}</span>}
+          <span className="font-sans text-[10px] font-medium text-emerald-600 ml-0.5">vs last mo</span>
+        </span>
+      );
+    }
     return (
       <span
-        className="inline-flex items-center gap-1 text-xs font-mono font-bold text-emerald-600"
+        className="inline-flex items-center gap-1 text-xs font-mono font-bold text-emerald-600 tabular-nums"
         title={`Current Active (${trend.current_active}) vs Last Month (${trend.last_month_active})`}
         data-testid="trend-indicator-up"
       >
@@ -88,9 +120,22 @@ export const TrendIndicator: React.FC<{
   }
 
   if (trend.direction === 'down') {
+    if (pill) {
+      return (
+        <span
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/80 font-mono tabular-nums"
+          title={`Current Active (${trend.current_active}) vs Last Month (${trend.last_month_active})`}
+          data-testid="trend-indicator-down"
+        >
+          <span>▼</span>
+          {typeof trend.delta === 'number' && <span>{trend.delta}</span>}
+          <span className="font-sans text-[10px] font-medium text-rose-600 ml-0.5">vs last mo</span>
+        </span>
+      );
+    }
     return (
       <span
-        className="inline-flex items-center gap-1 text-xs font-mono font-bold text-rose-600"
+        className="inline-flex items-center gap-1 text-xs font-mono font-bold text-rose-600 tabular-nums"
         title={`Current Active (${trend.current_active}) vs Last Month (${trend.last_month_active})`}
         data-testid="trend-indicator-down"
       >
@@ -100,9 +145,22 @@ export const TrendIndicator: React.FC<{
     );
   }
 
+  if (pill) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200/80 font-mono tabular-nums"
+        title={`Unchanged vs Last Month (${trend.last_month_active})`}
+        data-testid="trend-indicator-flat"
+      >
+        <span>— 0</span>
+        <span className="font-sans text-[10px] text-slate-500 ml-0.5">vs last mo</span>
+      </span>
+    );
+  }
+
   return (
     <span
-      className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-slate-500"
+      className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-slate-500 tabular-nums"
       title={`Unchanged vs Last Month (${trend.last_month_active})`}
       data-testid="trend-indicator-flat"
     >
@@ -112,169 +170,970 @@ export const TrendIndicator: React.FC<{
 };
 
 // ============================================================================
-// 3. Employment Category Badge (Rider vs In-House Staff)
+// 3. Employment Category Badge (Rider = Sky, In-House Staff = Emerald)
 // ============================================================================
 export const EmploymentCategoryBadge: React.FC<{
   category: 'Rider' | 'In-House Staff' | string;
 }> = ({ category }) => {
   const isRider = String(category).toLowerCase().includes('rider');
   return (
-    <Badge variant={isRider ? 'primary' : 'info'}>
+    <Badge variant={isRider ? 'sky' : 'success'} dot>
       {isRider ? 'Rider' : 'In-House Staff'}
     </Badge>
   );
 };
 
 // ============================================================================
-// 4. Category Rollup KPI Cards (Total, Rider, In-House Staff)
+// 4. Matched 3-Card KPI Row (Total Employees / Total Active Riders / Total In-House Staff)
+//    Accent Families: Indigo (Employees), Sky (Riders), Emerald (In-House Staff)
 // ============================================================================
 export const HeadcountCategoryRollupCards: React.FC<{
-  scopeLabel: string;
+  scopeLabel?: string;
   total: OverviewMetricBlock;
   rider: OverviewMetricBlock;
   inHouse: OverviewMetricBlock;
   extraCard?: React.ReactNode;
 }> = ({ scopeLabel, total, rider, inHouse, extraCard }) => {
+  const prefix = scopeLabel && scopeLabel !== 'Company' ? `${scopeLabel} · ` : '';
+
   return (
-    <div
-      id="headcount-category-rollup-cards"
-      className={`grid grid-cols-1 sm:grid-cols-2 ${
-        extraCard ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
-      } gap-4`}
-    >
-      {/* Card 1: Total Headcount */}
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-slate-500">
-            {scopeLabel} Total Headcount
-          </span>
-          <span className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-            <Users className="w-4 h-4" />
-          </span>
-        </div>
-        <div className="flex items-baseline justify-between gap-2 mt-1">
+    <div className="space-y-4">
+      <div
+        id="headcount-category-rollup-cards"
+        className="grid grid-cols-1 md:grid-cols-3 gap-5"
+      >
+        {/* KPI Card 1: Total Employees (Indigo Accent) */}
+        <div
+          id="kpi-card-total-employees"
+          className="rounded-2xl p-6 bg-white border border-slate-200/90 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 flex flex-col justify-between"
+        >
           <div>
-            <span className="text-2xl font-black text-slate-900 font-mono">
-              {total.active}
-            </span>
-            <span className="text-xs text-slate-500 font-mono ml-1">
-              / {total.approved} Approved
-            </span>
-          </div>
-          <TrendIndicator trend={total.trend} />
-        </div>
-        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
-          <span className="text-slate-600 font-medium">
-            Vacancy: <strong className="text-amber-700 font-mono">{total.vacancy}</strong>
-          </span>
-          <FillRateStatusBadge
-            status={total.fill_rate_status}
-            fillRatePct={total.fill_rate_pct}
-          />
-        </div>
-      </Card>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                {prefix}Total Employees
+              </span>
+              <span className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100/80 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5" />
+              </span>
+            </div>
 
-      {/* Card 2: Rider Headcount */}
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-slate-500">
-            Rider Headcount
-          </span>
-          <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <Bike className="w-4 h-4" />
-          </span>
+            <div className="flex items-baseline gap-2.5 mt-1">
+              <span className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 font-mono tabular-nums">
+                {total.active}
+              </span>
+              <span className="text-xs font-medium text-slate-400 font-mono tabular-nums">
+                / {total.approved} Approved
+              </span>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <TrendIndicator trend={total.trend} pill />
+              <span className="text-[11px] text-slate-500 font-mono tabular-nums">
+                Fill: <strong className="text-indigo-600">{total.fill_rate_pct}%</strong>
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3.5 border-t border-slate-100">
+            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-3">
+              <div
+                className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                style={{ width: `${Math.min(100, Math.max(0, total.fill_rate_pct))}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-slate-500 font-medium">
+                Open Vacancy:{' '}
+                <strong className="text-slate-900 font-mono tabular-nums">{total.vacancy}</strong>
+              </span>
+              <FillRateStatusBadge
+                status={total.fill_rate_status}
+                fillRatePct={total.fill_rate_pct}
+              />
+            </div>
+          </div>
         </div>
-        <div className="flex items-baseline justify-between gap-2 mt-1">
+
+        {/* KPI Card 2: Total Active Riders (Sky Accent) */}
+        <div
+          id="kpi-card-active-riders"
+          className="rounded-2xl p-6 bg-white border border-slate-200/90 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 flex flex-col justify-between"
+        >
           <div>
-            <span className="text-2xl font-black text-indigo-700 font-mono">
-              {rider.active}
-            </span>
-            <span className="text-xs text-slate-500 font-mono ml-1">
-              / {rider.approved} Approved
-            </span>
-          </div>
-          <TrendIndicator trend={rider.trend} />
-        </div>
-        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
-          <span className="text-slate-600 font-medium">
-            Vacancy: <strong className="text-amber-700 font-mono">{rider.vacancy}</strong>
-          </span>
-          <FillRateStatusBadge
-            status={rider.fill_rate_status}
-            fillRatePct={rider.fill_rate_pct}
-          />
-        </div>
-      </Card>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                {prefix}Total Active Riders
+              </span>
+              <span className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 border border-sky-100/80 flex items-center justify-center shrink-0">
+                <Bike className="w-5 h-5" />
+              </span>
+            </div>
 
-      {/* Card 3: In-House Staff Headcount */}
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-slate-500">
-            In-House Staff Headcount
-          </span>
-          <span className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <Briefcase className="w-4 h-4" />
-          </span>
+            <div className="flex items-baseline gap-2.5 mt-1">
+              <span className="text-3xl sm:text-4xl font-black tracking-tight text-sky-700 font-mono tabular-nums">
+                {rider.active}
+              </span>
+              <span className="text-xs font-medium text-slate-400 font-mono tabular-nums">
+                / {rider.approved} Approved
+              </span>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <TrendIndicator trend={rider.trend} pill />
+              <span className="text-[11px] text-slate-500 font-mono tabular-nums">
+                Fill: <strong className="text-sky-600">{rider.fill_rate_pct}%</strong>
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3.5 border-t border-slate-100">
+            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-3">
+              <div
+                className="h-full bg-sky-500 rounded-full transition-all duration-300"
+                style={{ width: `${Math.min(100, Math.max(0, rider.fill_rate_pct))}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-slate-500 font-medium">
+                Rider Vacancy:{' '}
+                <strong className="text-slate-900 font-mono tabular-nums">{rider.vacancy}</strong>
+              </span>
+              <FillRateStatusBadge
+                status={rider.fill_rate_status}
+                fillRatePct={rider.fill_rate_pct}
+              />
+            </div>
+          </div>
         </div>
-        <div className="flex items-baseline justify-between gap-2 mt-1">
+
+        {/* KPI Card 3: Total In-House Staff (Emerald Accent) */}
+        <div
+          id="kpi-card-inhouse-staff"
+          className="rounded-2xl p-6 bg-white border border-slate-200/90 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 flex flex-col justify-between"
+        >
           <div>
-            <span className="text-2xl font-black text-emerald-700 font-mono">
-              {inHouse.active}
-            </span>
-            <span className="text-xs text-slate-500 font-mono ml-1">
-              / {inHouse.approved} Approved
-            </span>
-          </div>
-          <TrendIndicator trend={inHouse.trend} />
-        </div>
-        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
-          <span className="text-slate-600 font-medium">
-            Vacancy: <strong className="text-amber-700 font-mono">{inHouse.vacancy}</strong>
-          </span>
-          <FillRateStatusBadge
-            status={inHouse.fill_rate_status}
-            fillRatePct={inHouse.fill_rate_pct}
-          />
-        </div>
-      </Card>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                {prefix}Total In-House Staff
+              </span>
+              <span className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100/80 flex items-center justify-center shrink-0">
+                <Briefcase className="w-5 h-5" />
+              </span>
+            </div>
 
-      {/* Optional 4th Card (Pipeline / Operational KPI) */}
-      {extraCard}
+            <div className="flex items-baseline gap-2.5 mt-1">
+              <span className="text-3xl sm:text-4xl font-black tracking-tight text-emerald-700 font-mono tabular-nums">
+                {inHouse.active}
+              </span>
+              <span className="text-xs font-medium text-slate-400 font-mono tabular-nums">
+                / {inHouse.approved} Approved
+              </span>
+            </div>
+
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <TrendIndicator trend={inHouse.trend} pill />
+              <span className="text-[11px] text-slate-500 font-mono tabular-nums">
+                Fill: <strong className="text-emerald-600">{inHouse.fill_rate_pct}%</strong>
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3.5 border-t border-slate-100">
+            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-3">
+              <div
+                className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                style={{ width: `${Math.min(100, Math.max(0, inHouse.fill_rate_pct))}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="text-slate-500 font-medium">
+                In-House Vacancy:{' '}
+                <strong className="text-slate-900 font-mono tabular-nums">{inHouse.vacancy}</strong>
+              </span>
+              <FillRateStatusBadge
+                status={inHouse.fill_rate_status}
+                fillRatePct={inHouse.fill_rate_pct}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {extraCard && <div className="pt-1">{extraCard}</div>}
     </div>
   );
 };
 
 // ============================================================================
-// 5. Active Definition Informational Note
+// 5. Zone / Branch Flashcards Row + Approved Summary Bar + Report Link
 // ============================================================================
-export const ActiveDefinitionBanner: React.FC<{ note?: string }> = ({ note }) => (
-  <Card className="p-3.5 bg-slate-50/80">
-    <div className="flex items-center justify-between flex-wrap gap-2 text-xs text-slate-600">
-      <div className="flex items-center gap-2">
-        <Info className="w-4 h-4 text-indigo-600 shrink-0" />
-        <span>
-          <strong>Headcount Definitions:</strong>{' '}
-          {note ||
-            'Active = any row in employees (approved/enrolled candidates); no offboarding flow exists yet, so all enrolled employees count as active. Vacancy = Approved − Active (floored at 0).'}
-        </span>
+export const ZoneBranchFlashcardsSection: React.FC<{
+  mode: 'super_admin' | 'zonal_hr' | 'central_hr' | 'branch_manager';
+  zoneRows: OverviewZoneRow[];
+  branchRows: OverviewBranchRow[];
+  summaryTotal: OverviewMetricBlock;
+  summaryRider: OverviewMetricBlock;
+  summaryInHouse: OverviewMetricBlock;
+  selectedZoneId?: string;
+  onSelectZoneFilter?: (zoneId: string) => void;
+  onInspectZone?: (zone: OverviewZoneRow) => void;
+  onInspectBranch?: (branch: OverviewBranchRow) => void;
+  onNavigateToHeadcount?: () => void;
+  fallbackZoneName?: string;
+  fallbackBranchName?: string;
+  designationsCount?: number;
+}> = ({
+  mode,
+  zoneRows,
+  branchRows,
+  summaryTotal,
+  summaryRider,
+  summaryInHouse,
+  selectedZoneId = 'all',
+  onSelectZoneFilter,
+  onInspectZone,
+  onInspectBranch,
+  onNavigateToHeadcount,
+  fallbackZoneName = 'Assigned Zone',
+  fallbackBranchName = 'Assigned Branch',
+  designationsCount = 0,
+}) => {
+  const sectionTitle =
+    mode === 'super_admin'
+      ? 'Geographic Zone Flashcards'
+      : mode === 'zonal_hr'
+      ? 'Assigned Zone Headcount Flashcard'
+      : mode === 'central_hr'
+      ? 'Scoped Zone & Branch Flashcards'
+      : 'Assigned Branch Hub Flashcard';
+
+  const sectionSubtitle =
+    mode === 'super_admin'
+      ? 'Company-wide zones with branch counts, Rider vs. In-House Staff approved budgets, and live fill-rate health.'
+      : mode === 'zonal_hr'
+      ? 'Full-width rollup for your assigned geographic zone across all constituent operational branches.'
+      : mode === 'central_hr'
+      ? 'Real-time headcount capacity across the branches tagged to your Central HR profile.'
+      : 'Approved vs. active headcount capacity for your operational branch hub.';
+
+  return (
+    <div id="overview-flashcards-section" className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 className="text-base font-bold tracking-tight text-slate-900">
+            {sectionTitle}
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">{sectionSubtitle}</p>
+        </div>
+        {mode === 'super_admin' && selectedZoneId !== 'all' && onSelectZoneFilter && (
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={() => onSelectZoneFilter('all')}
+          >
+            Clear Zone Filter (Show All)
+          </Button>
+        )}
       </div>
-      <div className="flex items-center gap-2">
-        <Badge variant="success" dot>
-          On Target (&ge;95%)
-        </Badge>
-        <Badge variant="warning" dot>
-          Understaffed (80–94%)
-        </Badge>
-        <Badge variant="error" dot>
-          Critical (&lt;80%)
-        </Badge>
+
+      {/* Super Admin: Grid of Zone Flashcards */}
+      {mode === 'super_admin' && (
+        <div
+          id="super-admin-zone-flashcards-grid"
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
+        >
+          {zoneRows.map((z) => {
+            const isSelected = selectedZoneId === z.zone_id;
+            return (
+              <div
+                key={z.zone_id}
+                id={`zone-flashcard-${z.zone_id}`}
+                onClick={() => {
+                  if (onSelectZoneFilter) {
+                    onSelectZoneFilter(isSelected ? 'all' : z.zone_id);
+                  } else if (onInspectZone) {
+                    onInspectZone(z);
+                  }
+                }}
+                className={`rounded-2xl p-5 bg-white border transition-all duration-150 cursor-pointer flex flex-col justify-between ${
+                  isSelected
+                    ? 'border-indigo-600 ring-2 ring-indigo-600/15 shadow-sm'
+                    : 'border-slate-200/90 shadow-xs hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5'
+                }`}
+              >
+                <div>
+                  {/* Card Top Header + Top-Right "Branch – {count}" Badge */}
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0">
+                        <MapPin className="w-4 h-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-bold text-slate-900 tracking-tight truncate">
+                          {z.zone_name}
+                        </h3>
+                        <span className="text-[11px] text-slate-400 font-mono block truncate">
+                          {z.zone_code || 'ZONE'} {z.region ? `· ${z.region}` : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <Badge variant="primary" data-testid={`zone-branch-badge-${z.zone_id}`}>
+                      Branch – {z.branches_count}
+                    </Badge>
+                  </div>
+
+                  {/* Category Split Metrics */}
+                  <div className="grid grid-cols-2 gap-3 my-3">
+                    <div className="p-3 rounded-xl bg-sky-50/50 border border-sky-100/80">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-700 block">
+                        Riders (Act / Appr)
+                      </span>
+                      <div className="mt-1 flex items-baseline gap-1 font-mono tabular-nums">
+                        <span className="text-lg font-black text-sky-700">
+                          {z.rider.active}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          / {z.rider.approved}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-100/80">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 block">
+                        In-House (Act / Appr)
+                      </span>
+                      <div className="mt-1 flex items-baseline gap-1 font-mono tabular-nums">
+                        <span className="text-lg font-black text-emerald-700">
+                          {z.in_house.active}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          / {z.in_house.approved}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Fill-Rate Progress Bar & Footer */}
+                <div className="pt-3 border-t border-slate-100">
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden mb-2.5">
+                    <div
+                      className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${Math.min(100, Math.max(0, z.total.fill_rate_pct))}%`,
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <FillRateStatusBadge
+                        status={z.total.fill_rate_status}
+                        fillRatePct={z.total.fill_rate_pct}
+                      />
+                      <TrendIndicator trend={z.total.trend} />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onInspectZone) onInspectZone(z);
+                      }}
+                      className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Trend</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Zonal HR: ONE Full-Width Zone Flashcard */}
+      {mode === 'zonal_hr' && (
+        <div
+          id="zonal-fullwidth-zone-flashcard"
+          onClick={() => {
+            if (zoneRows[0] && onInspectZone) onInspectZone(zoneRows[0]);
+          }}
+          className="rounded-2xl p-6 bg-white border border-slate-200/90 shadow-xs hover:shadow-md transition-all duration-150 cursor-pointer"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <span className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0">
+                <MapPin className="w-5 h-5" />
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+                    {zoneRows[0]?.zone_name || fallbackZoneName}
+                  </h3>
+                  {zoneRows[0]?.zone_code && (
+                    <span className="text-xs font-mono text-slate-400">
+                      ({zoneRows[0].zone_code})
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {zoneRows[0]?.region || 'Pakistan'} · Zone-wide active enrollment vs. approved headcount target
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 self-start sm:self-center">
+              <FillRateStatusBadge
+                status={summaryTotal.fill_rate_status}
+                fillRatePct={summaryTotal.fill_rate_pct}
+              />
+              <Badge variant="primary" data-testid="zonal-branch-count-badge">
+                Branch – {zoneRows[0]?.branches_count ?? branchRows.length}
+              </Badge>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-4">
+            <div className="p-3.5 rounded-xl bg-slate-50/90 border border-slate-200/70">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block">
+                Zone Total (Act / Appr)
+              </span>
+              <div className="mt-1 flex items-baseline justify-between">
+                <span className="text-xl font-black text-slate-900 font-mono tabular-nums">
+                  {summaryTotal.active} / {summaryTotal.approved}
+                </span>
+                <TrendIndicator trend={summaryTotal.trend} />
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-sky-50/50 border border-sky-100">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-sky-700 block">
+                Riders (Act / Appr)
+              </span>
+              <div className="mt-1 flex items-baseline justify-between">
+                <span className="text-xl font-black text-sky-700 font-mono tabular-nums">
+                  {summaryRider.active} / {summaryRider.approved}
+                </span>
+                <TrendIndicator trend={summaryRider.trend} />
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-100">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 block">
+                In-House (Act / Appr)
+              </span>
+              <div className="mt-1 flex items-baseline justify-between">
+                <span className="text-xl font-black text-emerald-700 font-mono tabular-nums">
+                  {summaryInHouse.active} / {summaryInHouse.approved}
+                </span>
+                <TrendIndicator trend={summaryInHouse.trend} />
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-amber-50/40 border border-amber-100">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-800 block">
+                Open Zone Vacancy
+              </span>
+              <div className="mt-1 flex items-baseline justify-between">
+                <span className="text-xl font-black text-amber-700 font-mono tabular-nums">
+                  {summaryTotal.vacancy}
+                </span>
+                <span className="text-[11px] text-slate-500 font-mono">
+                  {summaryTotal.fill_rate_pct}% Filled
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Central HR: Scoped Zone & Branch Flashcards */}
+      {mode === 'central_hr' && (
+        <div
+          id="central-branch-flashcards-grid"
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
+        >
+          {branchRows.map((b) => (
+            <div
+              key={b.branch_id}
+              id={`central-branch-flashcard-${b.branch_id}`}
+              onClick={() => onInspectBranch && onInspectBranch(b)}
+              className="rounded-2xl p-5 bg-white border border-slate-200/90 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 cursor-pointer flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0">
+                      <Building2 className="w-4 h-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-bold text-slate-900 tracking-tight truncate">
+                        {b.branch_name}
+                      </h3>
+                      <span className="text-[11px] text-slate-400 font-mono block truncate">
+                        {b.branch_code || 'HUB'} · {b.zone_name}
+                      </span>
+                    </div>
+                  </div>
+                  <Badge variant="info">{b.branch_type || 'Hub'}</Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 my-3">
+                  <div className="p-2.5 rounded-xl bg-sky-50/50 border border-sky-100/80">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-700 block">
+                      Riders (Act / Appr)
+                    </span>
+                    <span className="text-base font-black text-sky-700 font-mono tabular-nums mt-0.5 block">
+                      {b.rider.active} / {b.rider.approved}
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-emerald-50/50 border border-emerald-100/80">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 block">
+                      In-House (Act / Appr)
+                    </span>
+                    <span className="text-base font-black text-emerald-700 font-mono tabular-nums mt-0.5 block">
+                      {b.in_house.active} / {b.in_house.approved}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
+                <FillRateStatusBadge
+                  status={b.total.fill_rate_status}
+                  fillRatePct={b.total.fill_rate_pct}
+                />
+                <span className="text-slate-500 font-mono text-[11px]">
+                  Vacancy: <strong className="text-slate-900">{b.total.vacancy}</strong>
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Branch Manager: Single Branch Hub Flashcard */}
+      {mode === 'branch_manager' && (
+        <div
+          id="bm-branch-flashcard"
+          onClick={() => {
+            if (branchRows[0] && onInspectBranch) onInspectBranch(branchRows[0]);
+          }}
+          className="rounded-2xl p-6 bg-white border border-slate-200/90 shadow-xs hover:shadow-md transition-all duration-150 cursor-pointer"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <span className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0">
+                <Building2 className="w-5 h-5" />
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+                    {branchRows[0]?.branch_name || fallbackBranchName}
+                  </h3>
+                  {branchRows[0]?.branch_code && (
+                    <span className="text-xs font-mono text-slate-400">
+                      ({branchRows[0].branch_code})
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Zone: {branchRows[0]?.zone_name || fallbackZoneName} ·{' '}
+                  {branchRows[0]?.branch_type || 'Operational Hub'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <FillRateStatusBadge
+                status={summaryTotal.fill_rate_status}
+                fillRatePct={summaryTotal.fill_rate_pct}
+              />
+              <Badge variant="primary">
+                Designations – {designationsCount}
+              </Badge>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+            <div className="p-3.5 rounded-xl bg-sky-50/50 border border-sky-100">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-sky-700 block">
+                Branch Riders (Active / Approved)
+              </span>
+              <span className="text-xl font-black text-sky-700 font-mono tabular-nums mt-1 block">
+                {summaryRider.active} / {summaryRider.approved}
+              </span>
+            </div>
+            <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-100">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 block">
+                Branch In-House Staff (Active / Approved)
+              </span>
+              <span className="text-xl font-black text-emerald-700 font-mono tabular-nums mt-1 block">
+                {summaryInHouse.active} / {summaryInHouse.approved}
+              </span>
+            </div>
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block">
+                Open Branch Vacancy
+              </span>
+              <span className="text-xl font-black text-slate-900 font-mono tabular-nums mt-1 block">
+                {summaryTotal.vacancy}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approved Riders / Approved In-House Staff Summary Strip + "View Full Headcount Report →" Link */}
+      <div
+        id="approved-headcount-summary-strip"
+        className="rounded-2xl px-5 py-3.5 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs"
+      >
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-sky-400" />
+            <span className="text-slate-300">Approved Riders:</span>
+            <strong className="font-mono text-sm font-black text-white tabular-nums">
+              {summaryRider.approved}
+            </strong>
+            <span className="text-slate-400 font-mono text-[11px]">
+              ({summaryRider.active} active)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="text-slate-300">Approved In-House Staff:</span>
+            <strong className="font-mono text-sm font-black text-white tabular-nums">
+              {summaryInHouse.approved}
+            </strong>
+            <span className="text-slate-400 font-mono text-[11px]">
+              ({summaryInHouse.active} active)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-indigo-400" />
+            <span className="text-slate-300">Total Approved Budget:</span>
+            <strong className="font-mono text-sm font-black text-white tabular-nums">
+              {summaryTotal.approved}
+            </strong>
+          </div>
+        </div>
+
+        {onNavigateToHeadcount && (
+          <button
+            id="view-full-headcount-report-link"
+            type="button"
+            onClick={onNavigateToHeadcount}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-300 hover:text-white transition-colors duration-150 cursor-pointer whitespace-nowrap self-start sm:self-center"
+          >
+            <span>View Full Headcount Report</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     </div>
-  </Card>
+  );
+};
+
+// ============================================================================
+// 6. Unified Branch Headcount Table (with Search + Zone/Branch/Status Filters)
+//    Columns: Zone | Branch | Branch Manager | Rider HC Approved | Active Riders |
+//             In-House HC Approved | Active In-House | Vacancy | Fill-Rate Status | Trend | Drill-down
+// ============================================================================
+export const UnifiedBranchHeadcountTable: React.FC<{
+  tableId: string;
+  rowIdPrefix: string;
+  title: string;
+  description: string;
+  branchRows: OverviewBranchRow[];
+  zoneRows?: OverviewZoneRow[];
+  showZoneColumn?: boolean;
+  showZoneFilter?: boolean;
+  externalZoneFilter?: string;
+  onExternalZoneFilterChange?: (zoneId: string) => void;
+  fallbackStaffList?: Array<{
+    name: string;
+    branches?: { id: string } | null;
+    roles?: { name: string } | null;
+  }>;
+  onSelectBranch: (branch: OverviewBranchRow) => void;
+}> = ({
+  tableId,
+  rowIdPrefix,
+  title,
+  description,
+  branchRows,
+  zoneRows = [],
+  showZoneColumn = true,
+  showZoneFilter = false,
+  externalZoneFilter,
+  onExternalZoneFilterChange,
+  fallbackStaffList = [],
+  onSelectBranch,
+}) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [internalZoneFilter, setInternalZoneFilter] = useState('all');
+  const [branchFilter, setBranchFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  const activeZoneFilter =
+    externalZoneFilter !== undefined ? externalZoneFilter : internalZoneFilter;
+
+  const handleZoneChange = (val: string) => {
+    if (onExternalZoneFilterChange) {
+      onExternalZoneFilterChange(val);
+    } else {
+      setInternalZoneFilter(val);
+    }
+    setBranchFilter('all');
+  };
+
+  const zoneScopedBranches = useMemo(() => {
+    if (activeZoneFilter === 'all') return branchRows;
+    return branchRows.filter((b) => b.zone_id === activeZoneFilter);
+  }, [branchRows, activeZoneFilter]);
+
+  const filteredRows = useMemo(() => {
+    return zoneScopedBranches.filter((b) => {
+      if (branchFilter !== 'all' && b.branch_id !== branchFilter) return false;
+      if (statusFilter !== 'all' && b.total.fill_rate_status !== statusFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const bmNames = b.branch_managers.map((m) => m.name.toLowerCase()).join(' ');
+        const matches =
+          b.branch_name.toLowerCase().includes(q) ||
+          (b.branch_code || '').toLowerCase().includes(q) ||
+          (b.zone_name || '').toLowerCase().includes(q) ||
+          bmNames.includes(q);
+        if (!matches) return false;
+      }
+      return true;
+    });
+  }, [zoneScopedBranches, branchFilter, statusFilter, searchQuery]);
+
+  const resolveBranchManagerLabel = (branch: OverviewBranchRow) => {
+    if (branch.branch_managers && branch.branch_managers.length > 0) {
+      return branch.branch_managers.map((m) => m.name).join(', ');
+    }
+    if (fallbackStaffList.length > 0) {
+      const matched = fallbackStaffList
+        .filter(
+          (s) =>
+            s.branches?.id === branch.branch_id &&
+            s.roles?.name === 'branch_manager'
+        )
+        .map((s) => s.name);
+      if (matched.length > 0) return matched.join(', ');
+    }
+    return 'Unassigned';
+  };
+
+  return (
+    <Card
+      title={title}
+      description={description}
+      action={
+        <Badge variant="primary">
+          {filteredRows.length} of {branchRows.length} Branch{branchRows.length === 1 ? '' : 'es'}
+        </Badge>
+      }
+    >
+      {/* Search + Filters Bar */}
+      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className={showZoneFilter ? '' : 'sm:col-span-2'}>
+          <Input
+            id={`${tableId}-search`}
+            placeholder="Search branch, code, zone, or manager..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            leftIcon={<Search className="w-4 h-4" />}
+          />
+        </div>
+
+        {showZoneFilter && (
+          <Select
+            id="super-admin-overview-zone-filter"
+            value={activeZoneFilter}
+            onChange={(e) => handleZoneChange(e.target.value)}
+            options={[
+              { value: 'all', label: 'All Zones (Company-Wide)' },
+              ...zoneRows.map((z) => ({
+                value: z.zone_id,
+                label: `${z.zone_name}${z.zone_code ? ` (${z.zone_code})` : ''}`,
+              })),
+            ]}
+          />
+        )}
+
+        <Select
+          id={`${tableId}-branch-filter`}
+          value={branchFilter}
+          onChange={(e) => setBranchFilter(e.target.value)}
+          options={[
+            { value: 'all', label: 'All Branches' },
+            ...zoneScopedBranches.map((b) => ({
+              value: b.branch_id,
+              label: `${b.branch_name}${b.branch_code ? ` (${b.branch_code})` : ''}`,
+            })),
+          ]}
+        />
+
+        <Select
+          id={`${tableId}-status-filter`}
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          options={[
+            { value: 'all', label: 'All Fill-Rate Statuses' },
+            { value: 'On Target', label: 'On Target (≥95%)' },
+            { value: 'Understaffed', label: 'Understaffed (80–94%)' },
+            { value: 'Critical', label: 'Critical (<80%)' },
+          ]}
+        />
+      </div>
+
+      <Table id={tableId}>
+        <TableHeader>
+          <TableRow>
+            {showZoneColumn && <TableHead>Zone</TableHead>}
+            <TableHead>Branch</TableHead>
+            <TableHead>Branch Manager</TableHead>
+            <TableHead className="text-right">Rider HC Approved</TableHead>
+            <TableHead className="text-right">Active Riders</TableHead>
+            <TableHead className="text-right">In-House HC Approved</TableHead>
+            <TableHead className="text-right">Active In-House</TableHead>
+            <TableHead className="text-right">Vacancy</TableHead>
+            <TableHead>Fill-Rate Status</TableHead>
+            <TableHead>Trend</TableHead>
+            <TableHead className="text-right">Drill-Down</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {filteredRows.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={showZoneColumn ? 11 : 10}
+                className="text-center py-10 text-xs text-slate-500"
+              >
+                No branches match the active search or filter criteria.
+              </TableCell>
+            </TableRow>
+          ) : (
+            filteredRows.map((b) => {
+              const bmLabel = resolveBranchManagerLabel(b);
+              return (
+                <TableRow
+                  key={b.branch_id}
+                  id={`${rowIdPrefix}-${b.branch_id}`}
+                  onClick={() => onSelectBranch(b)}
+                  className="cursor-pointer hover:bg-indigo-50/40"
+                >
+                  {showZoneColumn && (
+                    <TableCell>
+                      <span className="text-xs font-semibold text-slate-800">
+                        {b.zone_name}
+                      </span>
+                      {b.zone_code && (
+                        <span className="block text-[11px] font-mono text-slate-400">
+                          {b.zone_code}
+                        </span>
+                      )}
+                    </TableCell>
+                  )}
+                  <TableCell>
+                    <div className="flex items-center gap-2 font-semibold text-xs text-slate-900">
+                      <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                      <span>{b.branch_name}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                      {b.branch_code || 'NO-CODE'} · {b.branch_type}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="inline-flex items-center gap-1.5 text-xs text-slate-700">
+                      <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className={bmLabel === 'Unassigned' ? 'text-slate-400 italic' : 'font-medium'}>
+                        {bmLabel}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs font-semibold text-slate-700 tabular-nums">
+                    {b.rider.approved}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs font-bold text-sky-700 tabular-nums">
+                    {b.rider.active}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs font-semibold text-slate-700 tabular-nums">
+                    {b.in_house.approved}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs font-bold text-emerald-700 tabular-nums">
+                    {b.in_house.active}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs font-bold text-amber-700 tabular-nums">
+                    {b.total.vacancy}
+                  </TableCell>
+                  <TableCell>
+                    <FillRateStatusBadge
+                      status={b.total.fill_rate_status}
+                      fillRatePct={b.total.fill_rate_pct}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <TrendIndicator trend={b.total.trend} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectBranch(b);
+                      }}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                    >
+                      <BarChart3 className="w-3.5 h-3.5" />
+                      <span>History</span>
+                    </button>
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          )}
+        </TableBody>
+      </Table>
+    </Card>
+  );
+};
+
+// ============================================================================
+// 7. Active Definition Informational Note
+// ============================================================================
+export const ActiveDefinitionBanner: React.FC<{ note?: string }> = ({ note }) => (
+  <div className="rounded-2xl px-4 py-3 bg-slate-50/90 border border-slate-200/80 flex items-center justify-between flex-wrap gap-3 text-xs text-slate-600">
+    <div className="flex items-center gap-2.5 min-w-0">
+      <Info className="w-4 h-4 text-indigo-600 shrink-0" />
+      <span className="leading-relaxed">
+        <strong className="text-slate-800">Headcount Governance:</strong>{' '}
+        {note ||
+          'Active = any row in employees (approved/enrolled candidates); no offboarding flow exists yet, so all enrolled employees count as active. Vacancy = Approved − Active (floored at 0).'}
+      </span>
+    </div>
+    <div className="flex items-center gap-2 shrink-0">
+      <Badge variant="success" dot>
+        On Target (&ge;95%)
+      </Badge>
+      <Badge variant="warning" dot>
+        Understaffed (80–94%)
+      </Badge>
+      <Badge variant="error" dot>
+        Critical (&lt;80%)
+      </Badge>
+    </div>
+  </div>
 );
 
 // ============================================================================
-// 6. Row Click Detail Modal with Full Historical Chart & Breakdown
+// 8. Row Click Detail Modal with Full Historical Chart & Breakdown
 // ============================================================================
 export type SelectedOverviewEntity =
   | { type: 'zone'; data: OverviewZoneRow }
@@ -356,14 +1215,16 @@ export const OverviewRowDetailModal: React.FC<{
         {/* Top Summary Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="p-4 bg-slate-50/70">
-            <div className="text-xs font-semibold text-slate-500">Total Headcount</div>
-            <div className="mt-1 flex items-baseline justify-between">
-              <span className="text-2xl font-black text-slate-900 font-mono">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              Total Employees
+            </div>
+            <div className="mt-1.5 flex items-baseline justify-between">
+              <span className="text-2xl font-black text-slate-900 font-mono tabular-nums">
                 {totalBlock.active} / {totalBlock.approved}
               </span>
               <TrendIndicator trend={totalBlock.trend} />
             </div>
-            <div className="mt-2 flex items-center justify-between text-xs">
+            <div className="mt-2.5 flex items-center justify-between text-xs">
               <span className="text-slate-600">
                 Vacancy: <strong className="font-mono">{totalBlock.vacancy}</strong>
               </span>
@@ -375,17 +1236,17 @@ export const OverviewRowDetailModal: React.FC<{
           </Card>
 
           {riderBlock && (
-            <Card className="p-4 bg-indigo-50/30">
-              <div className="text-xs font-semibold text-indigo-900">
+            <Card className="p-4 bg-sky-50/40 border-sky-100">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-sky-800">
                 Rider Category
               </div>
-              <div className="mt-1 flex items-baseline justify-between">
-                <span className="text-2xl font-black text-indigo-700 font-mono">
+              <div className="mt-1.5 flex items-baseline justify-between">
+                <span className="text-2xl font-black text-sky-700 font-mono tabular-nums">
                   {riderBlock.active} / {riderBlock.approved}
                 </span>
                 <TrendIndicator trend={riderBlock.trend} />
               </div>
-              <div className="mt-2 flex items-center justify-between text-xs">
+              <div className="mt-2.5 flex items-center justify-between text-xs">
                 <span className="text-slate-600">
                   Vacancy: <strong className="font-mono">{riderBlock.vacancy}</strong>
                 </span>
@@ -398,17 +1259,17 @@ export const OverviewRowDetailModal: React.FC<{
           )}
 
           {inHouseBlock && (
-            <Card className="p-4 bg-emerald-50/30">
-              <div className="text-xs font-semibold text-emerald-900">
+            <Card className="p-4 bg-emerald-50/40 border-emerald-100">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-emerald-800">
                 In-House Staff Category
               </div>
-              <div className="mt-1 flex items-baseline justify-between">
-                <span className="text-2xl font-black text-emerald-700 font-mono">
+              <div className="mt-1.5 flex items-baseline justify-between">
+                <span className="text-2xl font-black text-emerald-700 font-mono tabular-nums">
                   {inHouseBlock.active} / {inHouseBlock.approved}
                 </span>
                 <TrendIndicator trend={inHouseBlock.trend} />
               </div>
-              <div className="mt-2 flex items-center justify-between text-xs">
+              <div className="mt-2.5 flex items-center justify-between text-xs">
                 <span className="text-slate-600">
                   Vacancy: <strong className="font-mono">{inHouseBlock.vacancy}</strong>
                 </span>
@@ -423,7 +1284,7 @@ export const OverviewRowDetailModal: React.FC<{
           {isDesig && (
             <>
               <Card className="p-4 bg-slate-50/70">
-                <div className="text-xs font-semibold text-slate-500">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   Employment Category
                 </div>
                 <div className="mt-2">
@@ -434,7 +1295,7 @@ export const OverviewRowDetailModal: React.FC<{
                 </div>
               </Card>
               <Card className="p-4 bg-slate-50/70">
-                <div className="text-xs font-semibold text-slate-500">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   Month-over-Month Trend
                 </div>
                 <div className="mt-2 flex items-center gap-2">
@@ -479,12 +1340,12 @@ export const OverviewRowDetailModal: React.FC<{
             </div>
           ) : (
             <div id="overview-historical-chart" className="space-y-4">
-              {/* Visual SVG Bar Chart */}
+              {/* Visual Bar Chart */}
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
                 <div className="flex items-center justify-between text-[11px] text-slate-500 mb-3">
                   <div className="flex items-center gap-4">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-xs bg-indigo-600 inline-block" />
+                      <span className="w-2.5 h-2.5 rounded-xs bg-sky-500 inline-block" />
                       <span>Rider Active</span>
                     </span>
                     <span className="inline-flex items-center gap-1.5">
@@ -513,7 +1374,7 @@ export const OverviewRowDetailModal: React.FC<{
                         key={pt.month_key}
                         className="flex flex-col items-center gap-1.5"
                       >
-                        <div className="text-[11px] font-mono font-bold text-slate-800">
+                        <div className="text-[11px] font-mono font-bold text-slate-800 tabular-nums">
                           {pt.total_active}
                         </div>
                         <div className="w-full max-w-[48px] h-28 bg-slate-200/70 rounded-t-lg flex flex-col justify-end overflow-hidden p-0.5">
@@ -523,7 +1384,7 @@ export const OverviewRowDetailModal: React.FC<{
                           >
                             <div
                               style={{ height: `${riderSharePct}%` }}
-                              className="w-full bg-indigo-600"
+                              className="w-full bg-sky-500"
                               title={`Rider Active: ${pt.rider_active}`}
                             />
                             <div
@@ -550,30 +1411,30 @@ export const OverviewRowDetailModal: React.FC<{
                 <TableHeader>
                   <TableRow>
                     <TableHead>Month</TableHead>
-                    <TableHead>Rider Active</TableHead>
-                    <TableHead>In-House Active</TableHead>
-                    <TableHead>Total Active</TableHead>
-                    <TableHead>New Joiners</TableHead>
-                    <TableHead>Approved Target</TableHead>
+                    <TableHead className="text-right">Rider Active</TableHead>
+                    <TableHead className="text-right">In-House Active</TableHead>
+                    <TableHead className="text-right">Total Active</TableHead>
+                    <TableHead className="text-right">New Joiners</TableHead>
+                    <TableHead className="text-right">Approved Target</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {historicalSeries.map((pt) => (
                     <TableRow key={pt.month_key}>
                       <TableCell className="font-semibold text-xs">{pt.month_label}</TableCell>
-                      <TableCell className="font-mono text-xs text-indigo-700">
+                      <TableCell className="text-right font-mono text-xs text-sky-700">
                         {pt.rider_active}
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-emerald-700">
+                      <TableCell className="text-right font-mono text-xs text-emerald-700">
                         {pt.in_house_active}
                       </TableCell>
-                      <TableCell className="font-mono text-xs font-bold">
+                      <TableCell className="text-right font-mono text-xs font-bold">
                         {pt.total_active}
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-slate-600">
+                      <TableCell className="text-right font-mono text-xs text-slate-600">
                         +{pt.new_enrollments}
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-slate-600">
+                      <TableCell className="text-right font-mono text-xs text-slate-600">
                         {pt.approved_target}
                       </TableCell>
                     </TableRow>
@@ -594,9 +1455,9 @@ export const OverviewRowDetailModal: React.FC<{
               <TableHeader>
                 <TableRow>
                   <TableHead>Branch</TableHead>
-                  <TableHead>Rider (Appr / Act / Vac)</TableHead>
-                  <TableHead>In-House (Appr / Act / Vac)</TableHead>
-                  <TableHead>Total (Appr / Act / Vac)</TableHead>
+                  <TableHead className="text-right">Rider (Appr / Act / Vac)</TableHead>
+                  <TableHead className="text-right">In-House (Appr / Act / Vac)</TableHead>
+                  <TableHead className="text-right">Total (Appr / Act / Vac)</TableHead>
                   <TableHead>Fill-Rate Status</TableHead>
                   <TableHead>Trend</TableHead>
                 </TableRow>
@@ -613,13 +1474,13 @@ export const OverviewRowDetailModal: React.FC<{
                         {b.branch_code || 'No Code'} · {b.branch_type}
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {b.rider.approved} / {b.rider.active} / {b.rider.vacancy}
+                    <TableCell className="text-right font-mono text-xs">
+                      {b.rider.approved} / <strong className="text-sky-700">{b.rider.active}</strong> / {b.rider.vacancy}
                     </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {b.in_house.approved} / {b.in_house.active} / {b.in_house.vacancy}
+                    <TableCell className="text-right font-mono text-xs">
+                      {b.in_house.approved} / <strong className="text-emerald-700">{b.in_house.active}</strong> / {b.in_house.vacancy}
                     </TableCell>
-                    <TableCell className="font-mono text-xs font-semibold">
+                    <TableCell className="text-right font-mono text-xs font-semibold">
                       {b.total.approved} / {b.total.active} / {b.total.vacancy}
                     </TableCell>
                     <TableCell>
@@ -655,9 +1516,9 @@ export const OverviewRowDetailModal: React.FC<{
                     <TableHead>Designation</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead>Approved</TableHead>
-                    <TableHead>Active</TableHead>
-                    <TableHead>Vacancy</TableHead>
+                    <TableHead className="text-right">Approved</TableHead>
+                    <TableHead className="text-right">Active</TableHead>
+                    <TableHead className="text-right">Vacancy</TableHead>
                     <TableHead>Fill-Rate Status</TableHead>
                     <TableHead>Trend</TableHead>
                   </TableRow>
@@ -674,11 +1535,11 @@ export const OverviewRowDetailModal: React.FC<{
                       <TableCell>
                         <EmploymentCategoryBadge category={d.employment_category} />
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{d.approved}</TableCell>
-                      <TableCell className="font-mono text-xs font-bold text-indigo-700">
+                      <TableCell className="text-right font-mono text-xs">{d.approved}</TableCell>
+                      <TableCell className="text-right font-mono text-xs font-bold text-indigo-700">
                         {d.active}
                       </TableCell>
-                      <TableCell className="font-mono text-xs font-bold text-amber-700">
+                      <TableCell className="text-right font-mono text-xs font-bold text-amber-700">
                         {d.vacancy}
                       </TableCell>
                       <TableCell>

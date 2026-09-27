@@ -21,7 +21,7 @@ import {
 } from '../lib/staffAuth';
 import { validateStaffPassword } from '../lib/passwordPolicy';
 import { useBranding } from '../lib/branding';
-import { Button, Input } from './ui';
+import { Badge, Button, Input } from './ui';
 
 interface StaffLoginFormProps {
   onLoginSuccess?: () => void;
@@ -75,7 +75,6 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
       const result = await signInStaff(email, password);
 
       if (!result.success) {
-        // [HARD RULE] Deny access on failure
         setErrorMessage(result.error || 'Authentication failed. Please verify credentials.');
         setIsLoading(false);
         return;
@@ -169,7 +168,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
           </div>
           <div>
             <h3 className="font-bold text-slate-900 text-base">Set Permanent Password</h3>
-            <p className="text-xs text-amber-700">Initial temporary password change is strictly required [HARD RULE].</p>
+            <p className="text-xs text-amber-700">For your security, please set a permanent password before continuing.</p>
           </div>
         </div>
 
@@ -197,13 +196,21 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
             required
             placeholder="Enter new password"
             rightIcon={
-              <button
-                type="button"
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label={showNewPassword ? 'Hide password' : 'Show password'}
                 onClick={() => setShowNewPassword(!showNewPassword)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setShowNewPassword(!showNewPassword);
+                  }
+                }}
                 className="pointer-events-auto text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              </span>
             }
           />
 
@@ -240,7 +247,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
             variant="primary"
             isLoading={isLoading}
             disabled={isLoading || !policyCheck.isValid || newPassword !== confirmPassword}
-            className="w-full bg-emerald-600 hover:bg-emerald-700"
+            className="w-full"
           >
             Save New Password &amp; Continue
           </Button>
@@ -258,12 +265,12 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
       >
         <div className="flex items-center justify-between pb-4 border-b border-slate-200/80">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center justify-center">
               <UserCheck className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-bold text-slate-900 text-base">Staff Authenticated</h3>
-              <span className="text-xs text-slate-500 font-mono">8-Hour Active Session</span>
+              <span className="text-xs text-slate-500 font-mono">Active Corporate Session</span>
             </div>
           </div>
           <Button
@@ -291,11 +298,9 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
             <span className="text-slate-500 font-medium">Staff ID</span>
             <span className="text-slate-900 font-mono truncate max-w-[200px]">{sessionUser.id}</span>
           </div>
-          <div className="flex justify-between py-1.5 border-b border-slate-100">
+          <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
             <span className="text-slate-500 font-medium">Assigned Role</span>
-            <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-mono font-medium uppercase text-[11px] border border-emerald-200">
-              {sessionUser.role}
-            </span>
+            <Badge variant="primary">{sessionUser.role?.replace(/_/g, ' ')}</Badge>
           </div>
           {sessionUser.zone_name && (
             <div className="flex justify-between py-1.5">
@@ -310,7 +315,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
             <Button
               onClick={() => onLoginSuccess()}
               variant="primary"
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
+              className="w-full"
               rightIcon={<ArrowRight className="w-4 h-4" />}
             >
               Open Role Dashboard
@@ -318,13 +323,13 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
           </div>
         )}
 
-        <div className="mt-4 p-3 rounded-lg bg-emerald-50/80 border border-emerald-200 text-emerald-900 text-xs">
-          <p className="font-medium flex items-center gap-1.5">
+        <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs">
+          <p className="font-medium flex items-center gap-1.5 text-slate-900">
             <CheckCircle className="w-4 h-4 text-emerald-600" />
-            <span>Identity verified via Supabase Auth</span>
+            <span>Corporate account verified</span>
           </p>
-          <p className="text-emerald-700 mt-0.5">
-            Session governed by 8-hour maximum lifetime without guest or impersonation bypasses.
+          <p className="text-slate-500 mt-0.5">
+            Your active session remains valid for up to 8 hours.
           </p>
         </div>
       </div>
@@ -346,8 +351,8 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
             className="h-10 max-h-12 max-w-[180px] object-contain mx-auto mb-2"
           />
         ) : (
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-slate-900 text-white mb-2 shadow-xs">
-            <Shield className="w-6 h-6 text-emerald-400" />
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 mb-2 shadow-xs">
+            <Shield className="w-6 h-6" />
           </div>
         )}
         <h2 className="text-lg font-bold text-slate-900 tracking-tight">Staff &amp; Admin Sign In</h2>
@@ -378,7 +383,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          placeholder="e.g. admin@postex.pk"
+          placeholder="e.g. name@postex.pk"
           leftIcon={<Mail className="w-4 h-4" />}
         />
 
@@ -392,32 +397,30 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
           placeholder="Enter account password"
           leftIcon={<Lock className="w-4 h-4" />}
           rightIcon={
-            <button
-              type="button"
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
               onClick={() => setShowPassword(!showPassword)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setShowPassword(!showPassword);
+                }
+              }}
               className="pointer-events-auto text-slate-400 hover:text-slate-600 cursor-pointer"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </button>
+            </span>
           }
         />
-
-        <div className="p-3 bg-slate-50/80 border border-slate-200 rounded-lg text-xs text-slate-500 space-y-1">
-          <p className="font-semibold text-slate-700">Seed Super Admin Credentials:</p>
-          <p>
-            Email: <code className="text-slate-800 font-mono font-medium">admin@postex.pk</code>
-          </p>
-          <p>
-            Temp Password: <code className="text-slate-800 font-mono font-medium">PostExAdmin2026!</code>
-          </p>
-        </div>
 
         <Button
           id="staff-submit-btn"
           type="submit"
           variant="primary"
           isLoading={isLoading}
-          className="w-full bg-slate-900 hover:bg-slate-800"
+          className="w-full"
         >
           Sign In as Staff
         </Button>

@@ -143,18 +143,17 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       {/* Sidebar Navigation */}
       <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-r border-slate-800">
         <div className="p-5 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
-              P
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+              <ShieldCheck className="w-4 h-4" />
             </div>
-            <div>
-              <span className="font-bold text-white tracking-tight block text-sm">PostEx HR</span>
-              <span className="text-[10px] text-slate-400 font-medium block">Super Admin Portal</span>
+            <div className="min-w-0">
+              <span className="font-bold text-white tracking-tight block text-sm truncate">Super Admin Portal</span>
+              <span className="text-[11px] text-slate-400 font-medium block truncate">
+                {currentUser.name || currentUser.email}
+              </span>
             </div>
           </div>
-          <Badge variant="primary" size="sm">
-            v2.4
-          </Badge>
         </div>
 
         {/* Navigation Tabs */}
@@ -321,6 +320,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             metrics={metrics}
             loading={loading}
             onRefresh={loadOverviewData}
+            onNavigateToHeadcount={() => setActiveTab('headcount')}
           />
         )}
 

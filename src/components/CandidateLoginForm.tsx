@@ -84,7 +84,6 @@ const CandidateLoginFormInner: React.FC = () => {
       });
 
       if (!res.success) {
-        // [HARD RULE] Always deny access on failure
         setErrorMessage(res.error || 'Candidate identification failed.');
         setIsLoading(false);
         return;
@@ -242,7 +241,7 @@ const CandidateLoginFormInner: React.FC = () => {
             <span>
               Remaining attempts: <strong className="text-slate-800">{attemptsRemaining} / 5</strong>
             </span>
-            <span className="text-[11px] text-slate-400">Max 5 attempts allowed [HARD RULE]</span>
+            <span className="text-[11px] text-slate-400">Maximum 5 verification attempts allowed</span>
           </div>
 
           <Button
@@ -347,20 +346,6 @@ const CandidateLoginFormInner: React.FC = () => {
           className="font-mono"
           leftIcon={<Smartphone className="w-4 h-4" />}
         />
-
-        <div className="p-3 bg-slate-50/80 border border-slate-200 rounded-lg text-xs text-slate-500 space-y-1">
-          <p className="font-semibold text-slate-700">Seed Candidate Credentials:</p>
-          <p>
-            Joining ID: <code className="text-slate-800 font-mono font-medium">PEX-2026-001</code>
-          </p>
-          <p>
-            CNIC: <code className="text-slate-800 font-mono font-medium">35201-1234567-1</code> | Mobile:{' '}
-            <code className="text-slate-800 font-mono font-medium">03001234567</code>
-          </p>
-          <p className="text-[11px] text-slate-400">
-            Rate limited to max 3 OTP requests per 15 minutes [HARD RULE].
-          </p>
-        </div>
 
         <Button
           id="candidate-request-otp-btn"

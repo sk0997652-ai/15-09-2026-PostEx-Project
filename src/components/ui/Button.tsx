@@ -1,8 +1,8 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'danger';
-export type ButtonSize = 'default' | 'small';
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'link';
+export type ButtonSize = 'default' | 'small' | 'sm';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -28,9 +28,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
+    const isSmall = size === 'small' || size === 'sm';
     // Sizing tokens
     const sizeClasses =
-      size === 'small'
+      variant === 'link'
+        ? 'text-xs font-semibold p-0 h-auto'
+        : isSmall
         ? 'h-8 px-3 py-1.5 text-xs font-medium rounded-lg'
         : 'h-10 px-4 py-2.5 text-sm font-medium rounded-lg';
 
@@ -49,10 +52,18 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         variantClasses =
           'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 focus-visible:ring-2 focus-visible:ring-rose-600 focus-visible:ring-offset-2 shadow-xs';
         break;
+      case 'ghost':
+        variantClasses =
+          'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-indigo-600';
+        break;
+      case 'link':
+        variantClasses =
+          'bg-transparent text-indigo-600 hover:text-indigo-700 hover:underline focus-visible:ring-2 focus-visible:ring-indigo-600';
+        break;
     }
 
     const baseClasses =
-      'inline-flex items-center justify-center gap-2 font-medium transition-colors cursor-pointer select-none outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none';
+      'inline-flex items-center justify-center gap-2 font-medium transition-all duration-150 cursor-pointer select-none outline-none whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none';
 
     return (
       <button
@@ -63,7 +74,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {isLoading ? (
-          <Loader2 className={`${size === 'small' ? 'w-3.5 h-3.5' : 'w-4 h-4'} animate-spin shrink-0`} />
+          <Loader2 className={`${isSmall ? 'w-3.5 h-3.5' : 'w-4 h-4'} animate-spin shrink-0`} />
         ) : (
           leftIcon && <span className="shrink-0">{leftIcon}</span>
         )}

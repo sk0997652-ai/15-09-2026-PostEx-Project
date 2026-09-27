@@ -7,6 +7,7 @@ import {
   FileCheck,
   Clock,
   UserCheck,
+  BarChart3,
 } from 'lucide-react';
 import { DashboardMetrics } from '../../lib/superAdminApi';
 import {
@@ -31,6 +32,8 @@ import {
   TrendIndicator,
   EmploymentCategoryBadge,
   HeadcountCategoryRollupCards,
+  ZoneBranchFlashcardsSection,
+  UnifiedBranchHeadcountTable,
   ActiveDefinitionBanner,
   OverviewRowDetailModal,
   SelectedOverviewEntity,
@@ -40,6 +43,7 @@ export interface OverviewMetricsViewProps {
   metrics: DashboardMetrics | null;
   loading: boolean;
   onRefresh: () => void;
+  onNavigateToHeadcount?: () => void;
 }
 
 const EMPTY_METRIC_BLOCK = {
@@ -62,6 +66,7 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
   metrics,
   loading,
   onRefresh,
+  onNavigateToHeadcount,
 }) => {
   const [overviewData, setOverviewData] = useState<HeadcountOverviewResponse | null>(null);
   const [loadingOverview, setLoadingOverview] = useState(false);
@@ -94,11 +99,6 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
   const branchRows = overviewData?.branch_rows || [];
   const designationRows = overviewData?.designation_rows || [];
 
-  const filteredBranches = useMemo(() => {
-    if (selectedZoneFilter === 'all') return branchRows;
-    return branchRows.filter((b) => b.zone_id === selectedZoneFilter);
-  }, [branchRows, selectedZoneFilter]);
-
   const filteredDesignations = useMemo(() => {
     if (selectedCategoryFilter === 'all') return designationRows;
     return designationRows.filter((d) => d.employment_category === selectedCategoryFilter);
@@ -109,11 +109,11 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
   const summaryInHouse = overviewData?.summary?.in_house || EMPTY_METRIC_BLOCK;
 
   return (
-    <div id="super-admin-overview-view" className="space-y-6">
+    <div id="super-admin-overview-view" className="space-y-8">
       <PageHeader
-        title="Super Admin — Executive Headcount & Operations Overview"
-        description="Company-wide Rider vs. In-House Staff headcount rollups, fill-rate status, month-over-month trends, and zone/branch drill-downs."
-        roleContext="Executive Overview"
+        title="Executive Headcount & Operations Overview"
+        description="Company-wide Rider vs. In-House Staff headcount rollups, zone flashcards, branch fill-rate status, month-over-month trends, and historical drill-downs."
+        roleContext="Super Admin · Company-Wide"
         actions={
           <Button
             id="refresh-overview-metrics-btn"
@@ -121,112 +121,60 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
             size="sm"
             onClick={handleRefreshAll}
             disabled={loading || loadingOverview}
+            leftIcon={
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${
+                  loading || loadingOverview ? 'animate-spin' : ''
+                }`}
+              />
+            }
           >
-            <RefreshCw
-              className={`w-3.5 h-3.5 ${
-                loading || loadingOverview ? 'animate-spin' : ''
-              }`}
-            />
-            <span>Refresh Counts</span>
+            Refresh Counts
           </Button>
         }
       />
 
-      {/* Shared Headcount Definitions & Fill-Rate Thresholds Legend */}
-      <ActiveDefinitionBanner note={overviewData?.active_definition_note} />
-
-      {/* Primary Headcount Rollup Cards (Total, Rider, In-House Staff + Pipeline Summary) */}
+      {/* ROW 1: 3 Matched KPI Cards (Total Employees / Total Active Riders / Total In-House Staff) */}
       <HeadcountCategoryRollupCards
         scopeLabel="Company"
         total={summaryTotal}
         rider={summaryRider}
         inHouse={summaryInHouse}
-        extraCard={
-          <Card className="p-5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-500">
-                Onboarding Pipeline
-              </span>
-              <span className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <Clock className="w-4 h-4" />
-              </span>
-            </div>
-            <div className="flex items-baseline justify-between gap-2 mt-1">
-              <div>
-                <span className="text-2xl font-black text-amber-600 font-mono">
-                  {metrics?.pendingApplications ?? 0}
-                </span>
-                <span className="text-xs text-slate-500 ml-1">Pending Review</span>
-              </div>
-              <Badge variant="info">
-                {metrics?.totalCandidates ?? 0} Candidates
-              </Badge>
-            </div>
-            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-2 text-xs text-slate-600">
-              <span>
-                Enrolled: <strong className="text-emerald-700 font-mono">{metrics?.totalEmployees ?? summaryTotal.active}</strong>
-              </span>
-              <span>
-                <strong>{metrics?.totalZones ?? zoneRows.length}</strong> Zones ·{' '}
-                <strong>{metrics?.totalBranches ?? branchRows.length}</strong> Hubs
-              </span>
-            </div>
-          </Card>
-        }
       />
 
-      {/* Secondary Operational Pipeline Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs font-medium text-slate-500">Total Candidates</span>
-            <span className="text-xl font-bold text-slate-900 font-mono block mt-0.5">
-              {metrics?.totalCandidates ?? 0}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
-            <Users className="w-4 h-4" />
-          </div>
-        </Card>
+      {/* ROW 2: Geographic Zone Flashcards + Approved Summary Strip + "View Full Headcount Report →" */}
+      <ZoneBranchFlashcardsSection
+        mode="super_admin"
+        zoneRows={zoneRows}
+        branchRows={branchRows}
+        summaryTotal={summaryTotal}
+        summaryRider={summaryRider}
+        summaryInHouse={summaryInHouse}
+        selectedZoneId={selectedZoneFilter}
+        onSelectZoneFilter={setSelectedZoneFilter}
+        onInspectZone={(z) => setSelectedEntity({ type: 'zone', data: z })}
+        onNavigateToHeadcount={onNavigateToHeadcount}
+      />
 
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs font-medium text-slate-500">Approved Applications</span>
-            <span className="text-xl font-bold text-emerald-600 font-mono block mt-0.5">
-              {metrics?.approvedApplications ?? 0}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <FileCheck className="w-4 h-4" />
-          </div>
-        </Card>
+      {/* Shared Headcount Definitions & Fill-Rate Thresholds Legend */}
+      <ActiveDefinitionBanner note={overviewData?.active_definition_note} />
 
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs font-medium text-slate-500">Active Staff Accounts</span>
-            <span className="text-xl font-bold text-slate-900 font-mono block mt-0.5">
-              {metrics?.totalStaff ?? 0}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <UserCheck className="w-4 h-4" />
-          </div>
-        </Card>
+      {/* ROW 3: Unified Branch-Wise Headcount Table with Search + Zone/Branch/Status Filters */}
+      <UnifiedBranchHeadcountTable
+        tableId="super-admin-branch-headcount-table"
+        rowIdPrefix="super-admin-branch-row"
+        title="Branch-Wise Headcount & Fill-Rate Rollup"
+        description="Company-wide operational branches with Branch Manager assignment, Rider vs. In-House Staff approved & active counts, open vacancies, fill-rate status, and historical trend drill-down."
+        branchRows={branchRows}
+        zoneRows={zoneRows}
+        showZoneColumn
+        showZoneFilter
+        externalZoneFilter={selectedZoneFilter}
+        onExternalZoneFilterChange={setSelectedZoneFilter}
+        onSelectBranch={(b) => setSelectedEntity({ type: 'branch', data: b })}
+      />
 
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs font-medium text-slate-500">Zones &amp; Branch Hubs</span>
-            <span className="text-xl font-bold text-slate-900 font-mono block mt-0.5">
-              {metrics?.totalZones ?? zoneRows.length} / {metrics?.totalBranches ?? branchRows.length}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
-            <Building2 className="w-4 h-4" />
-          </div>
-        </Card>
-      </div>
-
-      {/* SECTION 1: ZONE-WISE HEADCOUNT & FILL-RATE ROLLUP TABLE */}
+      {/* ROW 4: Zone-Wise Rollup Summary Table */}
       <Card
         title="Zone-Wise Headcount & Fill-Rate Rollup"
         description="Company-wide Zone breakdown split by Employment Category (Rider vs. In-House Staff). Click any Zone row to open the Historical Trend Chart and Branch/Designation drill-down."
@@ -240,20 +188,21 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
           <TableHeader>
             <TableRow>
               <TableHead>Zone</TableHead>
-              <TableHead>Branches</TableHead>
-              <TableHead>Rider (Appr / Act / Vac)</TableHead>
-              <TableHead>In-House Staff (Appr / Act / Vac)</TableHead>
-              <TableHead>Total Approved</TableHead>
-              <TableHead>Total Active</TableHead>
-              <TableHead>Total Vacancy</TableHead>
+              <TableHead className="text-right">Branches</TableHead>
+              <TableHead className="text-right">Rider (Appr / Act / Vac)</TableHead>
+              <TableHead className="text-right">In-House Staff (Appr / Act / Vac)</TableHead>
+              <TableHead className="text-right">Total Approved</TableHead>
+              <TableHead className="text-right">Total Active</TableHead>
+              <TableHead className="text-right">Total Vacancy</TableHead>
               <TableHead>Fill-Rate Status</TableHead>
               <TableHead>Trend</TableHead>
+              <TableHead className="text-right">Drill-Down</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {zoneRows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-xs text-slate-500">
+                <TableCell colSpan={10} className="text-center py-8 text-xs text-slate-500">
                   No zones configured yet. Create zones and headcount entries to view rollups.
                 </TableCell>
               </TableRow>
@@ -270,30 +219,30 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
                       <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                       <span>{z.zone_name}</span>
                     </div>
-                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">
                       {z.zone_code || 'NO-CODE'} {z.region ? `· ${z.region}` : ''}
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono text-xs text-slate-700">
+                  <TableCell className="text-right font-mono text-xs text-slate-700">
                     {z.branches_count}
                   </TableCell>
-                  <TableCell className="font-mono text-xs">
+                  <TableCell className="text-right font-mono text-xs">
                     <span className="text-slate-700">{z.rider.approved}</span> /{' '}
-                    <span className="font-bold text-indigo-700">{z.rider.active}</span> /{' '}
+                    <span className="font-bold text-sky-700">{z.rider.active}</span> /{' '}
                     <span className="text-amber-700">{z.rider.vacancy}</span>
                   </TableCell>
-                  <TableCell className="font-mono text-xs">
+                  <TableCell className="text-right font-mono text-xs">
                     <span className="text-slate-700">{z.in_house.approved}</span> /{' '}
                     <span className="font-bold text-emerald-700">{z.in_house.active}</span> /{' '}
                     <span className="text-amber-700">{z.in_house.vacancy}</span>
                   </TableCell>
-                  <TableCell className="font-mono text-xs font-semibold text-slate-900">
+                  <TableCell className="text-right font-mono text-xs font-semibold text-slate-900">
                     {z.total.approved}
                   </TableCell>
-                  <TableCell className="font-mono text-xs font-bold text-indigo-700">
+                  <TableCell className="text-right font-mono text-xs font-bold text-indigo-700">
                     {z.total.active}
                   </TableCell>
-                  <TableCell className="font-mono text-xs font-bold text-amber-700">
+                  <TableCell className="text-right font-mono text-xs font-bold text-amber-700">
                     {z.total.vacancy}
                   </TableCell>
                   <TableCell>
@@ -305,102 +254,11 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
                   <TableCell>
                     <TrendIndicator trend={z.total.trend} />
                   </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
-
-      {/* SECTION 2: BRANCH-WISE HEADCOUNT & FILL-RATE ROLLUP TABLE */}
-      <Card
-        title="Branch-Wise Headcount & Fill-Rate Rollup"
-        description="Operational Hub & Branch rollup split by Rider vs. In-House Staff. Click any Branch row to open the Historical Trend Chart and Designation breakdown."
-        action={
-          <div className="w-56">
-            <Select
-              id="super-admin-overview-zone-filter"
-              value={selectedZoneFilter}
-              onChange={(e) => setSelectedZoneFilter(e.target.value)}
-              options={[
-                { value: 'all', label: 'All Zones (Company-Wide)' },
-                ...zoneRows.map((z) => ({
-                  value: z.zone_id,
-                  label: `${z.zone_name}${z.zone_code ? ` (${z.zone_code})` : ''}`,
-                })),
-              ]}
-            />
-          </div>
-        }
-      >
-        <Table id="super-admin-branch-headcount-table">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Branch Hub</TableHead>
-              <TableHead>Zone</TableHead>
-              <TableHead>Rider (Appr / Act / Vac)</TableHead>
-              <TableHead>In-House Staff (Appr / Act / Vac)</TableHead>
-              <TableHead>Total Approved</TableHead>
-              <TableHead>Total Active</TableHead>
-              <TableHead>Total Vacancy</TableHead>
-              <TableHead>Fill-Rate Status</TableHead>
-              <TableHead>Trend</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredBranches.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-xs text-slate-500">
-                  No branches found for the selected zone filter.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredBranches.map((b) => (
-                <TableRow
-                  key={b.branch_id}
-                  id={`super-admin-branch-row-${b.branch_id}`}
-                  onClick={() => setSelectedEntity({ type: 'branch', data: b })}
-                  className="cursor-pointer hover:bg-indigo-50/40"
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-2 font-semibold text-xs text-slate-900">
-                      <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                      <span>{b.branch_name}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                      {b.branch_code || 'NO-CODE'} · {b.branch_type}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs text-slate-700">
-                    {b.zone_name}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    <span className="text-slate-700">{b.rider.approved}</span> /{' '}
-                    <span className="font-bold text-indigo-700">{b.rider.active}</span> /{' '}
-                    <span className="text-amber-700">{b.rider.vacancy}</span>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    <span className="text-slate-700">{b.in_house.approved}</span> /{' '}
-                    <span className="font-bold text-emerald-700">{b.in_house.active}</span> /{' '}
-                    <span className="text-amber-700">{b.in_house.vacancy}</span>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs font-semibold text-slate-900">
-                    {b.total.approved}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs font-bold text-indigo-700">
-                    {b.total.active}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs font-bold text-amber-700">
-                    {b.total.vacancy}
-                  </TableCell>
-                  <TableCell>
-                    <FillRateStatusBadge
-                      status={b.total.fill_rate_status}
-                      fillRatePct={b.total.fill_rate_pct}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <TrendIndicator trend={b.total.trend} />
+                  <TableCell className="text-right">
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600">
+                      <BarChart3 className="w-3.5 h-3.5" />
+                      <span>History</span>
+                    </span>
                   </TableCell>
                 </TableRow>
               ))
@@ -409,7 +267,7 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
         </Table>
       </Card>
 
-      {/* SECTION 3: DESIGNATION-WISE ROLLUP TABLE */}
+      {/* ROW 5: Designation-Wise Rollup Table */}
       <Card
         title="Designation-Wise Headcount Rollup"
         description="Company-wide headcount aggregated by Designation and Employment Category. Click any Designation row to inspect its historical trend chart."
@@ -434,17 +292,18 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
               <TableHead>Designation</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Employment Category</TableHead>
-              <TableHead>Approved</TableHead>
-              <TableHead>Active</TableHead>
-              <TableHead>Vacancy</TableHead>
+              <TableHead className="text-right">Approved</TableHead>
+              <TableHead className="text-right">Active</TableHead>
+              <TableHead className="text-right">Vacancy</TableHead>
               <TableHead>Fill-Rate Status</TableHead>
               <TableHead>Trend</TableHead>
+              <TableHead className="text-right">Drill-Down</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredDesignations.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-xs text-slate-500">
+                <TableCell colSpan={9} className="text-center py-8 text-xs text-slate-500">
                   No designation headcount entries found for the selected category filter.
                 </TableCell>
               </TableRow>
@@ -466,13 +325,13 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
                   <TableCell>
                     <EmploymentCategoryBadge category={d.employment_category} />
                   </TableCell>
-                  <TableCell className="font-mono text-xs font-semibold">
+                  <TableCell className="text-right font-mono text-xs font-semibold">
                     {d.approved}
                   </TableCell>
-                  <TableCell className="font-mono text-xs font-bold text-indigo-700">
+                  <TableCell className="text-right font-mono text-xs font-bold text-indigo-700">
                     {d.active}
                   </TableCell>
-                  <TableCell className="font-mono text-xs font-bold text-amber-700">
+                  <TableCell className="text-right font-mono text-xs font-bold text-amber-700">
                     {d.vacancy}
                   </TableCell>
                   <TableCell>
@@ -484,12 +343,77 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
                   <TableCell>
                     <TrendIndicator trend={d.trend} />
                   </TableCell>
+                  <TableCell className="text-right">
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600">
+                      <BarChart3 className="w-3.5 h-3.5" />
+                      <span>History</span>
+                    </span>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </Card>
+
+      {/* Secondary Operational Pipeline Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              Total Candidates
+            </span>
+            <span className="text-xl font-black text-slate-900 font-mono tabular-nums block mt-0.5">
+              {metrics?.totalCandidates ?? 0}
+            </span>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
+            <Users className="w-4 h-4" />
+          </div>
+        </Card>
+
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              Pending Review
+            </span>
+            <span className="text-xl font-black text-amber-600 font-mono tabular-nums block mt-0.5">
+              {metrics?.pendingApplications ?? 0}
+            </span>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <Clock className="w-4 h-4" />
+          </div>
+        </Card>
+
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              Approved Applications
+            </span>
+            <span className="text-xl font-black text-emerald-600 font-mono tabular-nums block mt-0.5">
+              {metrics?.approvedApplications ?? 0}
+            </span>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <FileCheck className="w-4 h-4" />
+          </div>
+        </Card>
+
+        <Card className="p-4 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              Active Staff Accounts
+            </span>
+            <span className="text-xl font-black text-indigo-700 font-mono tabular-nums block mt-0.5">
+              {metrics?.totalStaff ?? 0}
+            </span>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <UserCheck className="w-4 h-4" />
+          </div>
+        </Card>
+      </div>
 
       {/* Row Click Detail Modal with Full Historical Chart */}
       <OverviewRowDetailModal

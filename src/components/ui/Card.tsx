@@ -20,28 +20,28 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className={`rounded-2xl p-6 bg-white border border-slate-200 shadow-xs transition-colors ${className}`}
+      className={`rounded-2xl p-6 bg-white border border-slate-200/90 shadow-xs hover:shadow-sm transition-all duration-150 ${className}`}
       {...props}
     >
       {hasHeader && (
-        <div className="flex items-start justify-between gap-4 mb-5">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-5 pb-4 border-b border-slate-100">
+          <div className="min-w-0">
             {title && (
               typeof title === 'string' ? (
-                <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+                <h3 className="text-[15px] font-bold tracking-tight text-slate-900">{title}</h3>
               ) : (
                 title
               )
             )}
             {description && (
               typeof description === 'string' ? (
-                <p className="text-sm font-normal text-slate-500 mt-1">{description}</p>
+                <p className="text-xs font-normal text-slate-500 mt-1 leading-relaxed max-w-3xl">{description}</p>
               ) : (
                 description
               )
             )}
           </div>
-          {action && <div className="shrink-0">{action}</div>}
+          {action && <div className="shrink-0 flex items-center gap-2">{action}</div>}
         </div>
       )}
       <div>{children}</div>

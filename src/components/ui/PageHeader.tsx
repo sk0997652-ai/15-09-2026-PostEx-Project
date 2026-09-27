@@ -5,6 +5,7 @@ export interface PageHeaderProps {
   title: string;
   description?: string;
   roleContext?: string;
+  badge?: React.ReactNode;
   actions?: React.ReactNode;
   breadcrumbs?: Array<{ label: string; href?: string; onClick?: () => void }>;
   className?: string;
@@ -14,14 +15,15 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   title,
   description,
   roleContext,
+  badge,
   actions,
   breadcrumbs,
   className = '',
 }) => {
   return (
-    <div className={`mb-6 pb-5 border-b border-slate-200 ${className}`}>
+    <div className={`mb-7 pb-5 border-b border-slate-200/90 ${className}`}>
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav aria-label="Breadcrumb" className="mb-2">
+        <nav aria-label="Breadcrumb" className="mb-2.5">
           <ol className="flex items-center gap-1.5 text-xs text-slate-500">
             {breadcrumbs.map((crumb, idx) => (
               <li key={idx} className="flex items-center gap-1.5">
@@ -46,21 +48,26 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{title}</h1>
+        <div className="min-w-0">
+          <div className="flex items-center flex-wrap gap-2.5">
+            <h1 className="text-[21px] sm:text-[22px] font-bold text-slate-900 tracking-tight leading-snug">
+              {title}
+            </h1>
             {roleContext && (
               <Badge variant="primary" dot>
                 {roleContext}
               </Badge>
             )}
+            {badge}
           </div>
           {description && (
-            <p className="text-sm font-normal text-slate-500 mt-1">{description}</p>
+            <p className="text-xs sm:text-[13px] font-normal text-slate-500 mt-1.5 max-w-3xl leading-relaxed">
+              {description}
+            </p>
           )}
         </div>
 
-        {actions && <div className="flex items-center gap-3 shrink-0">{actions}</div>}
+        {actions && <div className="flex items-center gap-2.5 shrink-0">{actions}</div>}
       </div>
     </div>
   );

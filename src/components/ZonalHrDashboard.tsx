@@ -506,7 +506,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
           </div>
           <div className="mt-3 text-[11px] text-slate-400 flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60">
             <Shield className="w-3.5 h-3.5 text-indigo-400" />
-            <span>RLS Zone-Scoped Access</span>
+            <span>Zone-Scoped Access</span>
           </div>
         </div>
 
@@ -653,6 +653,7 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
             loading={loading}
             onRefresh={loadDashboardData}
             onNavigateToStaff={() => setActiveTab('staff')}
+            onNavigateToHeadcount={() => setActiveTab('headcount')}
             onOpenAddStaff={() => {
               setActiveTab('staff');
               setShowAddStaffModal(true);
