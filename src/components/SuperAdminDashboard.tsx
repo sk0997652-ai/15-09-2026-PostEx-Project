@@ -11,6 +11,7 @@ import {
   LogOut,
   CheckCircle2,
   AlertTriangle,
+  X,
 } from 'lucide-react';
 import {
   DashboardMetrics,
@@ -33,6 +34,8 @@ import { Badge, Button } from './ui';
 export interface SuperAdminDashboardProps {
   currentUser: { id: string; email: string; name?: string; role?: string };
   onSignOut: () => void;
+  mobileNavOpen?: boolean;
+  setMobileNavOpen?: (open: boolean) => void;
 }
 
 export type AdminTab =
@@ -49,8 +52,13 @@ export type AdminTab =
 export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   currentUser,
   onSignOut,
+  mobileNavOpen,
+  setMobileNavOpen,
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [internalNavOpen, setInternalNavOpen] = useState(false);
+  const isNavOpen = mobileNavOpen !== undefined ? mobileNavOpen : internalNavOpen;
+  const setNavOpen = setMobileNavOpen || setInternalNavOpen;
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [org, setOrg] = useState<OrgStructure | null>(null);
   const [staff, setStaff] = useState<StaffUserItem[]>([]);
@@ -66,12 +74,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     }
   }, [notification]);
 
-  // Initial load
-  useEffect(() => {
-    loadOverviewData();
-  }, []);
-
-  // Tab-specific loads
+  // Tab-specific loads (also runs on initial mount for 'overview')
   useEffect(() => {
     if (activeTab === 'overview') loadOverviewData();
     if (activeTab === 'org') loadOrgData();
@@ -138,163 +141,201 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     }
   };
 
+  const handleSelectTab = (tab: AdminTab) => {
+    setActiveTab(tab);
+    setNavOpen(false);
+  };
+
   return (
-    <div id="super-admin-dashboard-container" className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans antialiased text-slate-800">
-      {/* Sidebar Navigation */}
-      <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-r border-slate-800">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+    <div id="super-admin-dashboard-container" className="min-h-screen bg-slate-50 flex flex-col sm:flex-row font-sans antialiased text-slate-800 overflow-x-hidden">
+      {/* Mobile Slide-In Drawer Backdrop (<640px) */}
+      {isNavOpen && (
+        <div
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 sm:hidden"
+          onClick={() => setNavOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar Navigation: Mobile Slide-In Drawer (<640px) | Tablet Icon Rail (640-1024px) | Desktop Full Sidebar (1024px+) */}
+      <aside
+        className={`${
+          isNavOpen
+            ? 'fixed inset-y-0 left-0 z-50 w-64 flex shadow-2xl'
+            : 'hidden'
+        } sm:static sm:z-auto sm:flex sm:w-16 lg:w-60 bg-slate-900 text-slate-300 flex-col shrink-0 border-r border-slate-800 transition-all duration-200`}
+      >
+        <div className="p-4 sm:p-3 lg:p-5 border-b border-slate-800 flex items-center justify-between sm:justify-center lg:justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
               <ShieldCheck className="w-4 h-4" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 sm:hidden lg:block">
               <span className="font-bold text-white tracking-tight block text-sm truncate">Super Admin Portal</span>
               <span className="text-[11px] text-slate-400 font-medium block truncate">
                 {currentUser.name || currentUser.email}
               </span>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setNavOpen(false)}
+            aria-label="Close navigation drawer"
+            className="sm:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="p-3 space-y-1 text-xs flex-1">
+        <nav className="p-2.5 sm:p-2 lg:p-3 space-y-1 text-xs flex-1 overflow-y-auto">
           <button
             id="nav-btn-overview"
-            onClick={() => setActiveTab('overview')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
+            title="Overview"
+            onClick={() => handleSelectTab('overview')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
               activeTab === 'overview'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
             }`}
           >
-            <TrendingUp className="w-4 h-4" />
-            <span>Overview</span>
+            <TrendingUp className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Overview</span>
           </button>
 
           <button
             id="nav-btn-org"
-            onClick={() => setActiveTab('org')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
+            title="Organization Structure"
+            onClick={() => handleSelectTab('org')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
               activeTab === 'org'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
             }`}
           >
-            <Building2 className="w-4 h-4" />
-            <span>Organization Structure</span>
+            <Building2 className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Organization Structure</span>
           </button>
 
           <button
             id="nav-btn-headcount"
-            onClick={() => setActiveTab('headcount')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
+            title="Headcount Management"
+            onClick={() => handleSelectTab('headcount')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
               activeTab === 'headcount'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
             }`}
           >
-            <Users className="w-4 h-4" />
-            <span>Headcount Management</span>
+            <Users className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Headcount Management</span>
           </button>
 
           <button
             id="nav-btn-staff"
-            onClick={() => setActiveTab('staff')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
+            title="Staff & User Management"
+            onClick={() => handleSelectTab('staff')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
               activeTab === 'staff'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
             }`}
           >
-            <Users className="w-4 h-4" />
-            <span>Staff &amp; User Management</span>
+            <Users className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Staff &amp; User Management</span>
           </button>
 
           <button
             id="nav-btn-overrides"
-            onClick={() => setActiveTab('overrides')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
+            title="User Permissions"
+            onClick={() => handleSelectTab('overrides')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
               activeTab === 'overrides'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
             }`}
           >
-            <ShieldCheck className="w-4 h-4" />
-            <span>User Permissions</span>
+            <ShieldCheck className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">User Permissions</span>
           </button>
 
           <button
             id="nav-btn-records"
-            onClick={() => setActiveTab('records')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
+            title="Company Record Browser"
+            onClick={() => handleSelectTab('records')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
               activeTab === 'records'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
             }`}
           >
-            <Search className="w-4 h-4" />
-            <span>Company Record Browser</span>
+            <Search className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Company Record Browser</span>
           </button>
 
           <button
             id="nav-btn-audit"
-            onClick={() => setActiveTab('audit')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
+            title="Audit Trail Logs"
+            onClick={() => handleSelectTab('audit')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
               activeTab === 'audit'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
             }`}
           >
-            <History className="w-4 h-4" />
-            <span>Audit Trail Logs</span>
+            <History className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Audit Trail Logs</span>
           </button>
 
           <button
             id="nav-btn-form-builder"
-            onClick={() => setActiveTab('form_builder')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
+            title="Form Builder"
+            onClick={() => handleSelectTab('form_builder')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
               activeTab === 'form_builder'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
             }`}
           >
-            <Sliders className="w-4 h-4" />
-            <span>Form Builder</span>
+            <Sliders className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Form Builder</span>
           </button>
 
           <button
             id="nav-btn-settings"
-            onClick={() => setActiveTab('settings')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
+            title="Organization Settings"
+            onClick={() => handleSelectTab('settings')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
               activeTab === 'settings'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
             }`}
           >
-            <Settings className="w-4 h-4" />
-            <span>Organization Settings</span>
+            <Settings className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Organization Settings</span>
           </button>
         </nav>
 
         {/* User Session & Sign Out */}
-        <div className="p-3 border-t border-slate-800 space-y-2">
-          <div className="px-2 py-1 text-xs">
+        <div className="p-2.5 sm:p-2 lg:p-3 border-t border-slate-800 space-y-2">
+          <div className="px-2 py-1 text-xs sm:hidden lg:block">
             <span className="text-[11px] text-slate-400 block">Logged in as</span>
             <span className="font-semibold text-white truncate block">{currentUser.name || currentUser.email}</span>
           </div>
           <button
             id="super-admin-signout-btn"
+            title="Sign Out"
             onClick={onSignOut}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 sm:px-0 lg:px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
+            <LogOut className="w-3.5 h-3.5 shrink-0" />
+            <span className="sm:hidden lg:inline">Sign Out</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content Workspace */}
-      <main className="flex-1 overflow-y-auto p-6 md:p-8">
+      <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
         {/* Global Notification */}
         {notification && (
           <div

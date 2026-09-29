@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { getStaffAccessToken } from '../lib/staffAuth';
 import {
   UserPlus,
   ClipboardList,
@@ -40,6 +41,8 @@ interface CentralHrDashboardProps {
     branch_name?: string;
   };
   onSignOut: () => void;
+  mobileNavOpen?: boolean;
+  setMobileNavOpen?: (open: boolean) => void;
 }
 
 interface ApplicationItem {
@@ -85,8 +88,16 @@ interface EnrolledEmployee {
   } | null;
 }
 
-export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboardProps) {
+export function CentralHrDashboard({
+  currentUser,
+  onSignOut,
+  mobileNavOpen,
+  setMobileNavOpen,
+}: CentralHrDashboardProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'headcount' | 'create_joiner' | 'review_queue' | 'enrolled_roster'>('overview');
+  const [internalNavOpen, setInternalNavOpen] = useState(false);
+  const isNavOpen = mobileNavOpen !== undefined ? mobileNavOpen : internalNavOpen;
+  const setNavOpen = setMobileNavOpen || setInternalNavOpen;
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -215,8 +226,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
 
   // Helper: Get Auth Token
   const getAuthToken = async (): Promise<string | null> => {
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token || null;
+    return getStaffAccessToken();
   };
 
   // Fetch Dashboard Metrics
@@ -587,29 +597,62 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
     });
   };
 
+  const handleSelectTab = (
+    tab: 'overview' | 'headcount' | 'create_joiner' | 'review_queue' | 'enrolled_roster'
+  ) => {
+    setActiveTab(tab);
+    setSelectedApplicationId(null);
+    setNavOpen(false);
+  };
+
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-slate-100">
+    <div className="flex flex-col sm:flex-row min-h-[calc(100vh-4rem)] bg-slate-100 overflow-x-hidden">
+      {/* Mobile Slide-In Drawer Backdrop (<640px) */}
+      {isNavOpen && (
+        <div
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 sm:hidden"
+          onClick={() => setNavOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ------------------------------------------------------------- */}
       {/* 1. Dedicated Central HR Sidebar Navigation */}
       {/* ------------------------------------------------------------- */}
-      <aside className="w-full lg:w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col justify-between border-r border-slate-800">
-        <div className="p-4 space-y-6">
+      <aside
+        className={`${
+          isNavOpen
+            ? 'fixed inset-y-0 left-0 z-50 w-64 flex shadow-2xl'
+            : 'hidden'
+        } sm:static sm:z-auto sm:flex sm:w-16 lg:w-60 bg-slate-900 text-white flex-shrink-0 flex-col justify-between border-r border-slate-800 transition-all duration-200`}
+      >
+        <div className="p-3 sm:p-2 lg:p-4 space-y-4 lg:space-y-6">
           {/* User Badge / Role Context */}
-          <div className="bg-slate-800/80 rounded-xl p-3 border border-slate-700/60">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 font-bold">
-                <IdCard className="w-5 h-5" />
-              </div>
-              <div className="overflow-hidden">
-                <h3 className="text-sm font-bold text-slate-100 truncate">{currentUser.name || currentUser.email}</h3>
-                <div className="flex items-center gap-1 text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">
-                  <span>Central HR</span>
+          <div className="bg-slate-800/80 rounded-xl p-2.5 sm:p-2 lg:p-3 border border-slate-700/60">
+            <div className="flex items-center justify-between sm:justify-center lg:justify-between gap-2">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 font-bold shrink-0">
+                  <IdCard className="w-4 h-4 lg:w-5 lg:h-5" />
+                </div>
+                <div className="overflow-hidden sm:hidden lg:block">
+                  <h3 className="text-sm font-bold text-slate-100 truncate">{currentUser.name || currentUser.email}</h3>
+                  <div className="flex items-center gap-1 text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">
+                    <span>Central HR</span>
+                  </div>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setNavOpen(false)}
+                aria-label="Close navigation drawer"
+                className="sm:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <div className="mt-3 pt-2.5 border-t border-slate-700/50 flex items-center justify-between text-xs text-slate-300">
+            <div className="mt-3 pt-2.5 border-t border-slate-700/50 sm:hidden lg:flex items-center justify-between text-xs text-slate-300 flex">
               <span className="text-slate-400">Assigned Zone:</span>
-              <span className="font-semibold text-white bg-slate-700/60 px-2 py-0.5 rounded text-[11px]">
+              <span className="font-semibold text-white bg-slate-700/60 px-2 py-0.5 rounded text-[11px] truncate max-w-[120px]">
                 {currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
               </span>
             </div>
@@ -619,79 +662,71 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
           <nav className="space-y-1">
             <button
               id="central-nav-overview"
-              onClick={() => {
-                setActiveTab('overview');
-                setSelectedApplicationId(null);
-              }}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              title="Zone Overview"
+              onClick={() => handleSelectTab('overview')}
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                 activeTab === 'overview'
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <Building2 className="w-4 h-4 text-indigo-300" />
-                <span>Zone Overview</span>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Building2 className="w-4 h-4 text-indigo-300 shrink-0" />
+                <span className="sm:hidden lg:inline truncate">Zone Overview</span>
               </div>
             </button>
 
             <button
               id="central-nav-headcount"
-              onClick={() => {
-                setActiveTab('headcount');
-                setSelectedApplicationId(null);
-              }}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              title="Headcount Management"
+              onClick={() => handleSelectTab('headcount')}
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                 activeTab === 'headcount'
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <Users className="w-4 h-4 text-indigo-300" />
-                <span>Headcount Management</span>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Users className="w-4 h-4 text-indigo-300 shrink-0" />
+                <span className="sm:hidden lg:inline truncate">Headcount Management</span>
               </div>
             </button>
 
             <button
               id="central-nav-create-joiner"
-              onClick={() => {
-                setActiveTab('create_joiner');
-                setSelectedApplicationId(null);
-              }}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              title="Create New Joiner"
+              onClick={() => handleSelectTab('create_joiner')}
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                 activeTab === 'create_joiner'
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <UserPlus className="w-4 h-4 text-emerald-400" />
-                <span>Create New Joiner</span>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <UserPlus className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="sm:hidden lg:inline truncate">Create New Joiner</span>
               </div>
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-1.5 py-0.5 rounded font-mono">
+              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-1.5 py-0.5 rounded font-mono sm:hidden lg:inline">
                 PX-ID
               </span>
             </button>
 
             <button
               id="central-nav-review-queue"
-              onClick={() => {
-                setActiveTab('review_queue');
-                setSelectedApplicationId(null);
-              }}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              title="Review Queue"
+              onClick={() => handleSelectTab('review_queue')}
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                 activeTab === 'review_queue'
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <ClipboardList className="w-4 h-4 text-amber-400" />
-                <span>Review Queue</span>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <ClipboardList className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="sm:hidden lg:inline truncate">Review Queue</span>
               </div>
               {metrics && metrics.pendingReviewCount > 0 && (
-                <span className="bg-amber-500 text-slate-900 font-bold text-[10px] px-2 py-0.5 rounded-full">
+                <span className="bg-amber-500 text-slate-900 font-bold text-[10px] px-2 py-0.5 rounded-full sm:hidden lg:inline">
                   {metrics.pendingReviewCount}
                 </span>
               )}
@@ -699,22 +734,20 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
 
             <button
               id="central-nav-enrolled-roster"
-              onClick={() => {
-                setActiveTab('enrolled_roster');
-                setSelectedApplicationId(null);
-              }}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              title="Enrolled Employees"
+              onClick={() => handleSelectTab('enrolled_roster')}
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                 activeTab === 'enrolled_roster'
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <UserCheck className="w-4 h-4 text-indigo-400" />
-                <span>Enrolled Employees</span>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <UserCheck className="w-4 h-4 text-indigo-400 shrink-0" />
+                <span className="sm:hidden lg:inline truncate">Enrolled Employees</span>
               </div>
               {metrics && metrics.enrolledCount > 0 && (
-                <span className="bg-slate-800 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/30">
+                <span className="bg-slate-800 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/30 sm:hidden lg:inline">
                   {metrics.enrolledCount}
                 </span>
               )}
@@ -723,20 +756,21 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
         </div>
 
         {/* Bottom Sidebar Action */}
-        <div className="p-4 border-t border-slate-800 space-y-2">
-          <div className="text-[11px] text-slate-400 px-1 flex items-center justify-between">
+        <div className="p-2.5 sm:p-2 lg:p-4 border-t border-slate-800 space-y-2">
+          <div className="text-[11px] text-slate-400 px-1 sm:hidden lg:flex items-center justify-between flex">
             <span className="flex items-center gap-1.5">
-              <Shield className="w-3 h-3 text-emerald-400" />
+              <Shield className="w-3 h-3 text-emerald-400 shrink-0" />
               <span>Zone-Scoped Access</span>
             </span>
           </div>
           <button
             id="central-hr-signout-btn"
+            title="Sign Out Session"
             onClick={onSignOut}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-rose-300 bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/40 transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 sm:px-0 lg:px-3 py-2 rounded-lg text-xs font-semibold text-rose-300 bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/40 transition-colors cursor-pointer"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out Session</span>
+            <LogOut className="w-3.5 h-3.5 shrink-0" />
+            <span className="sm:hidden lg:inline">Sign Out Session</span>
           </button>
         </div>
       </aside>
@@ -744,7 +778,7 @@ export function CentralHrDashboard({ currentUser, onSignOut }: CentralHrDashboar
       {/* ------------------------------------------------------------- */}
       {/* 2. Main Workspace Content Area */}
       {/* ------------------------------------------------------------- */}
-      <div className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
+      <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
         {/* Global Notifications */}
         {errorMessage && (
           <div className="mb-6 p-4 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-start justify-between shadow-xs">

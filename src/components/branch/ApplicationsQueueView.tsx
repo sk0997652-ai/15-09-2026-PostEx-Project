@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  Search,
   RefreshCw,
   Clock,
   Sparkles,
@@ -9,7 +8,21 @@ import {
   Shield,
 } from 'lucide-react';
 import { BranchApplicationSummary } from './types';
-import { PageHeader, Card, Button, StatusBadge, Badge, TablePagination, Input } from '../ui';
+import {
+  PageHeader,
+  Card,
+  Button,
+  StatusBadge,
+  Badge,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  TablePagination,
+  TableToolbar,
+} from '../ui';
 
 interface ApplicationsQueueViewProps {
   applications: BranchApplicationSummary[];
@@ -42,8 +55,28 @@ export function ApplicationsQueueView({
   actionLoading,
   activeTabTitle,
 }: ApplicationsQueueViewProps) {
+  const [docStatusFilter, setDocStatusFilter] = useState('');
+
+  const filteredApps = useMemo(() => {
+    return applications.filter((app) => {
+      if (docStatusFilter === 'flagged' && app.documents_correction_required === 0) return false;
+      if (
+        docStatusFilter === 'all_verified' &&
+        (app.documents_total === 0 || app.documents_verified < app.documents_total)
+      )
+        return false;
+      if (
+        docStatusFilter === 'pending_docs' &&
+        app.documents_verified >= app.documents_total &&
+        app.documents_correction_required === 0
+      )
+        return false;
+      return true;
+    });
+  }, [applications, docStatusFilter]);
+
   return (
-    <div className="p-6 space-y-4 max-w-6xl mx-auto w-full">
+    <div className="p-4 sm:p-6 space-y-4 max-w-6xl mx-auto w-full">
       <PageHeader
         title={activeTabTitle}
         description="Physical verification queue for candidate credentials and digital attestation."
@@ -54,46 +87,69 @@ export function ApplicationsQueueView({
         }
       />
 
-      {/* Search & Filter Bar */}
-      <Card className="p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <form onSubmit={onSearch} className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="flex-1 sm:w-80">
-            <Input
-              type="text"
-              placeholder="Search name, masked CNIC, or joining ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              leftIcon={<Search className="w-4 h-4 text-slate-400" />}
-            />
-          </div>
-          <Button
-            type="submit"
-            variant="primary"
-            size="default"
-          >
-            Search
-          </Button>
-          {searchQuery && (
+      {/* Search & Filter Toolbar */}
+      <TableToolbar
+        searchInputId="branch-queue-search-input"
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearchSubmit={() => {
+          const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+          onSearch(fakeEvent);
+        }}
+        searchPlaceholder="Search name, masked CNIC, or joining ID..."
+        statusPills={[
+          { value: '', label: 'All Candidates', variant: 'info', count: applications.length },
+          {
+            value: 'pending_docs',
+            label: 'Docs Pending Review',
+            variant: 'warning',
+            count: applications.filter(
+              (a) => a.documents_verified < a.documents_total && a.documents_correction_required === 0
+            ).length,
+          },
+          {
+            value: 'all_verified',
+            label: 'All Docs Verified',
+            variant: 'success',
+            count: applications.filter(
+              (a) => a.documents_total > 0 && a.documents_verified >= a.documents_total
+            ).length,
+          },
+          {
+            value: 'flagged',
+            label: 'Correction Flagged',
+            variant: 'error',
+            count: applications.filter((a) => a.documents_correction_required > 0).length,
+          },
+        ]}
+        activeStatus={docStatusFilter}
+        onStatusChange={setDocStatusFilter}
+        hasActiveFilters={Boolean(searchQuery || docStatusFilter)}
+        onReset={() => {
+          setSearchQuery('');
+          setDocStatusFilter('');
+          onPageChange(1);
+        }}
+        actions={
+          <div className="flex items-center gap-2">
             <Button
               type="button"
-              variant="secondary"
+              variant="primary"
               size="sm"
               onClick={() => {
-                setSearchQuery('');
-                onPageChange(1);
+                const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+                onSearch(fakeEvent);
               }}
             >
-              Clear
+              Search
             </Button>
-          )}
-        </form>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-          <span className="text-xs text-slate-500">
-            Showing <span className="font-bold text-slate-800">{applications.length}</span> of {totalApps} applications
-          </span>
-        </div>
-      </Card>
+            <span className="text-xs text-slate-500 hidden sm:inline">
+              Showing <span className="font-bold text-slate-800">{filteredApps.length}</span> of{' '}
+              {totalApps}
+            </span>
+          </div>
+        }
+      />
 
       {/* Applications Table */}
       <Card className="overflow-hidden">
@@ -123,36 +179,55 @@ export function ApplicationsQueueView({
             </Button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="px-5 py-3">Candidate</th>
-                  <th className="px-5 py-3">Joining ID</th>
-                  <th className="px-5 py-3">Masked CNIC</th>
-                  <th className="px-5 py-3">Documents</th>
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-                {applications.map((app) => {
+          <Table wrapperClassName="md:border-0 md:rounded-none md:shadow-none max-md:p-3">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Candidate</TableHead>
+                <TableHead hideOnTablet>Joining ID</TableHead>
+                <TableHead>Masked CNIC</TableHead>
+                <TableHead>Documents</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredApps.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-8 text-center text-slate-500">
+                    No applications match the selected filter criteria.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredApps.map((app) => {
                   const cand = app.candidate;
                   const isPending = app.status === 'bm_verification';
 
                   return (
-                    <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <span className="font-bold text-slate-900 block">{cand?.full_name || 'Unnamed'}</span>
-                        <span className="text-[11px] text-slate-500 font-mono">{cand?.mobile || 'No mobile'}</span>
-                      </td>
-                      <td className="px-5 py-3.5 font-mono text-slate-800 font-semibold">
+                    <TableRow key={app.id}>
+                      <TableCell mobileRole="primary">
+                        <span className="font-bold text-slate-900 block">
+                          {cand?.full_name || 'Unnamed'}
+                        </span>
+                        <span className="text-[11px] text-slate-500 font-mono">
+                          {cand?.mobile || 'No mobile'}
+                        </span>
+                      </TableCell>
+                      <TableCell
+                        mobileRole="field"
+                        mobileLabel="Joining ID"
+                        hideOnTablet
+                        className="font-mono text-slate-800 font-semibold"
+                      >
                         {cand?.joining_id || 'PX-PENDING'}
-                      </td>
-                      <td className="px-5 py-3.5 font-mono text-slate-600">
+                      </TableCell>
+                      <TableCell
+                        mobileRole="field"
+                        mobileLabel="Masked CNIC"
+                        className="font-mono text-slate-600"
+                      >
                         {cand?.masked_cnic || 'N/A'}
-                      </td>
-                      <td className="px-5 py-3.5">
+                      </TableCell>
+                      <TableCell mobileRole="field" mobileLabel="Documents">
                         <span className="inline-flex items-center gap-1 text-slate-700 font-medium">
                           <FileText className="w-3.5 h-3.5 text-slate-400" />
                           {app.documents_verified} / {app.documents_total} Verified
@@ -162,11 +237,11 @@ export function ApplicationsQueueView({
                             {app.documents_correction_required} flagged
                           </span>
                         )}
-                      </td>
-                      <td className="px-5 py-3.5">
+                      </TableCell>
+                      <TableCell mobileRole="status">
                         <StatusBadge status={app.status} size="sm" />
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
+                      </TableCell>
+                      <TableCell mobileRole="actions" className="text-right">
                         <Button
                           variant={isPending ? 'primary' : 'secondary'}
                           size="sm"
@@ -175,13 +250,13 @@ export function ApplicationsQueueView({
                         >
                           {isPending ? 'Review & Verify' : 'View Details'}
                         </Button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
+                })
+              )}
+            </TableBody>
+          </Table>
         )}
 
         {/* Pagination Footer */}

@@ -15,6 +15,7 @@ import {
   Sparkles,
   BarChart3,
   Layers,
+  X,
 } from 'lucide-react';
 import {
   getZonalMetrics,
@@ -57,10 +58,20 @@ interface ZonalHrDashboardProps {
     zone_id?: string;
   };
   onSignOut: () => void;
+  mobileNavOpen?: boolean;
+  setMobileNavOpen?: (open: boolean) => void;
 }
 
-export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardProps) {
+export function ZonalHrDashboard({
+  currentUser,
+  onSignOut,
+  mobileNavOpen,
+  setMobileNavOpen,
+}: ZonalHrDashboardProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'headcount' | 'staff' | 'applications' | 'reports'>('overview');
+  const [internalNavOpen, setInternalNavOpen] = useState(false);
+  const isNavOpen = mobileNavOpen !== undefined ? mobileNavOpen : internalNavOpen;
+  const setNavOpen = setMobileNavOpen || setInternalNavOpen;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -489,68 +500,101 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
 
   const zoneDisplayName = metrics?.zoneName || zoneInfo?.name || 'Assigned Zone';
 
+  const handleSelectTab = (tab: 'overview' | 'headcount' | 'staff' | 'applications' | 'reports') => {
+    setActiveTab(tab);
+    setNavOpen(false);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-50 flex flex-col sm:flex-row overflow-x-hidden">
+      {/* Mobile Slide-In Drawer Backdrop (<640px) */}
+      {isNavOpen && (
+        <div
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 sm:hidden"
+          onClick={() => setNavOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Dedicated Zonal HR Sidebar Navigation */}
-      <aside className="w-full md:w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col border-r border-slate-800">
+      <aside
+        className={`${
+          isNavOpen
+            ? 'fixed inset-y-0 left-0 z-50 w-64 flex shadow-2xl'
+            : 'hidden'
+        } sm:static sm:z-auto sm:flex sm:w-16 lg:w-60 bg-slate-900 text-white flex-shrink-0 flex-col border-r border-slate-800 transition-all duration-200`}
+      >
         {/* Zonal Header / Scope Identity */}
-        <div className="p-5 border-b border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-400">
-              <MapPin className="w-4 h-4" />
+        <div className="p-4 sm:p-3 lg:p-5 border-b border-slate-800">
+          <div className="flex items-center justify-between sm:justify-center lg:justify-between">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-400 shrink-0">
+                <MapPin className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 sm:hidden lg:block">
+                <div className="text-xs font-semibold text-indigo-400">Zonal Operations</div>
+                <div className="text-sm font-bold text-white truncate">{zoneDisplayName}</div>
+              </div>
             </div>
-            <div>
-              <div className="text-xs font-semibold text-indigo-400">Zonal Operations</div>
-              <div className="text-sm font-bold text-white truncate">{zoneDisplayName}</div>
-            </div>
+            <button
+              type="button"
+              onClick={() => setNavOpen(false)}
+              aria-label="Close navigation drawer"
+              className="sm:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <div className="mt-3 text-[11px] text-slate-400 flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60">
-            <Shield className="w-3.5 h-3.5 text-indigo-400" />
+          <div className="mt-3 text-[11px] text-slate-400 sm:hidden lg:flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60 flex">
+            <Shield className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
             <span>Zone-Scoped Access</span>
           </div>
         </div>
 
         {/* Sidebar Menu Items */}
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-2.5 sm:p-2 lg:p-3 space-y-1 overflow-y-auto">
           <button
             id="zonal-tab-overview"
-            onClick={() => setActiveTab('overview')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            title="Zone Overview"
+            onClick={() => handleSelectTab('overview')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'overview'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <Layers className="w-4 h-4" />
-            <span>Zone Overview</span>
+            <Layers className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Zone Overview</span>
           </button>
 
           <button
             id="zonal-tab-headcount"
-            onClick={() => setActiveTab('headcount')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            title="Headcount Management"
+            onClick={() => handleSelectTab('headcount')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'headcount'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <Users className="w-4 h-4" />
-            <span>Headcount Management</span>
+            <Users className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Headcount Management</span>
           </button>
 
           <button
             id="zonal-tab-staff"
-            onClick={() => setActiveTab('staff')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            title="Zone Staff Management"
+            onClick={() => handleSelectTab('staff')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'staff'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <Users className="w-4 h-4" />
-            <span className="flex-1 text-left">Zone Staff Management</span>
+            <Users className="w-4 h-4 shrink-0" />
+            <span className="flex-1 text-left sm:hidden lg:inline truncate">Zone Staff Management</span>
             {staffList.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-indigo-300 font-mono">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-indigo-300 font-mono sm:hidden lg:inline">
                 {staffList.length}
               </span>
             )}
@@ -558,17 +602,18 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
 
           <button
             id="zonal-tab-applications"
-            onClick={() => setActiveTab('applications')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            title="Applications Pipeline"
+            onClick={() => handleSelectTab('applications')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'applications'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <FileText className="w-4 h-4" />
-            <span className="flex-1 text-left">Applications Pipeline</span>
+            <FileText className="w-4 h-4 shrink-0" />
+            <span className="flex-1 text-left sm:hidden lg:inline truncate">Applications Pipeline</span>
             {metrics?.pendingApplications !== undefined && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono sm:hidden lg:inline">
                 {metrics.pendingApplications}
               </span>
             )}
@@ -576,42 +621,44 @@ export function ZonalHrDashboard({ currentUser, onSignOut }: ZonalHrDashboardPro
 
           <button
             id="zonal-tab-reports"
-            onClick={() => setActiveTab('reports')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            title="Zone Analytics & SLA"
+            onClick={() => handleSelectTab('reports')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'reports'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <BarChart3 className="w-4 h-4" />
-            <span>Zone Analytics &amp; SLA</span>
+            <BarChart3 className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Zone Analytics &amp; SLA</span>
           </button>
         </nav>
 
         {/* User Badge & Sign Out */}
-        <div className="p-3 border-t border-slate-800 bg-slate-900/90">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex flex-col">
+        <div className="p-2.5 sm:p-2 lg:p-3 border-t border-slate-800 bg-slate-900/90">
+          <div className="flex items-center justify-between mb-2 sm:hidden lg:flex">
+            <div className="flex flex-col min-w-0">
               <span className="text-xs font-bold text-slate-200 truncate">{currentUser.name || 'Zonal HR Manager'}</span>
               <span className="text-[10px] text-slate-400 truncate">{currentUser.email}</span>
             </div>
-            <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">
+            <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 shrink-0">
               Zonal HR
             </span>
           </div>
           <button
             id="zonal-signout-btn"
+            title="Sign Out"
             onClick={onSignOut}
-            className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-700/50 text-xs font-semibold transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 sm:px-0 lg:px-3 py-2 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-700/50 text-xs font-semibold transition-colors cursor-pointer"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out</span>
+            <LogOut className="w-3.5 h-3.5 shrink-0" />
+            <span className="sm:hidden lg:inline">Sign Out</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content Workspace */}
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
         {/* Banner Alert for Messages */}
         {error && (
           <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">

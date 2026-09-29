@@ -22,6 +22,79 @@ export interface StaffAuthState {
 const STAFF_SESSION_KEY = 'postex_staff_session_meta';
 const MAX_SESSION_DURATION_MS = 8 * 60 * 60 * 1000; // 8 hours max lifetime
 
+let cachedAccessToken: string | null = null;
+
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT') {
+    cachedAccessToken = null;
+  } else if (session?.access_token) {
+    cachedAccessToken = session.access_token;
+  }
+});
+
+export async function getStaffAccessToken(): Promise<string | null> {
+  // 1. Try Supabase Auth session
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data?.session?.access_token) {
+      cachedAccessToken = data.session.access_token;
+      return data.session.access_token;
+    }
+  } catch {
+    // Fall through to cached / localStorage token
+  }
+
+  // 2. Check in-memory cached token
+  if (cachedAccessToken) {
+    return cachedAccessToken;
+  }
+
+  // 3. Check postex_staff_session_meta in localStorage
+  if (typeof window !== 'undefined') {
+    try {
+      const metaRaw = localStorage.getItem(STAFF_SESSION_KEY);
+      if (metaRaw) {
+        const meta = JSON.parse(metaRaw);
+        if (meta?.accessToken && (!meta.expiresAt || Date.now() <= meta.expiresAt)) {
+          cachedAccessToken = meta.accessToken;
+          return meta.accessToken;
+        }
+      }
+    } catch {
+      // Ignore storage parse error
+    }
+
+    // 4. Check standard Supabase localStorage token key (sb-*-auth-token) or fallback keys
+    try {
+      const directToken =
+        localStorage.getItem('postex_staff_token') ||
+        localStorage.getItem('supabase_auth_token');
+      if (directToken) {
+        cachedAccessToken = directToken;
+        return directToken;
+      }
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const token = parsed?.access_token || parsed?.currentSession?.access_token;
+            if (token) {
+              cachedAccessToken = token;
+              return token;
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore storage read error
+    }
+  }
+
+  return null;
+}
+
 export async function signInStaff(email: string, password: string): Promise<{
   success: boolean;
   mustChangePassword: boolean;
@@ -69,12 +142,15 @@ export async function signInStaff(email: string, password: string): Promise<{
     console.warn('Could not query /api/staff/me directly:', err);
   }
 
+  cachedAccessToken = data.session.access_token;
+
   // Record 8-hour session timestamp
   const sessionExpiry = Date.now() + MAX_SESSION_DURATION_MS;
   localStorage.setItem(
     STAFF_SESSION_KEY,
     JSON.stringify({
       userId: data.user.id,
+      accessToken: data.session.access_token,
       loginAt: Date.now(),
       expiresAt: sessionExpiry,
     })
@@ -167,6 +243,8 @@ export async function checkStaffSession(): Promise<{
     return { isAuthenticated: false, mustChangePassword: false, user: null };
   }
 
+  cachedAccessToken = session.access_token;
+
   // Fetch full server-resolved staff profile with role and zoning
   try {
     const res = await fetch('/api/staff/me', {
@@ -205,6 +283,7 @@ export async function checkStaffSession(): Promise<{
 }
 
 export async function signOutStaff(): Promise<void> {
+  cachedAccessToken = null;
   localStorage.removeItem(STAFF_SESSION_KEY);
   await supabase.auth.signOut();
 }

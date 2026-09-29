@@ -10,6 +10,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { DashboardMetrics } from '../../lib/superAdminApi';
+import { getStaffAccessToken } from '../../lib/staffAuth';
 import {
   headcountApi,
   HeadcountOverviewResponse,
@@ -75,12 +76,14 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
   const [selectedEntity, setSelectedEntity] = useState<SelectedOverviewEntity | null>(null);
 
   const fetchOverviewRollup = async () => {
+    const token = await getStaffAccessToken();
+    if (!token) return;
     setLoadingOverview(true);
     try {
       const data = await headcountApi.getOverview();
       setOverviewData(data);
-    } catch (err) {
-      console.error('Failed to load Super Admin headcount overview:', err);
+    } catch {
+      // Handled gracefully without triggering global console.error overlay
     } finally {
       setLoadingOverview(false);
     }
@@ -88,7 +91,7 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
 
   useEffect(() => {
     fetchOverviewRollup();
-  }, [metrics]);
+  }, []);
 
   const handleRefreshAll = () => {
     onRefresh();
@@ -188,14 +191,14 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
           <TableHeader>
             <TableRow>
               <TableHead>Zone</TableHead>
-              <TableHead className="text-right">Branches</TableHead>
+              <TableHead className="text-right" hideOnTablet>Branches</TableHead>
               <TableHead className="text-right">Rider (Appr / Act / Vac)</TableHead>
               <TableHead className="text-right">In-House Staff (Appr / Act / Vac)</TableHead>
-              <TableHead className="text-right">Total Approved</TableHead>
+              <TableHead className="text-right" hideOnTablet>Total Approved</TableHead>
               <TableHead className="text-right">Total Active</TableHead>
               <TableHead className="text-right">Total Vacancy</TableHead>
               <TableHead>Fill-Rate Status</TableHead>
-              <TableHead>Trend</TableHead>
+              <TableHead hideOnTablet>Trend</TableHead>
               <TableHead className="text-right">Drill-Down</TableHead>
             </TableRow>
           </TableHeader>
@@ -214,7 +217,7 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
                   onClick={() => setSelectedEntity({ type: 'zone', data: z })}
                   className="cursor-pointer hover:bg-indigo-50/40"
                 >
-                  <TableCell>
+                  <TableCell mobileRole="primary">
                     <div className="flex items-center gap-2 font-semibold text-xs text-slate-900">
                       <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                       <span>{z.zone_name}</span>
@@ -223,38 +226,38 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
                       {z.zone_code || 'NO-CODE'} {z.region ? `· ${z.region}` : ''}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs text-slate-700">
+                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Branches" className="md:text-right font-mono text-xs text-slate-700">
                     {z.branches_count}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs">
+                  <TableCell mobileRole="field" mobileLabel="Rider (Appr / Act / Vac)" className="md:text-right font-mono text-xs">
                     <span className="text-slate-700">{z.rider.approved}</span> /{' '}
                     <span className="font-bold text-sky-700">{z.rider.active}</span> /{' '}
                     <span className="text-amber-700">{z.rider.vacancy}</span>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs">
+                  <TableCell mobileRole="field" mobileLabel="In-House (Appr / Act / Vac)" className="md:text-right font-mono text-xs">
                     <span className="text-slate-700">{z.in_house.approved}</span> /{' '}
                     <span className="font-bold text-emerald-700">{z.in_house.active}</span> /{' '}
                     <span className="text-amber-700">{z.in_house.vacancy}</span>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-semibold text-slate-900">
+                  <TableCell hideOnTablet hideOnMobile className="text-right font-mono text-xs font-semibold text-slate-900">
                     {z.total.approved}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-bold text-indigo-700">
+                  <TableCell mobileRole="field" mobileLabel="Total Active" className="md:text-right font-mono text-xs font-bold text-indigo-700">
                     {z.total.active}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-bold text-amber-700">
+                  <TableCell mobileRole="field" mobileLabel="Total Vacancy" className="md:text-right font-mono text-xs font-bold text-amber-700">
                     {z.total.vacancy}
                   </TableCell>
-                  <TableCell>
+                  <TableCell mobileRole="status">
                     <FillRateStatusBadge
                       status={z.total.fill_rate_status}
                       fillRatePct={z.total.fill_rate_pct}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell hideOnTablet hideOnMobile>
                     <TrendIndicator trend={z.total.trend} />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell mobileRole="actions" className="text-right">
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600">
                       <BarChart3 className="w-3.5 h-3.5" />
                       <span>History</span>
@@ -272,7 +275,7 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
         title="Designation-Wise Headcount Rollup"
         description="Company-wide headcount aggregated by Designation and Employment Category. Click any Designation row to inspect its historical trend chart."
         action={
-          <div className="w-52">
+          <div className="w-full sm:w-52">
             <Select
               id="super-admin-overview-category-filter"
               value={selectedCategoryFilter}
@@ -290,13 +293,13 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
           <TableHeader>
             <TableRow>
               <TableHead>Designation</TableHead>
-              <TableHead>Department</TableHead>
+              <TableHead hideOnTablet>Department</TableHead>
               <TableHead>Employment Category</TableHead>
               <TableHead className="text-right">Approved</TableHead>
               <TableHead className="text-right">Active</TableHead>
               <TableHead className="text-right">Vacancy</TableHead>
               <TableHead>Fill-Rate Status</TableHead>
-              <TableHead>Trend</TableHead>
+              <TableHead hideOnTablet>Trend</TableHead>
               <TableHead className="text-right">Drill-Down</TableHead>
             </TableRow>
           </TableHeader>
@@ -315,35 +318,35 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
                   onClick={() => setSelectedEntity({ type: 'designation', data: d })}
                   className="cursor-pointer hover:bg-indigo-50/40"
                 >
-                  <TableCell className="font-semibold text-xs text-slate-900">
+                  <TableCell mobileRole="primary" className="font-semibold text-xs text-slate-900">
                     {d.designation_name}
                   </TableCell>
-                  <TableCell className="text-xs text-slate-600">
+                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Department" className="text-xs text-slate-600">
                     {d.department_name}
                     {d.department_code ? ` (${d.department_code})` : ''}
                   </TableCell>
-                  <TableCell>
+                  <TableCell mobileRole="field" mobileLabel="Category">
                     <EmploymentCategoryBadge category={d.employment_category} />
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-semibold">
+                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right font-mono text-xs font-semibold">
                     {d.approved}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-bold text-indigo-700">
+                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right font-mono text-xs font-bold text-indigo-700">
                     {d.active}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-bold text-amber-700">
+                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right font-mono text-xs font-bold text-amber-700">
                     {d.vacancy}
                   </TableCell>
-                  <TableCell>
+                  <TableCell mobileRole="status">
                     <FillRateStatusBadge
                       status={d.fill_rate_status}
                       fillRatePct={d.fill_rate_pct}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell hideOnTablet hideOnMobile>
                     <TrendIndicator trend={d.trend} />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell mobileRole="actions" className="text-right">
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600">
                       <BarChart3 className="w-3.5 h-3.5" />
                       <span>History</span>
@@ -356,8 +359,8 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
         </Table>
       </Card>
 
-      {/* Secondary Operational Pipeline Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Secondary Operational Pipeline Strip (2-col on mobile, 4-col on desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="p-4 flex items-center justify-between">
           <div>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">

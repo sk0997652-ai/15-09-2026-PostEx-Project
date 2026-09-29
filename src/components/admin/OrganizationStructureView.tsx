@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Plus,
   Edit2,
@@ -14,6 +14,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableToolbar,
   PageHeader,
   Modal,
   Input,
@@ -52,6 +53,9 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
   setNotification,
 }) => {
   const [orgSubTab, setOrgSubTab] = useState<'zones' | 'branches' | 'departments' | 'designations'>('zones');
+  const [orgSearch, setOrgSearch] = useState('');
+  const [orgStatusFilter, setOrgStatusFilter] = useState('');
+  const [orgParentFilter, setOrgParentFilter] = useState('');
   const [showOrgModal, setShowOrgModal] = useState(false);
   const [orgModalMode, setOrgModalMode] = useState<'create' | 'edit'>('create');
   const [orgEditId, setOrgEditId] = useState<string | null>(null);
@@ -178,6 +182,38 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
 
   const currentItems = org ? ((org as any)[orgSubTab] || []) : [];
 
+  const filteredItems = useMemo(() => {
+    return currentItems.filter((item: any) => {
+      const isActive = typeof item.is_active === 'boolean' ? item.is_active : true;
+      if (orgSearch.trim()) {
+        const q = orgSearch.toLowerCase();
+        const matchesName = (item.name || '').toLowerCase().includes(q);
+        const matchesCode = (
+          item.zone_code ||
+          item.branch_code ||
+          item.department_code ||
+          item.region ||
+          item.city_address ||
+          ''
+        )
+          .toLowerCase()
+          .includes(q);
+        if (!matchesName && !matchesCode) return false;
+      }
+      if (orgStatusFilter) {
+        if (orgStatusFilter === 'active' && !isActive) return false;
+        if (orgStatusFilter === 'inactive' && isActive) return false;
+      }
+      if (orgParentFilter) {
+        if (orgSubTab === 'zones' && item.region !== orgParentFilter) return false;
+        if (orgSubTab === 'branches' && item.zone_id !== orgParentFilter) return false;
+        if (orgSubTab === 'departments' && item.department_category !== orgParentFilter) return false;
+        if (orgSubTab === 'designations' && item.department_id !== orgParentFilter) return false;
+      }
+      return true;
+    });
+  }, [currentItems, orgSearch, orgStatusFilter, orgParentFilter, orgSubTab]);
+
   const getColSpan = () => {
     if (orgSubTab === 'zones') return 6;
     if (orgSubTab === 'branches') return 9;
@@ -205,15 +241,20 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
       />
 
       {/* Sub-tabs Navigation */}
-      <div className="flex border-b border-slate-200 gap-6 text-xs font-semibold">
+      <div className="flex border-b border-slate-200 gap-6 text-xs font-semibold overflow-x-auto">
         {(['zones', 'branches', 'departments', 'designations'] as const).map((tab) => {
           const count = org ? (org as any)[tab]?.length || 0 : 0;
           return (
             <button
               key={tab}
               id={`org-subtab-${tab}`}
-              onClick={() => setOrgSubTab(tab)}
-              className={`pb-3 capitalize transition-colors cursor-pointer flex items-center gap-1.5 ${
+              onClick={() => {
+                setOrgSubTab(tab);
+                setOrgSearch('');
+                setOrgStatusFilter('');
+                setOrgParentFilter('');
+              }}
+              className={`pb-3 capitalize transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                 orgSubTab === tab
                   ? 'text-indigo-700 border-b-2 border-indigo-600 font-bold'
                   : 'text-slate-500 hover:text-slate-900'
@@ -227,6 +268,92 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
           );
         })}
       </div>
+
+      {/* Entity Search & Filter Toolbar */}
+      <TableToolbar
+        searchInputId="org-entity-search-input"
+        searchValue={orgSearch}
+        onSearchChange={setOrgSearch}
+        searchPlaceholder={`Search ${orgSubTab} by name or code...`}
+        filters={
+          orgSubTab === 'zones'
+            ? [
+                {
+                  id: 'org-zone-region-filter',
+                  label: 'Filter by Region',
+                  value: orgParentFilter,
+                  onChange: setOrgParentFilter,
+                  options: [
+                    { value: '', label: 'All Regions' },
+                    ...PAKISTAN_REGIONS.map((r) => ({ value: r, label: r })),
+                  ],
+                },
+              ]
+            : orgSubTab === 'branches'
+            ? [
+                {
+                  id: 'org-branch-zone-filter',
+                  label: 'Filter by Zone',
+                  value: orgParentFilter,
+                  onChange: setOrgParentFilter,
+                  options: [
+                    { value: '', label: 'All Zones' },
+                    ...(org?.zones || []).map((z) => ({ value: z.id, label: z.name })),
+                  ],
+                },
+              ]
+            : orgSubTab === 'departments'
+            ? [
+                {
+                  id: 'org-dept-category-filter',
+                  label: 'Filter by Category',
+                  value: orgParentFilter,
+                  onChange: setOrgParentFilter,
+                  options: [
+                    { value: '', label: 'All Categories' },
+                    ...DEPARTMENT_CATEGORIES.map((c) => ({ value: c, label: c })),
+                  ],
+                },
+              ]
+            : [
+                {
+                  id: 'org-desig-dept-filter',
+                  label: 'Filter by Department',
+                  value: orgParentFilter,
+                  onChange: setOrgParentFilter,
+                  options: [
+                    { value: '', label: 'All Departments' },
+                    ...(org?.departments || []).map((d) => ({ value: d.id, label: d.name })),
+                  ],
+                },
+              ]
+        }
+        statusPills={[
+          { value: '', label: 'All Statuses', variant: 'info', count: currentItems.length },
+          {
+            value: 'active',
+            label: 'Active',
+            variant: 'success',
+            count: currentItems.filter((i: any) =>
+              typeof i.is_active === 'boolean' ? i.is_active : true
+            ).length,
+          },
+          {
+            value: 'inactive',
+            label: 'Inactive',
+            variant: 'neutral',
+            count: currentItems.filter((i: any) => i.is_active === false).length,
+          },
+        ]}
+        activeStatus={orgStatusFilter}
+        onStatusChange={setOrgStatusFilter}
+        hasActiveFilters={Boolean(orgSearch || orgStatusFilter || orgParentFilter)}
+        onReset={() => {
+          setOrgSearch('');
+          setOrgStatusFilter('');
+          setOrgParentFilter('');
+        }}
+      />
 
       {/* Entity Data Table */}
       <div className="space-y-3">
@@ -245,8 +372,8 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
                   <TableHead>Branch Code</TableHead>
                   <TableHead>Zone</TableHead>
                   <TableHead>Branch Type</TableHead>
-                  <TableHead>City / Address</TableHead>
-                  <TableHead>Contact Number</TableHead>
+                  <TableHead hideOnTablet>City / Address</TableHead>
+                  <TableHead hideOnTablet>Contact Number</TableHead>
                 </>
               )}
               {orgSubTab === 'departments' && (
@@ -262,46 +389,86 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
                 </>
               )}
               <TableHead>Status</TableHead>
-              <TableHead>Created At</TableHead>
+              <TableHead hideOnTablet>Created At</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentItems.length > 0 ? (
-              currentItems.map((item: any) => {
+            {filteredItems.length > 0 ? (
+              filteredItems.map((item: any) => {
                 const isActive = typeof item.is_active === 'boolean' ? item.is_active : true;
                 return (
                   <TableRow key={item.id}>
-                    <TableCell className="font-bold text-slate-900">{item.name}</TableCell>
+                    <TableCell mobileRole="primary" className="font-bold text-slate-900">
+                      {item.name}
+                    </TableCell>
                     {orgSubTab === 'zones' && (
                       <>
-                        <TableCell className="font-mono text-xs text-indigo-700 font-semibold">
+                        <TableCell
+                          mobileRole="field"
+                          mobileLabel="Zone Code"
+                          className="font-mono text-xs text-indigo-700 font-semibold"
+                        >
                           {item.zone_code || '—'}
                         </TableCell>
-                        <TableCell className="text-slate-600">{item.region || '—'}</TableCell>
+                        <TableCell
+                          mobileRole="field"
+                          mobileLabel="Region"
+                          className="text-slate-600"
+                        >
+                          {item.region || '—'}
+                        </TableCell>
                       </>
                     )}
                     {orgSubTab === 'branches' && (
                       <>
-                        <TableCell className="font-mono text-xs text-indigo-700 font-semibold">
+                        <TableCell
+                          mobileRole="field"
+                          mobileLabel="Branch Code"
+                          className="font-mono text-xs text-indigo-700 font-semibold"
+                        >
                           {item.branch_code || '—'}
                         </TableCell>
-                        <TableCell className="text-slate-600">{item.zones?.name || item.zone_id}</TableCell>
-                        <TableCell>
+                        <TableCell
+                          mobileRole="field"
+                          mobileLabel="Zone"
+                          className="text-slate-600"
+                        >
+                          {item.zones?.name || item.zone_id}
+                        </TableCell>
+                        <TableCell mobileRole="field" mobileLabel="Branch Type">
                           {item.branch_type ? (
                             <Badge variant="neutral" size="sm">{item.branch_type}</Badge>
                           ) : '—'}
                         </TableCell>
-                        <TableCell className="text-slate-600">{item.city_address || item.address || '—'}</TableCell>
-                        <TableCell className="text-slate-500 font-mono text-xs">{item.contact_number || '—'}</TableCell>
+                        <TableCell
+                          mobileRole="field"
+                          mobileLabel="City / Address"
+                          hideOnTablet
+                          className="text-slate-600"
+                        >
+                          {item.city_address || item.address || '—'}
+                        </TableCell>
+                        <TableCell
+                          mobileRole="field"
+                          mobileLabel="Contact"
+                          hideOnTablet
+                          className="text-slate-500 font-mono text-xs"
+                        >
+                          {item.contact_number || '—'}
+                        </TableCell>
                       </>
                     )}
                     {orgSubTab === 'departments' && (
                       <>
-                        <TableCell className="font-mono text-xs text-indigo-700 font-semibold">
+                        <TableCell
+                          mobileRole="field"
+                          mobileLabel="Dept Code"
+                          className="font-mono text-xs text-indigo-700 font-semibold"
+                        >
                           {item.department_code || '—'}
                         </TableCell>
-                        <TableCell>
+                        <TableCell mobileRole="field" mobileLabel="Category">
                           {item.department_category ? (
                             <Badge variant="neutral" size="sm">{item.department_category}</Badge>
                           ) : '—'}
@@ -310,8 +477,14 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
                     )}
                     {orgSubTab === 'designations' && (
                       <>
-                        <TableCell className="text-slate-600">{item.departments?.name || item.department_id}</TableCell>
-                        <TableCell>
+                        <TableCell
+                          mobileRole="field"
+                          mobileLabel="Department"
+                          className="text-slate-600"
+                        >
+                          {item.departments?.name || item.department_id}
+                        </TableCell>
+                        <TableCell mobileRole="field" mobileLabel="Category">
                           {item.employment_category ? (
                             <Badge
                               variant={item.employment_category === 'Rider' ? 'warning' : 'primary'}
@@ -323,15 +496,20 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
                         </TableCell>
                       </>
                     )}
-                    <TableCell>
+                    <TableCell mobileRole="status">
                       <Badge variant={isActive ? 'success' : 'neutral'} size="sm">
                         {isActive ? 'Active' : 'Inactive'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-slate-400 font-mono text-xs">
+                    <TableCell
+                      mobileRole="field"
+                      mobileLabel="Created At"
+                      hideOnTablet
+                      className="text-slate-400 font-mono text-xs"
+                    >
                       {item.created_at ? new Date(item.created_at).toLocaleDateString() : '—'}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell mobileRole="actions" className="text-right">
                       <div className="inline-flex items-center gap-1">
                         <Button
                           variant="ghost"
@@ -362,7 +540,9 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
                   colSpan={getColSpan()}
                   className="py-12 text-center text-slate-400"
                 >
-                  No {orgSubTab} configured yet. Click "Add {orgSubTab.slice(0, -1)}" above.
+                  {orgSearch || orgStatusFilter || orgParentFilter
+                    ? `No ${orgSubTab} match the selected filter criteria.`
+                    : `No ${orgSubTab} configured yet. Click "Add ${orgSubTab.slice(0, -1)}" above.`}
                 </TableCell>
               </TableRow>
             )}

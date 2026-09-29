@@ -6,6 +6,7 @@ export * from './Card';
 export * from './Badge';
 export * from './StatusBadge';
 export * from './Table';
+export * from './TableToolbar';
 export * from './PageHeader';
 export * from './Modal';
 export * from './Checkbox';

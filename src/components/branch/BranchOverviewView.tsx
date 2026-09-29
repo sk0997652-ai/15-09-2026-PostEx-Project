@@ -7,6 +7,7 @@ import {
   Search,
   BarChart3,
 } from 'lucide-react';
+import { getStaffAccessToken } from '../../lib/staffAuth';
 import {
   headcountApi,
   HeadcountOverviewResponse,
@@ -16,14 +17,13 @@ import {
   Card,
   Badge,
   Button,
-  Input,
-  Select,
   Table,
   TableHeader,
   TableBody,
   TableRow,
   TableHead,
   TableCell,
+  TableToolbar,
 } from '../ui';
 import {
   FillRateStatusBadge,
@@ -74,12 +74,14 @@ export function BranchOverviewView({
   const [statusFilter, setStatusFilter] = useState('all');
 
   const fetchBranchOverview = async () => {
+    const token = await getStaffAccessToken();
+    if (!token) return;
     setLoadingOverview(true);
     try {
       const data = await headcountApi.getOverview();
       setOverviewData(data);
-    } catch (err) {
-      console.error('Failed to load Branch Manager headcount overview:', err);
+    } catch {
+      // Handled gracefully without triggering global console.error overlay
     } finally {
       setLoadingOverview(false);
     }
@@ -187,48 +189,57 @@ export function BranchOverviewView({
           </Badge>
         }
       >
-        <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Input
-            id="bm-designation-search"
-            placeholder="Search designation or department..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            leftIcon={<Search className="w-4 h-4" />}
-          />
-          <Select
-            id="bm-designation-category-filter"
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            options={[
-              { value: 'all', label: 'All Categories' },
-              { value: 'Rider', label: 'Rider Only' },
-              { value: 'In-House Staff', label: 'In-House Staff Only' },
-            ]}
-          />
-          <Select
-            id="bm-designation-status-filter"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            options={[
-              { value: 'all', label: 'All Fill-Rate Statuses' },
-              { value: 'On Target', label: 'On Target (≥95%)' },
-              { value: 'Understaffed', label: 'Understaffed (80–94%)' },
-              { value: 'Critical', label: 'Critical (<80%)' },
-            ]}
-          />
-        </div>
+        <TableToolbar
+          className="mb-4"
+          searchInputId="bm-designation-search"
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Search designation or department..."
+          filters={[
+            {
+              id: 'bm-designation-category-filter',
+              label: 'Category Filter',
+              value: categoryFilter,
+              onChange: setCategoryFilter,
+              options: [
+                { value: 'all', label: 'All Categories' },
+                { value: 'Rider', label: 'Rider Only' },
+                { value: 'In-House Staff', label: 'In-House Staff Only' },
+              ],
+            },
+          ]}
+          statusSelectId="bm-designation-status-filter"
+          activeStatus={statusFilter}
+          onStatusChange={setStatusFilter}
+          statusPills={[
+            { value: 'all', label: 'All Fill-Rate Statuses', variant: 'info' },
+            { value: 'On Target', label: 'On Target (≥95%)', variant: 'success' },
+            { value: 'Understaffed', label: 'Understaffed (80–94%)', variant: 'warning' },
+            { value: 'Critical', label: 'Critical (<80%)', variant: 'error' },
+          ]}
+          hasActiveFilters={
+            Boolean(searchQuery.trim()) ||
+            categoryFilter !== 'all' ||
+            statusFilter !== 'all'
+          }
+          onReset={() => {
+            setSearchQuery('');
+            setCategoryFilter('all');
+            setStatusFilter('all');
+          }}
+        />
 
         <Table id="branch-manager-designation-headcount-table">
           <TableHeader>
             <TableRow>
               <TableHead>Designation</TableHead>
-              <TableHead>Department</TableHead>
+              <TableHead hideOnTablet>Department</TableHead>
               <TableHead>Employment Category</TableHead>
               <TableHead className="text-right">Approved</TableHead>
               <TableHead className="text-right">Active</TableHead>
               <TableHead className="text-right">Vacancy</TableHead>
               <TableHead>Fill-Rate Status</TableHead>
-              <TableHead>Trend</TableHead>
+              <TableHead hideOnTablet>Trend</TableHead>
               <TableHead className="text-right">Drill-Down</TableHead>
             </TableRow>
           </TableHeader>
@@ -247,35 +258,35 @@ export function BranchOverviewView({
                   onClick={() => setSelectedEntity({ type: 'designation', data: d })}
                   className="cursor-pointer hover:bg-indigo-50/40"
                 >
-                  <TableCell className="font-semibold text-xs text-slate-900">
+                  <TableCell mobileRole="primary" className="font-semibold text-xs text-slate-900">
                     {d.designation_name}
                   </TableCell>
-                  <TableCell className="text-xs text-slate-600">
+                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Department" className="text-xs text-slate-600">
                     {d.department_name}
                     {d.department_code ? ` (${d.department_code})` : ''}
                   </TableCell>
-                  <TableCell>
+                  <TableCell mobileRole="field" mobileLabel="Category">
                     <EmploymentCategoryBadge category={d.employment_category} />
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-semibold tabular-nums">
+                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right font-mono text-xs font-semibold tabular-nums">
                     {d.approved}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-bold text-indigo-700 tabular-nums">
+                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right font-mono text-xs font-bold text-indigo-700 tabular-nums">
                     {d.active}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-bold text-amber-700 tabular-nums">
+                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right font-mono text-xs font-bold text-amber-700 tabular-nums">
                     {d.vacancy}
                   </TableCell>
-                  <TableCell>
+                  <TableCell mobileRole="status">
                     <FillRateStatusBadge
                       status={d.fill_rate_status}
                       fillRatePct={d.fill_rate_pct}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell hideOnTablet hideOnMobile>
                     <TrendIndicator trend={d.trend} />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell mobileRole="actions" className="text-right">
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600">
                       <BarChart3 className="w-3.5 h-3.5" />
                       <span>History</span>

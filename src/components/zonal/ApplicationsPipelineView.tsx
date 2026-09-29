@@ -1,7 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   RefreshCw,
-  Search,
   ArrowRightLeft,
   Sparkles,
 } from 'lucide-react';
@@ -10,12 +9,16 @@ import {
   PageHeader,
   Button,
   Card,
-  Input,
-  Select,
   StatusBadge,
   Badge,
   Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
   TablePagination,
+  TableToolbar,
 } from '../ui';
 
 interface ApplicationsPipelineViewProps {
@@ -53,6 +56,8 @@ export function ApplicationsPipelineView({
   onOpenReassign,
   onOpenOverride,
 }: ApplicationsPipelineViewProps) {
+  const [branchFilter, setBranchFilter] = useState('');
+
   // Deduplicate applications by id
   const uniqueApplications = useMemo(() => {
     const seen = new Set<string>();
@@ -62,6 +67,24 @@ export function ApplicationsPipelineView({
       return true;
     });
   }, [applications]);
+
+  const branchOptions = useMemo(() => {
+    const names = Array.from(
+      new Set(
+        uniqueApplications
+          .map((a) => a.candidate?.branches?.name)
+          .filter(Boolean) as string[]
+      )
+    );
+    return names;
+  }, [uniqueApplications]);
+
+  const filteredApplications = useMemo(() => {
+    return uniqueApplications.filter((app) => {
+      if (branchFilter && app.candidate?.branches?.name !== branchFilter) return false;
+      return true;
+    });
+  }, [uniqueApplications, branchFilter]);
 
   return (
     <div className="space-y-6">
@@ -84,105 +107,138 @@ export function ApplicationsPipelineView({
       />
 
       {/* Search & Filter Toolbar */}
-      <Card className="p-4">
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <form onSubmit={onSearchSubmit} className="flex-1 w-full relative flex gap-2">
-            <div className="flex-1">
-              <Input
-                id="zonal-app-search-input"
-                placeholder="Search candidate name, Joining ID, or CNIC..."
-                value={appSearchQuery}
-                onChange={(e) => onSearchQueryChange(e.target.value)}
-                leftIcon={<Search className="w-4 h-4" />}
-              />
-            </div>
-            <Button
-              type="submit"
-              variant="primary"
-              size="md"
-              className="shrink-0"
-            >
-              Search
-            </Button>
-          </form>
-
-          {/* Status Filter Dropdown */}
-          <div className="w-full sm:w-56 flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">Status:</span>
-            <Select
-              id="zonal-app-status-filter"
-              value={appStatusFilter}
-              onChange={(e) => onStatusFilterChange(e.target.value)}
-              options={[
-                { value: '', label: 'All Statuses' },
-                { value: 'draft', label: 'Draft' },
-                { value: 'submitted', label: 'Submitted' },
-                { value: 'bm_verification', label: 'BM Verification' },
-                { value: 'hr_review', label: 'HR Review' },
-                { value: 'needs_correction', label: 'Needs Correction' },
-                { value: 'approved', label: 'Approved' },
-                { value: 'rejected', label: 'Rejected' },
-              ]}
-            />
-          </div>
-        </div>
-      </Card>
+      <TableToolbar
+        searchInputId="zonal-app-search-input"
+        searchValue={appSearchQuery}
+        onSearchChange={onSearchQueryChange}
+        onSearchSubmit={() => {
+          const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+          onSearchSubmit(fakeEvent);
+        }}
+        searchPlaceholder="Search candidate name, Joining ID, or CNIC..."
+        filters={
+          branchOptions.length > 0
+            ? [
+                {
+                  id: 'zonal-app-branch-filter',
+                  label: 'Filter by Branch',
+                  value: branchFilter,
+                  onChange: setBranchFilter,
+                  options: [
+                    { value: '', label: 'All Branches' },
+                    ...branchOptions.map((b) => ({ value: b, label: b })),
+                  ],
+                },
+              ]
+            : []
+        }
+        statusPills={[
+          { value: '', label: 'All Statuses', variant: 'info' },
+          { value: 'draft', label: 'Draft', variant: 'info' },
+          { value: 'submitted', label: 'Submitted', variant: 'warning' },
+          { value: 'bm_verification', label: 'BM Verification', variant: 'warning' },
+          { value: 'hr_review', label: 'HR Review', variant: 'warning' },
+          { value: 'needs_correction', label: 'Needs Correction', variant: 'warning' },
+          { value: 'approved', label: 'Approved', variant: 'success' },
+          { value: 'rejected', label: 'Rejected', variant: 'error' },
+        ]}
+        activeStatus={appStatusFilter}
+        onStatusChange={onStatusFilterChange}
+        statusSelectId="zonal-app-status-filter"
+        hasActiveFilters={Boolean(appSearchQuery || appStatusFilter || branchFilter)}
+        onReset={() => {
+          onSearchQueryChange('');
+          onStatusFilterChange('');
+          setBranchFilter('');
+        }}
+        actions={
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+              onSearchSubmit(fakeEvent);
+            }}
+          >
+            Search
+          </Button>
+        }
+      />
 
       {/* Applications Table */}
       <Card className="overflow-hidden">
-        <Table>
-          <thead>
-            <tr>
-              <th className="py-3 px-4 font-semibold text-left">Candidate</th>
-              <th className="py-3 px-4 font-semibold text-left">Masked CNIC</th>
-              <th className="py-3 px-4 font-semibold text-left">Branch</th>
-              <th className="py-3 px-4 font-semibold text-left">Assigned Central HR</th>
-              <th className="py-3 px-4 font-semibold text-left">Status</th>
-              <th className="py-3 px-4 font-semibold text-left">Stage</th>
-              <th className="py-3 px-4 font-semibold text-right">Zonal Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200">
+        <Table wrapperClassName="md:border-0 md:rounded-none md:shadow-none max-md:p-3">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Candidate</TableHead>
+              <TableHead hideOnTablet>Masked CNIC</TableHead>
+              <TableHead>Branch</TableHead>
+              <TableHead>Assigned Central HR</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead hideOnTablet>Stage</TableHead>
+              <TableHead className="text-right">Zonal Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {loadingApps ? (
-              <tr>
-                <td colSpan={7} className="py-8 text-center text-slate-500">
+              <TableRow>
+                <TableCell colSpan={7} className="py-8 text-center text-slate-500">
                   <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-indigo-600" />
                   <span>Loading applications in {zoneName}...</span>
-                </td>
-              </tr>
-            ) : uniqueApplications.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-8 text-center text-slate-500">
+                </TableCell>
+              </TableRow>
+            ) : filteredApplications.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="py-8 text-center text-slate-500">
                   No applications matching your filters in this zone.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
-              uniqueApplications.map((app) => (
-                <tr key={app.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3.5 px-4">
-                    <div className="font-bold text-slate-900">{app.candidate?.full_name || 'Candidate'}</div>
-                    <div className="text-[11px] text-slate-500 font-mono">{app.candidate?.joining_id}</div>
-                  </td>
-                  <td className="py-3.5 px-4 font-mono text-slate-700">
+              filteredApplications.map((app) => (
+                <TableRow key={app.id}>
+                  <TableCell mobileRole="primary">
+                    <div className="font-bold text-slate-900">
+                      {app.candidate?.full_name || 'Candidate'}
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-mono">
+                      {app.candidate?.joining_id}
+                    </div>
+                  </TableCell>
+                  <TableCell
+                    mobileRole="field"
+                    mobileLabel="Masked CNIC"
+                    hideOnTablet
+                    className="font-mono text-slate-700"
+                  >
                     {app.candidate?.masked_cnic || '*****'}
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-700">
+                  </TableCell>
+                  <TableCell
+                    mobileRole="field"
+                    mobileLabel="Branch"
+                    className="text-slate-700"
+                  >
                     {app.candidate?.branches?.name || 'Assigned Branch'}
-                  </td>
-                  <td className="py-3.5 px-4">
+                  </TableCell>
+                  <TableCell mobileRole="field" mobileLabel="Assigned Central HR">
                     <div className="flex items-center gap-1.5 font-medium text-slate-800">
                       <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
                       <span>{app.assigned_central_hr_name}</span>
                     </div>
-                  </td>
-                  <td className="py-3.5 px-4">
+                  </TableCell>
+                  <TableCell mobileRole="status">
                     <StatusBadge status={app.status} />
-                  </td>
-                  <td className="py-3.5 px-4 text-slate-600 font-mono">
+                  </TableCell>
+                  <TableCell
+                    mobileRole="field"
+                    mobileLabel="Stage"
+                    hideOnTablet
+                    className="text-slate-600 font-mono"
+                  >
                     Step {app.current_step}/4
-                  </td>
-                  <td className="py-3.5 px-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                  </TableCell>
+                  <TableCell mobileRole="actions" className="text-right">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
                       <Button
                         id={`zonal-reassign-btn-${app.id}`}
                         variant="secondary"
@@ -204,14 +260,14 @@ export function ApplicationsPipelineView({
                         Override
                       </Button>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))
             )}
-          </tbody>
+          </TableBody>
         </Table>
 
-        {uniqueApplications.length > 0 && (
+        {filteredApplications.length > 0 && (
           <TablePagination
             currentPage={appPage}
             totalPages={appTotalPages}

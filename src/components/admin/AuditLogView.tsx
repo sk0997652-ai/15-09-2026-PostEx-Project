@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { History, RefreshCw, Search } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { AuditLogItem, superAdminApi } from '../../lib/superAdminApi';
 import {
   Button,
-  Card,
   Table,
   TableHeader,
   TableBody,
@@ -11,8 +10,8 @@ import {
   TableHead,
   TableCell,
   TablePagination,
+  TableToolbar,
   PageHeader,
-  Input,
   Badge,
 } from '../ui';
 
@@ -23,6 +22,10 @@ export interface AuditLogViewProps {
 export const AuditLogView: React.FC<AuditLogViewProps> = ({ setNotification }) => {
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [auditActionFilter, setAuditActionFilter] = useState('');
+  const [actorTypeFilter, setActorTypeFilter] = useState('');
+  const [categoryPill, setCategoryPill] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [auditPagination, setAuditPagination] = useState({
     page: 1,
     limit: 25,
@@ -31,13 +34,13 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ setNotification }) =
   });
   const [loading, setLoading] = useState(false);
 
-  const loadAuditLogsData = async (page = 1, limit = 25) => {
+  const loadAuditLogsData = async (page = 1, limit = 25, actionOverride?: string) => {
     setLoading(true);
     try {
       const res = await superAdminApi.getAuditLogs({
         page,
         limit,
-        action: auditActionFilter,
+        action: actionOverride !== undefined ? actionOverride : auditActionFilter,
       });
       setAuditLogs(res.logs || []);
       setAuditPagination({
@@ -56,6 +59,37 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ setNotification }) =
   useEffect(() => {
     loadAuditLogsData(1, auditPagination.limit);
   }, []);
+
+  const filteredLogs = useMemo(() => {
+    return auditLogs.filter((log) => {
+      if (actorTypeFilter && log.actor_type !== actorTypeFilter) return false;
+      if (categoryPill) {
+        const act = (log.action || '').toLowerCase();
+        if (categoryPill === 'create' && !act.includes('create') && !act.includes('provision')) return false;
+        if (categoryPill === 'security' && !act.includes('password') && !act.includes('permission') && !act.includes('override') && !act.includes('auth')) return false;
+        if (categoryPill === 'update' && !act.includes('update') && !act.includes('edit') && !act.includes('status')) return false;
+        if (categoryPill === 'delete' && !act.includes('delete') && !act.includes('remove') && !act.includes('retention')) return false;
+      }
+      if (dateFrom) {
+        const logDate = new Date(log.created_at).toISOString().slice(0, 10);
+        if (logDate < dateFrom) return false;
+      }
+      if (dateTo) {
+        const logDate = new Date(log.created_at).toISOString().slice(0, 10);
+        if (logDate > dateTo) return false;
+      }
+      return true;
+    });
+  }, [auditLogs, actorTypeFilter, categoryPill, dateFrom, dateTo]);
+
+  const handleResetFilters = () => {
+    setAuditActionFilter('');
+    setActorTypeFilter('');
+    setCategoryPill('');
+    setDateFrom('');
+    setDateTo('');
+    loadAuditLogsData(1, auditPagination.limit, '');
+  };
 
   return (
     <div id="super-admin-audit-log-view" className="space-y-6">
@@ -77,59 +111,109 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ setNotification }) =
         }
       />
 
-      {/* Filter Bar */}
-      <Card className="p-4">
-        <div className="flex gap-3 items-center">
-          <div className="flex-1">
-            <Input
-              id="audit-filter-input"
-              type="text"
-              placeholder="Filter by action name (e.g., regenerate, create, override, data_retention)..."
-              value={auditActionFilter}
-              onChange={(e) => setAuditActionFilter(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && loadAuditLogsData(1, auditPagination.limit)}
-              leftIcon={<Search className="w-4 h-4 text-slate-400" />}
-            />
-          </div>
+      {/* Search, Actor Filter & Date Range Toolbar */}
+      <TableToolbar
+        searchInputId="audit-filter-input"
+        searchValue={auditActionFilter}
+        onSearchChange={setAuditActionFilter}
+        onDebouncedSearchChange={(val) => loadAuditLogsData(1, auditPagination.limit, val)}
+        onSearchSubmit={() => loadAuditLogsData(1, auditPagination.limit, auditActionFilter)}
+        searchPlaceholder="Filter by action name (e.g., regenerate, create, override, data_retention)..."
+        filters={[
+          {
+            id: 'audit-actor-filter-select',
+            label: 'Actor Type',
+            value: actorTypeFilter,
+            onChange: setActorTypeFilter,
+            options: [
+              { value: '', label: 'All Actors' },
+              { value: 'staff', label: 'Staff User' },
+              { value: 'system', label: 'System' },
+              { value: 'candidate', label: 'Candidate' },
+            ],
+          },
+        ]}
+        dateRange={{
+          from: dateFrom,
+          to: dateTo,
+          onFromChange: setDateFrom,
+          onToChange: setDateTo,
+          fromId: 'audit-date-from',
+          toId: 'audit-date-to',
+        }}
+        statusPills={[
+          { value: '', label: 'All Events', variant: 'info', count: auditLogs.length },
+          { value: 'create', label: 'Provision / Create', variant: 'success' },
+          { value: 'security', label: 'Security & Permissions', variant: 'warning' },
+          { value: 'update', label: 'Updates & Status', variant: 'primary' },
+          { value: 'delete', label: 'Deletion & Retention', variant: 'error' },
+        ]}
+        activeStatus={categoryPill}
+        onStatusChange={setCategoryPill}
+        hasActiveFilters={Boolean(
+          auditActionFilter || actorTypeFilter || categoryPill || dateFrom || dateTo
+        )}
+        onReset={handleResetFilters}
+        actions={
           <Button
             id="audit-filter-btn"
             variant="primary"
             size="sm"
-            onClick={() => loadAuditLogsData(1, auditPagination.limit)}
+            onClick={() => loadAuditLogsData(1, auditPagination.limit, auditActionFilter)}
             disabled={loading}
           >
             Filter Logs
           </Button>
-        </div>
-      </Card>
+        }
+      />
 
       {/* Audit Logs Table */}
       <div className="space-y-4">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Timestamp</TableHead>
+              <TableHead hideOnTablet>Timestamp</TableHead>
               <TableHead>Action</TableHead>
               <TableHead>Actor Type</TableHead>
               <TableHead>Entity</TableHead>
-              <TableHead>Metadata Details</TableHead>
+              <TableHead hideOnTablet>Metadata Details</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {auditLogs.length > 0 ? (
-              auditLogs.map((log) => (
+            {filteredLogs.length > 0 ? (
+              filteredLogs.map((log) => (
                 <TableRow key={log.id}>
-                  <TableCell className="text-slate-500 whitespace-nowrap font-mono text-xs">
+                  <TableCell
+                    mobileRole="field"
+                    mobileLabel="Timestamp"
+                    hideOnTablet
+                    className="text-slate-500 whitespace-nowrap font-mono text-xs"
+                  >
                     {new Date(log.created_at).toLocaleString()}
                   </TableCell>
-                  <TableCell>
+                  <TableCell mobileRole="primary">
                     <Badge variant="neutral" size="sm">
                       {log.action}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-slate-600 text-xs">{log.actor_type}</TableCell>
-                  <TableCell className="text-slate-700 font-mono text-xs">{log.entity_type}</TableCell>
-                  <TableCell className="text-slate-500 max-w-md truncate font-mono text-[11px]">
+                  <TableCell mobileRole="status" className="text-slate-600 text-xs">
+                    <Badge variant="info" size="sm">
+                      {log.actor_type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell
+                    mobileRole="field"
+                    mobileLabel="Entity"
+                    className="text-slate-700 font-mono text-xs"
+                  >
+                    {log.entity_type}
+                  </TableCell>
+                  <TableCell
+                    mobileRole="field"
+                    mobileLabel="Metadata Details"
+                    hideOnTablet
+                    className="text-slate-500 max-w-md truncate font-mono text-[11px]"
+                  >
                     {JSON.stringify(log.metadata)}
                   </TableCell>
                 </TableRow>
@@ -144,7 +228,7 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ setNotification }) =
           </TableBody>
         </Table>
 
-        {auditLogs.length > 0 && (
+        {filteredLogs.length > 0 && (
           <TablePagination
             page={auditPagination.page}
             totalPages={auditPagination.totalPages}

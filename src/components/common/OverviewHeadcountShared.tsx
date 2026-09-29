@@ -34,6 +34,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableToolbar,
 } from '../ui';
 
 // ============================================================================
@@ -593,7 +594,7 @@ export const ZoneBranchFlashcardsSection: React.FC<{
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-4">
             <div className="p-3.5 rounded-xl bg-slate-50/90 border border-slate-200/70">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 block">
                 Zone Total (Act / Appr)
@@ -930,6 +931,45 @@ export const UnifiedBranchHeadcountTable: React.FC<{
     return 'Unassigned';
   };
 
+  const dropdownFilters = [
+    ...(showZoneFilter
+      ? [
+          {
+            id: 'super-admin-overview-zone-filter',
+            label: 'Zone Filter',
+            value: activeZoneFilter,
+            onChange: handleZoneChange,
+            options: [
+              { value: 'all', label: 'All Zones (Company-Wide)' },
+              ...zoneRows.map((z) => ({
+                value: z.zone_id,
+                label: `${z.zone_name}${z.zone_code ? ` (${z.zone_code})` : ''}`,
+              })),
+            ],
+          },
+        ]
+      : []),
+    {
+      id: `${tableId}-branch-filter`,
+      label: 'Branch Filter',
+      value: branchFilter,
+      onChange: setBranchFilter,
+      options: [
+        { value: 'all', label: 'All Branches' },
+        ...zoneScopedBranches.map((b) => ({
+          value: b.branch_id,
+          label: `${b.branch_name}${b.branch_code ? ` (${b.branch_code})` : ''}`,
+        })),
+      ],
+    },
+  ];
+
+  const hasFilters =
+    Boolean(searchQuery.trim()) ||
+    activeZoneFilter !== 'all' ||
+    branchFilter !== 'all' ||
+    statusFilter !== 'all';
+
   return (
     <Card
       title={title}
@@ -940,72 +980,45 @@ export const UnifiedBranchHeadcountTable: React.FC<{
         </Badge>
       }
     >
-      {/* Search + Filters Bar */}
-      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className={showZoneFilter ? '' : 'sm:col-span-2'}>
-          <Input
-            id={`${tableId}-search`}
-            placeholder="Search branch, code, zone, or manager..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            leftIcon={<Search className="w-4 h-4" />}
-          />
-        </div>
-
-        {showZoneFilter && (
-          <Select
-            id="super-admin-overview-zone-filter"
-            value={activeZoneFilter}
-            onChange={(e) => handleZoneChange(e.target.value)}
-            options={[
-              { value: 'all', label: 'All Zones (Company-Wide)' },
-              ...zoneRows.map((z) => ({
-                value: z.zone_id,
-                label: `${z.zone_name}${z.zone_code ? ` (${z.zone_code})` : ''}`,
-              })),
-            ]}
-          />
-        )}
-
-        <Select
-          id={`${tableId}-branch-filter`}
-          value={branchFilter}
-          onChange={(e) => setBranchFilter(e.target.value)}
-          options={[
-            { value: 'all', label: 'All Branches' },
-            ...zoneScopedBranches.map((b) => ({
-              value: b.branch_id,
-              label: `${b.branch_name}${b.branch_code ? ` (${b.branch_code})` : ''}`,
-            })),
-          ]}
-        />
-
-        <Select
-          id={`${tableId}-status-filter`}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          options={[
-            { value: 'all', label: 'All Fill-Rate Statuses' },
-            { value: 'On Target', label: 'On Target (≥95%)' },
-            { value: 'Understaffed', label: 'Understaffed (80–94%)' },
-            { value: 'Critical', label: 'Critical (<80%)' },
-          ]}
-        />
-      </div>
+      {/* Reusable Search + Dropdowns + Status Pill Toolbar */}
+      <TableToolbar
+        className="mb-4"
+        searchInputId={`${tableId}-search`}
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search branch, code, zone, or manager..."
+        filters={dropdownFilters}
+        statusSelectId={`${tableId}-status-filter`}
+        activeStatus={statusFilter}
+        onStatusChange={setStatusFilter}
+        statusPills={[
+          { value: 'all', label: 'All Fill-Rate Statuses', variant: 'info' },
+          { value: 'On Target', label: 'On Target (≥95%)', variant: 'success' },
+          { value: 'Understaffed', label: 'Understaffed (80–94%)', variant: 'warning' },
+          { value: 'Critical', label: 'Critical (<80%)', variant: 'error' },
+        ]}
+        hasActiveFilters={hasFilters}
+        onReset={() => {
+          setSearchQuery('');
+          handleZoneChange('all');
+          setBranchFilter('all');
+          setStatusFilter('all');
+        }}
+      />
 
       <Table id={tableId}>
         <TableHeader>
           <TableRow>
-            {showZoneColumn && <TableHead>Zone</TableHead>}
+            {showZoneColumn && <TableHead hideOnTablet>Zone</TableHead>}
             <TableHead>Branch</TableHead>
             <TableHead>Branch Manager</TableHead>
-            <TableHead className="text-right">Rider HC Approved</TableHead>
+            <TableHead className="text-right" hideOnTablet>Rider HC Approved</TableHead>
             <TableHead className="text-right">Active Riders</TableHead>
-            <TableHead className="text-right">In-House HC Approved</TableHead>
+            <TableHead className="text-right" hideOnTablet>In-House HC Approved</TableHead>
             <TableHead className="text-right">Active In-House</TableHead>
             <TableHead className="text-right">Vacancy</TableHead>
             <TableHead>Fill-Rate Status</TableHead>
-            <TableHead>Trend</TableHead>
+            <TableHead hideOnTablet>Trend</TableHead>
             <TableHead className="text-right">Drill-Down</TableHead>
           </TableRow>
         </TableHeader>
@@ -1030,7 +1043,7 @@ export const UnifiedBranchHeadcountTable: React.FC<{
                   className="cursor-pointer hover:bg-indigo-50/40"
                 >
                   {showZoneColumn && (
-                    <TableCell>
+                    <TableCell hideOnTablet mobileRole="field" mobileLabel="Zone">
                       <span className="text-xs font-semibold text-slate-800">
                         {b.zone_name}
                       </span>
@@ -1041,7 +1054,7 @@ export const UnifiedBranchHeadcountTable: React.FC<{
                       )}
                     </TableCell>
                   )}
-                  <TableCell>
+                  <TableCell mobileRole="primary">
                     <div className="flex items-center gap-2 font-semibold text-xs text-slate-900">
                       <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                       <span>{b.branch_name}</span>
@@ -1050,7 +1063,7 @@ export const UnifiedBranchHeadcountTable: React.FC<{
                       {b.branch_code || 'NO-CODE'} · {b.branch_type}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell mobileRole="field" mobileLabel="Branch Manager">
                     <div className="inline-flex items-center gap-1.5 text-xs text-slate-700">
                       <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span className={bmLabel === 'Unassigned' ? 'text-slate-400 italic' : 'font-medium'}>
@@ -1058,31 +1071,33 @@ export const UnifiedBranchHeadcountTable: React.FC<{
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-semibold text-slate-700 tabular-nums">
+                  <TableCell hideOnTablet hideOnMobile className="text-right font-mono text-xs font-semibold text-slate-700 tabular-nums">
                     {b.rider.approved}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-bold text-sky-700 tabular-nums">
-                    {b.rider.active}
+                  <TableCell mobileRole="field" mobileLabel="Riders (Act / Appr)" className="md:text-right font-mono text-xs font-bold text-sky-700 tabular-nums">
+                    <span>{b.rider.active}</span>
+                    <span className="md:hidden text-slate-400 font-normal"> / {b.rider.approved}</span>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-semibold text-slate-700 tabular-nums">
+                  <TableCell hideOnTablet hideOnMobile className="text-right font-mono text-xs font-semibold text-slate-700 tabular-nums">
                     {b.in_house.approved}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-bold text-emerald-700 tabular-nums">
-                    {b.in_house.active}
+                  <TableCell mobileRole="field" mobileLabel="In-House (Act / Appr)" className="md:text-right font-mono text-xs font-bold text-emerald-700 tabular-nums">
+                    <span>{b.in_house.active}</span>
+                    <span className="md:hidden text-slate-400 font-normal"> / {b.in_house.approved}</span>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-xs font-bold text-amber-700 tabular-nums">
+                  <TableCell mobileRole="field" mobileLabel="Open Vacancy" className="md:text-right font-mono text-xs font-bold text-amber-700 tabular-nums">
                     {b.total.vacancy}
                   </TableCell>
-                  <TableCell>
+                  <TableCell mobileRole="status">
                     <FillRateStatusBadge
                       status={b.total.fill_rate_status}
                       fillRatePct={b.total.fill_rate_pct}
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell hideOnTablet hideOnMobile>
                     <TrendIndicator trend={b.total.trend} />
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell mobileRole="actions" className="text-right">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1414,27 +1429,27 @@ export const OverviewRowDetailModal: React.FC<{
                     <TableHead className="text-right">Rider Active</TableHead>
                     <TableHead className="text-right">In-House Active</TableHead>
                     <TableHead className="text-right">Total Active</TableHead>
-                    <TableHead className="text-right">New Joiners</TableHead>
-                    <TableHead className="text-right">Approved Target</TableHead>
+                    <TableHead className="text-right" hideOnTablet>New Joiners</TableHead>
+                    <TableHead className="text-right" hideOnTablet>Approved Target</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {historicalSeries.map((pt) => (
                     <TableRow key={pt.month_key}>
-                      <TableCell className="font-semibold text-xs">{pt.month_label}</TableCell>
-                      <TableCell className="text-right font-mono text-xs text-sky-700">
+                      <TableCell mobileRole="primary" className="font-semibold text-xs">{pt.month_label}</TableCell>
+                      <TableCell mobileRole="field" mobileLabel="Rider Active" className="md:text-right font-mono text-xs text-sky-700">
                         {pt.rider_active}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs text-emerald-700">
+                      <TableCell mobileRole="field" mobileLabel="In-House Active" className="md:text-right font-mono text-xs text-emerald-700">
                         {pt.in_house_active}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs font-bold">
+                      <TableCell mobileRole="status" className="md:text-right font-mono text-xs font-bold">
                         {pt.total_active}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs text-slate-600">
+                      <TableCell hideOnTablet mobileRole="field" mobileLabel="New Joiners" className="md:text-right font-mono text-xs text-slate-600">
                         +{pt.new_enrollments}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs text-slate-600">
+                      <TableCell hideOnTablet mobileRole="field" mobileLabel="Approved Target" className="md:text-right font-mono text-xs text-slate-600">
                         {pt.approved_target}
                       </TableCell>
                     </TableRow>
@@ -1457,15 +1472,15 @@ export const OverviewRowDetailModal: React.FC<{
                   <TableHead>Branch</TableHead>
                   <TableHead className="text-right">Rider (Appr / Act / Vac)</TableHead>
                   <TableHead className="text-right">In-House (Appr / Act / Vac)</TableHead>
-                  <TableHead className="text-right">Total (Appr / Act / Vac)</TableHead>
+                  <TableHead className="text-right" hideOnTablet>Total (Appr / Act / Vac)</TableHead>
                   <TableHead>Fill-Rate Status</TableHead>
-                  <TableHead>Trend</TableHead>
+                  <TableHead hideOnTablet>Trend</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {branchBreakdown.map((b) => (
                   <TableRow key={b.branch_id}>
-                    <TableCell>
+                    <TableCell mobileRole="primary">
                       <div className="font-semibold text-xs text-slate-900 flex items-center gap-1.5">
                         <Building2 className="w-3.5 h-3.5 text-indigo-600" />
                         <span>{b.branch_name}</span>
@@ -1474,22 +1489,22 @@ export const OverviewRowDetailModal: React.FC<{
                         {b.branch_code || 'No Code'} · {b.branch_type}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right font-mono text-xs">
+                    <TableCell mobileRole="field" mobileLabel="Riders (Appr/Act/Vac)" className="md:text-right font-mono text-xs">
                       {b.rider.approved} / <strong className="text-sky-700">{b.rider.active}</strong> / {b.rider.vacancy}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-xs">
+                    <TableCell mobileRole="field" mobileLabel="In-House (Appr/Act/Vac)" className="md:text-right font-mono text-xs">
                       {b.in_house.approved} / <strong className="text-emerald-700">{b.in_house.active}</strong> / {b.in_house.vacancy}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-xs font-semibold">
+                    <TableCell hideOnTablet mobileRole="field" mobileLabel="Total (Appr/Act/Vac)" className="md:text-right font-mono text-xs font-semibold">
                       {b.total.approved} / {b.total.active} / {b.total.vacancy}
                     </TableCell>
-                    <TableCell>
+                    <TableCell mobileRole="status">
                       <FillRateStatusBadge
                         status={b.total.fill_rate_status}
                         fillRatePct={b.total.fill_rate_pct}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell hideOnTablet hideOnMobile>
                       <TrendIndicator trend={b.total.trend} />
                     </TableCell>
                   </TableRow>
@@ -1514,41 +1529,41 @@ export const OverviewRowDetailModal: React.FC<{
                 <TableHeader>
                   <TableRow>
                     <TableHead>Designation</TableHead>
-                    <TableHead>Department</TableHead>
+                    <TableHead hideOnTablet>Department</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead className="text-right">Approved</TableHead>
                     <TableHead className="text-right">Active</TableHead>
                     <TableHead className="text-right">Vacancy</TableHead>
                     <TableHead>Fill-Rate Status</TableHead>
-                    <TableHead>Trend</TableHead>
+                    <TableHead hideOnTablet>Trend</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {designationBreakdown.map((d) => (
                     <TableRow key={d.designation_id}>
-                      <TableCell className="font-semibold text-xs text-slate-900">
+                      <TableCell mobileRole="primary" className="font-semibold text-xs text-slate-900">
                         {d.designation_name}
                       </TableCell>
-                      <TableCell className="text-xs text-slate-600">
+                      <TableCell hideOnTablet mobileRole="field" mobileLabel="Department" className="text-xs text-slate-600">
                         {d.department_name}
                       </TableCell>
-                      <TableCell>
+                      <TableCell mobileRole="field" mobileLabel="Category">
                         <EmploymentCategoryBadge category={d.employment_category} />
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs">{d.approved}</TableCell>
-                      <TableCell className="text-right font-mono text-xs font-bold text-indigo-700">
+                      <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right font-mono text-xs">{d.approved}</TableCell>
+                      <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right font-mono text-xs font-bold text-indigo-700">
                         {d.active}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-xs font-bold text-amber-700">
+                      <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right font-mono text-xs font-bold text-amber-700">
                         {d.vacancy}
                       </TableCell>
-                      <TableCell>
+                      <TableCell mobileRole="status">
                         <FillRateStatusBadge
                           status={d.fill_rate_status}
                           fillRatePct={d.fill_rate_pct}
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell hideOnTablet hideOnMobile>
                         <TrendIndicator trend={d.trend} />
                       </TableCell>
                     </TableRow>

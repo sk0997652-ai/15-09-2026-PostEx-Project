@@ -14,7 +14,7 @@ import { CentralHrDashboard } from './components/CentralHrDashboard';
 import { BranchManagerDashboard } from './components/BranchManagerDashboard';
 import { checkStaffSession, signOutStaff } from './lib/staffAuth';
 import { supabase } from './lib/supabase';
-import { Building2, Shield, Users, Smartphone, Activity, Lock, Wrench, ChevronDown, UserCheck, LogOut, Sparkles } from 'lucide-react';
+import { Building2, Shield, Users, Smartphone, Activity, Lock, Wrench, ChevronDown, UserCheck, LogOut, Sparkles, Menu, Bell } from 'lucide-react';
 import { ComponentLibraryShowcase } from './components/ui/ComponentLibraryShowcase';
 import { Button } from './components/ui';
 import { useBranding } from './lib/branding';
@@ -32,6 +32,7 @@ export default function App() {
     branch_name?: string;
   } | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeDevTab, setActiveDevTab] = useState<'none' | 'rbac' | 'auth' | 'connectivity' | 'ui-library'>(() => {
     if (typeof window !== 'undefined') {
       const search = window.location.search;
@@ -84,50 +85,79 @@ export default function App() {
   }, []);
 
   const handleSignOut = async () => {
-    await signOutStaff();
     setCurrentUser(null);
     setIsSuperAdmin(false);
     setActiveDevTab('none');
+    await signOutStaff();
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col">
+    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col overflow-x-hidden">
       {/* Top Application Header */}
       <header className="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {currentUser && activeDevTab === 'none' && (
+              <button
+                id="mobile-nav-hamburger-btn"
+                type="button"
+                aria-label="Toggle navigation menu"
+                onClick={() => setMobileNavOpen((prev) => !prev)}
+                className="sm:hidden p-2 -ml-1 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            )}
             {logoUrl ? (
               <img
                 src={logoUrl}
                 alt={companyName || 'Company Logo'}
-                className="h-9 max-w-[140px] object-contain rounded bg-white/10 p-1 border border-white/20"
+                className="h-8 sm:h-9 max-w-[110px] sm:max-w-[140px] object-contain rounded bg-white/10 p-1 border border-white/20 shrink-0"
               />
             ) : (
-              <div className="w-9 h-9 rounded-lg bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-400">
-                <Building2 className="w-5 h-5" />
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-400 shrink-0">
+                <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
             )}
-            <div>
-              <span className="text-base font-bold tracking-tight text-white flex items-center gap-2">
-                {companyName || portalName}{' '}
-                <span className="text-slate-400 font-normal">| HR Onboarding Portal</span>
+            <div className="min-w-0">
+              <span className="text-sm sm:text-base font-bold tracking-tight text-white flex items-center gap-2 truncate">
+                <span className="truncate">{companyName || portalName}</span>
+                <span className="text-slate-400 font-normal hidden md:inline">| HR Onboarding Portal</span>
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Real App Mode Indicator / Role Badge */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Notification Icon & Role/Avatar Badge */}
             {currentUser && (
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs">
-                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                <span className="font-semibold text-slate-200">{currentUser.name || currentUser.email}</span>
-                <span className="text-indigo-400 font-mono text-[11px] font-bold uppercase">
-                  {currentUser.role?.replace(/_/g, ' ')}
-                </span>
-                {currentUser.zone_name && (
-                  <span className="text-slate-400 text-[10px]">({currentUser.zone_name})</span>
-                )}
-              </div>
+              <>
+                <button
+                  id="top-bar-notification-btn"
+                  type="button"
+                  aria-label="Notifications"
+                  className="relative p-2 rounded-full bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0"
+                >
+                  <Bell className="w-4 h-4" />
+                  <span className="w-2 h-2 rounded-full bg-indigo-500 absolute top-1.5 right-1.5" />
+                </button>
+
+                <div className="flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs max-w-[160px] sm:max-w-none">
+                  <div className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                    {(currentUser.name || currentUser.email || 'U').charAt(0).toUpperCase()}
+                  </div>
+                  <span className="font-semibold text-slate-200 truncate hidden sm:inline">
+                    {currentUser.name || currentUser.email}
+                  </span>
+                  <span className="text-indigo-400 font-mono text-[10px] sm:text-[11px] font-bold uppercase truncate">
+                    {currentUser.role?.replace(/_/g, ' ')}
+                  </span>
+                  {currentUser.zone_name && (
+                    <span className="text-slate-400 text-[10px] hidden lg:inline">
+                      ({currentUser.zone_name})
+                    </span>
+                  )}
+                </div>
+              </>
             )}
 
             {/* Developer Verification Tools Menu - Gated behind VITE_ENABLE_DEV_TOOLS flag (off by default in production) */}
@@ -142,7 +172,8 @@ export default function App() {
                   rightIcon={<ChevronDown className="w-3 h-3 text-slate-400" />}
                   className="bg-slate-800 hover:bg-slate-700 active:bg-slate-700 text-slate-200 border-slate-700"
                 >
-                  Dev Verification Tools
+                  <span className="hidden sm:inline">Dev Verification Tools</span>
+                  <span className="sm:hidden">Dev</span>
                 </Button>
 
                 {showDevMenu && (
@@ -303,21 +334,29 @@ export default function App() {
             <SuperAdminDashboard
               currentUser={currentUser}
               onSignOut={handleSignOut}
+              mobileNavOpen={mobileNavOpen}
+              setMobileNavOpen={setMobileNavOpen}
             />
           ) : currentUser && currentUser.role === 'zonal_hr_manager' ? (
             <ZonalHrDashboard
               currentUser={currentUser}
               onSignOut={handleSignOut}
+              mobileNavOpen={mobileNavOpen}
+              setMobileNavOpen={setMobileNavOpen}
             />
           ) : currentUser && currentUser.role === 'central_hr' ? (
             <CentralHrDashboard
               currentUser={currentUser}
               onSignOut={handleSignOut}
+              mobileNavOpen={mobileNavOpen}
+              setMobileNavOpen={setMobileNavOpen}
             />
           ) : currentUser && currentUser.role === 'branch_manager' ? (
             <BranchManagerDashboard
               currentUser={currentUser}
               onSignOut={handleSignOut}
+              mobileNavOpen={mobileNavOpen}
+              setMobileNavOpen={setMobileNavOpen}
             />
           ) : currentUser ? (
             <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12">

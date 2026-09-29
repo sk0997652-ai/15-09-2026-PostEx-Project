@@ -26,6 +26,7 @@ import {
   TableHead,
   TableCell,
   TablePagination,
+  TableToolbar,
   PageHeader,
   Modal,
   Input,
@@ -439,88 +440,75 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
       />
 
       {/* Filter & Search Bar */}
-      <Card className="p-4">
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex-1 min-w-[220px]">
-            <Input
-              id="staff-search-input"
-              type="text"
-              placeholder="Search by name, official email, or PX-STAFF ID..."
-              value={staffSearch}
-              onChange={(e) => {
-                setStaffSearch(e.target.value);
-                setStaffPage(1);
-              }}
-              leftIcon={<Search className="w-4 h-4 text-slate-400" />}
-            />
-          </div>
-
-          <div className="w-44">
-            <Select
-              id="staff-role-filter-select"
-              value={staffRoleFilter}
-              onChange={(e) => {
-                setStaffRoleFilter(e.target.value);
-                setStaffPage(1);
-              }}
-            >
-              <option value="">All Roles</option>
-              {staffRoles.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {ROLE_LABELS[r.name] || r.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-
-          <div className="w-36">
-            <Select
-              id="staff-status-filter-select"
-              value={staffStatusFilter}
-              onChange={(e) => {
-                setStaffStatusFilter(e.target.value);
-                setStaffPage(1);
-              }}
-            >
-              <option value="">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="suspended">Suspended</option>
-            </Select>
-          </div>
-
-          <div className="w-40">
-            <Select
-              id="staff-zone-filter-select"
-              value={staffZoneFilter}
-              onChange={(e) => {
-                setStaffZoneFilter(e.target.value);
-                setStaffPage(1);
-              }}
-            >
-              <option value="">All Zones</option>
-              {org?.zones.map((z) => (
-                <option key={z.id} value={z.id}>
-                  {z.name}
-                </option>
-              ))}
-            </Select>
-          </div>
-
-          {(staffSearch || staffRoleFilter || staffStatusFilter || staffZoneFilter) && (
-            <Button
-              id="reset-staff-filters-btn"
-              variant="ghost"
-              size="sm"
-              onClick={handleResetFilters}
-              title="Clear Filters"
-              className="text-slate-500 hover:text-slate-900"
-            >
-              <FilterX className="w-4 h-4" />
-              <span>Clear</span>
-            </Button>
-          )}
-        </div>
-      </Card>
+      <TableToolbar
+        searchInputId="staff-search-input"
+        searchValue={staffSearch}
+        onSearchChange={(val) => {
+          setStaffSearch(val);
+          setStaffPage(1);
+        }}
+        searchPlaceholder="Search by name, official email, or PX-STAFF ID..."
+        filters={[
+          {
+            id: 'staff-role-filter-select',
+            label: 'Filter by Role',
+            value: staffRoleFilter,
+            onChange: (val) => {
+              setStaffRoleFilter(val);
+              setStaffPage(1);
+            },
+            options: [
+              { value: '', label: 'All Roles' },
+              ...staffRoles.map((r) => ({
+                value: r.id,
+                label: ROLE_LABELS[r.name] || r.name,
+              })),
+            ],
+          },
+          {
+            id: 'staff-zone-filter-select',
+            label: 'Filter by Zone',
+            value: staffZoneFilter,
+            onChange: (val) => {
+              setStaffZoneFilter(val);
+              setStaffPage(1);
+            },
+            options: [
+              { value: '', label: 'All Zones' },
+              ...(org?.zones || []).map((z) => ({
+                value: z.id,
+                label: z.name,
+              })),
+            ],
+          },
+        ]}
+        statusPills={[
+          { value: '', label: 'All Statuses', variant: 'info', count: uniqueStaff.length },
+          {
+            value: 'active',
+            label: 'Active',
+            variant: 'success',
+            count: uniqueStaff.filter((s) => s.is_active).length,
+          },
+          {
+            value: 'suspended',
+            label: 'Suspended',
+            variant: 'error',
+            count: uniqueStaff.filter((s) => !s.is_active).length,
+          },
+        ]}
+        activeStatus={staffStatusFilter}
+        onStatusChange={(val) => {
+          setStaffStatusFilter(val);
+          setStaffPage(1);
+        }}
+        statusSelectId="staff-status-filter-select"
+        hasActiveFilters={Boolean(
+          staffSearch || staffRoleFilter || staffStatusFilter || staffZoneFilter
+        )}
+        onReset={handleResetFilters}
+        resetButtonId="reset-staff-filters-btn"
+      />
 
       {/* Staff Table */}
       <div className="space-y-4">
@@ -528,9 +516,9 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
           <TableHeader>
             <TableRow>
               <TableHead>Staff Member &amp; Contact</TableHead>
-              <TableHead>Employment Identity</TableHead>
+              <TableHead hideOnTablet>Employment Identity</TableHead>
               <TableHead>System Role</TableHead>
-              <TableHead>Zone &amp; Tagged Branches</TableHead>
+              <TableHead hideOnTablet>Zone &amp; Tagged Branches</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -547,7 +535,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
 
                 return (
                   <TableRow key={s.id}>
-                    <TableCell>
+                    <TableCell mobileRole="primary">
                       <div>
                         <span className="font-bold text-slate-900 block">{s.name}</span>
                         <span className="text-xs text-slate-600 font-mono block">{s.email}</span>
@@ -558,7 +546,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell mobileRole="field" mobileLabel="Employment Identity" hideOnTablet>
                       <div className="space-y-0.5">
                         <span className="font-mono text-xs font-bold text-indigo-950 block">
                           {s.staff_employee_id || '—'}
@@ -571,12 +559,17 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell mobileRole="field" mobileLabel="System Role">
                       <Badge variant="primary" size="sm">
                         {ROLE_LABELS[s.roles?.name || ''] || s.roles?.name || 'Staff'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-slate-600">
+                    <TableCell
+                      mobileRole="field"
+                      mobileLabel="Zone & Branches"
+                      hideOnTablet
+                      className="text-slate-600"
+                    >
                       <span className="font-medium text-slate-800 block text-xs">
                         {s.zones?.name || 'All Zones (HQ)'}
                       </span>
@@ -590,12 +583,12 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                         <span className="text-[11px] text-slate-400 block">Zone-Wide / All Branches</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell mobileRole="status">
                       <Badge variant={s.is_active ? 'success' : 'error'} size="sm" dot>
                         {s.is_active ? 'Active' : 'Suspended'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell mobileRole="actions" className="text-right">
                       <div className="inline-flex items-center gap-1">
                         <Button
                           id={`regen-pwd-btn-${s.id}`}

@@ -2,12 +2,12 @@
 // PostEx HR Onboarding Portal — Super Admin API Client (Step 5)
 // ==============================================================================
 
-import { supabase } from './supabase';
+import { getStaffAccessToken } from './staffAuth';
 
 async function getAuthHeader(): Promise<{ Authorization: string } | {}> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.access_token) {
-    return { Authorization: `Bearer ${session.access_token}` };
+  const token = await getStaffAccessToken();
+  if (token) {
+    return { Authorization: `Bearer ${token}` };
   }
   return {};
 }

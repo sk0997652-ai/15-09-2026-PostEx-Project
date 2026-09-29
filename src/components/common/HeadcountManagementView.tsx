@@ -25,6 +25,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableToolbar,
   PageHeader,
   Modal,
   Input,
@@ -53,6 +54,9 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
   const [selectedBranchId, setSelectedBranchId] = useState<string>('');
   const [selectedBranchInfo, setSelectedBranchInfo] = useState<HeadcountBranch | null>(null);
   const [entries, setEntries] = useState<HeadcountEntryItem[]>([]);
+  const [entrySearch, setEntrySearch] = useState('');
+  const [entryCategoryFilter, setEntryCategoryFilter] = useState('all');
+  const [entryStatusFilter, setEntryStatusFilter] = useState('all');
   const [summary, setSummary] = useState({
     totalDesignations: 0,
     totalApproved: 0,
@@ -283,6 +287,25 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
     return role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
+  const filteredEntries = useMemo(() => {
+    return entries.filter((entry) => {
+      if (entryCategoryFilter !== 'all' && entry.employment_category !== entryCategoryFilter) {
+        return false;
+      }
+      if (entryStatusFilter === 'vacancy' && entry.vacancy <= 0) return false;
+      if (entryStatusFilter === 'filled' && entry.vacancy > 0) return false;
+      if (entrySearch.trim()) {
+        const q = entrySearch.trim().toLowerCase();
+        const matches =
+          entry.designation_name.toLowerCase().includes(q) ||
+          (entry.department_name || '').toLowerCase().includes(q) ||
+          (entry.employment_category || '').toLowerCase().includes(q);
+        if (!matches) return false;
+      }
+      return true;
+    });
+  }, [entries, entryCategoryFilter, entryStatusFilter, entrySearch]);
+
   return (
     <div id="headcount-management-view" className="space-y-6">
       <PageHeader
@@ -464,6 +487,53 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
 
       {/* Headcount Entries Table */}
       <div className="space-y-3">
+        <TableToolbar
+          searchInputId="headcount-entry-search-input"
+          searchValue={entrySearch}
+          onSearchChange={setEntrySearch}
+          searchPlaceholder="Search designation, department, or category..."
+          filters={[
+            {
+              id: 'headcount-entry-category-filter',
+              label: 'Category',
+              value: entryCategoryFilter,
+              onChange: setEntryCategoryFilter,
+              options: [
+                { value: 'all', label: 'All Categories' },
+                { value: 'Rider', label: 'Rider Only' },
+                { value: 'In-House Staff', label: 'In-House Staff Only' },
+              ],
+            },
+          ]}
+          activeStatus={entryStatusFilter}
+          onStatusChange={setEntryStatusFilter}
+          statusPills={[
+            { value: 'all', label: 'All Allocations', variant: 'info', count: entries.length },
+            {
+              value: 'vacancy',
+              label: 'Open Vacancy',
+              variant: 'warning',
+              count: entries.filter((e) => e.vacancy > 0).length,
+            },
+            {
+              value: 'filled',
+              label: 'Fully Staffed',
+              variant: 'success',
+              count: entries.filter((e) => e.vacancy <= 0).length,
+            },
+          ]}
+          hasActiveFilters={
+            Boolean(entrySearch.trim()) ||
+            entryCategoryFilter !== 'all' ||
+            entryStatusFilter !== 'all'
+          }
+          onReset={() => {
+            setEntrySearch('');
+            setEntryCategoryFilter('all');
+            setEntryStatusFilter('all');
+          }}
+        />
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -471,7 +541,7 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
               <TableHead className="text-right">Approved Count</TableHead>
               <TableHead className="text-right">Active Count</TableHead>
               <TableHead className="text-right">Vacancy</TableHead>
-              <TableHead>Last Updated By</TableHead>
+              <TableHead hideOnTablet>Last Updated By</TableHead>
               {canEdit && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
@@ -488,10 +558,10 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
                   No branch available in your scope. Please configure a branch in Organization Structure first.
                 </TableCell>
               </TableRow>
-            ) : entries.length > 0 ? (
-              entries.map((entry) => (
+            ) : filteredEntries.length > 0 ? (
+              filteredEntries.map((entry) => (
                 <TableRow key={entry.id} data-designation-id={entry.designation_id}>
-                  <TableCell>
+                  <TableCell mobileRole="primaryFull">
                     <div className="font-semibold text-slate-900 text-xs">{entry.designation_name}</div>
                     <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1.5">
                       <span>{entry.department_name || 'Unassigned Department'}</span>
@@ -506,28 +576,34 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
 
                   <TableCell
                     id={`headcount-approved-${entry.designation_id}`}
-                    className="text-right font-mono tabular-nums font-semibold text-slate-900"
+                    mobileRole="field"
+                    mobileLabel="Approved Count"
+                    className="md:text-right font-mono tabular-nums font-semibold text-slate-900"
                   >
                     {entry.approved_count}
                   </TableCell>
 
                   <TableCell
                     id={`headcount-active-${entry.designation_id}`}
-                    className="text-right font-mono tabular-nums font-semibold text-emerald-700"
+                    mobileRole="field"
+                    mobileLabel="Active Count"
+                    className="md:text-right font-mono tabular-nums font-semibold text-emerald-700"
                   >
                     {entry.active_count}
                   </TableCell>
 
                   <TableCell
                     id={`headcount-vacancy-${entry.designation_id}`}
-                    className={`text-right font-mono tabular-nums font-semibold ${
+                    mobileRole="field"
+                    mobileLabel="Vacancy"
+                    className={`md:text-right font-mono tabular-nums font-semibold ${
                       entry.vacancy > 0 ? 'text-amber-700' : 'text-slate-500'
                     }`}
                   >
                     {entry.vacancy}
                   </TableCell>
 
-                  <TableCell>
+                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Last Updated By">
                     <div className="text-xs text-slate-800 font-medium">{entry.updated_by_name}</div>
                     <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
                       {entry.updated_by_role && (
@@ -543,7 +619,7 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
                   </TableCell>
 
                   {canEdit && (
-                    <TableCell className="text-right">
+                    <TableCell mobileRole="actions" className="text-right">
                       <div className="inline-flex items-center gap-1">
                         <Button
                           id={`headcount-edit-btn-${entry.designation_id}`}
@@ -573,8 +649,13 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
             ) : (
               <TableRow>
                 <TableCell colSpan={canEdit ? 6 : 5} className="py-12 text-center text-slate-400 text-xs">
-                  No headcount entries configured for this branch yet.
-                  {canEdit && ' Click "Add / Edit Headcount Entry" above to set approved headcounts per designation.'}
+                  {entries.length > 0
+                    ? 'No headcount entries match the active search or filter criteria.'
+                    : `No headcount entries configured for this branch yet.${
+                        canEdit
+                          ? ' Click "Add / Edit Headcount Entry" above to set approved headcounts per designation.'
+                          : ''
+                      }`}
                 </TableCell>
               </TableRow>
             )}

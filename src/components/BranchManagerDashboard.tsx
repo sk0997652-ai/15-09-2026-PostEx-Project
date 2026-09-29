@@ -53,11 +53,21 @@ interface BranchManagerDashboardProps {
     branch_name?: string;
   };
   onSignOut: () => void;
+  mobileNavOpen?: boolean;
+  setMobileNavOpen?: (open: boolean) => void;
 }
 
-export function BranchManagerDashboard({ currentUser, onSignOut }: BranchManagerDashboardProps) {
+export function BranchManagerDashboard({
+  currentUser,
+  onSignOut,
+  mobileNavOpen,
+  setMobileNavOpen,
+}: BranchManagerDashboardProps) {
   // Navigation tabs
   const [activeTab, setActiveTab] = useState<'pending_queue' | 'corrections_queue' | 'forwarded_queue' | 'branch_overview' | 'headcount'>('pending_queue');
+  const [internalNavOpen, setInternalNavOpen] = useState(false);
+  const isNavOpen = mobileNavOpen !== undefined ? mobileNavOpen : internalNavOpen;
+  const setNavOpen = setMobileNavOpen || setInternalNavOpen;
 
   // Dashboard state
   const [metrics, setMetrics] = useState<BranchMetrics | null>(null);
@@ -350,51 +360,82 @@ export function BranchManagerDashboard({ currentUser, onSignOut }: BranchManager
     }
   };
 
+  const handleSelectTab = (
+    tab: 'pending_queue' | 'corrections_queue' | 'forwarded_queue' | 'branch_overview' | 'headcount'
+  ) => {
+    setActiveTab(tab);
+    setSelectedAppId(null);
+    setNavOpen(false);
+  };
+
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-slate-100">
+    <div className="flex flex-col sm:flex-row min-h-[calc(100vh-4rem)] bg-slate-100 overflow-x-hidden">
+      {/* Mobile Slide-In Drawer Backdrop (<640px) */}
+      {isNavOpen && (
+        <div
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 sm:hidden"
+          onClick={() => setNavOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ---------------------------------------------------------------------- */}
       {/* DEDICATED SIDEBAR NAVIGATION */}
       {/* ---------------------------------------------------------------------- */}
-      <aside className="w-full lg:w-72 bg-slate-900 text-slate-200 flex flex-col border-r border-slate-800 shrink-0">
+      <aside
+        className={`${
+          isNavOpen
+            ? 'fixed inset-y-0 left-0 z-50 w-64 flex shadow-2xl'
+            : 'hidden'
+        } sm:static sm:z-auto sm:flex sm:w-16 lg:w-64 bg-slate-900 text-slate-200 flex-col border-r border-slate-800 shrink-0 transition-all duration-200`}
+      >
         {/* Branch Context Header */}
-        <div className="p-5 border-b border-slate-800 bg-slate-950/50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
-              <Building2 className="w-5 h-5" />
+        <div className="p-4 sm:p-3 lg:p-5 border-b border-slate-800 bg-slate-950/50">
+          <div className="flex items-center justify-between sm:justify-center lg:justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                <Building2 className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 sm:hidden lg:block">
+                <span className="text-xs uppercase tracking-wider font-bold text-indigo-400">Branch Portal</span>
+                <h2 className="text-sm font-bold text-white leading-snug truncate max-w-[160px]">
+                  {currentUser.branch_name || 'Assigned Branch'}
+                </h2>
+                <span className="text-[11px] text-slate-400 flex items-center gap-1 truncate">
+                  Zone: {currentUser.zone_name || 'Assigned Zone'}
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-xs uppercase tracking-wider font-bold text-indigo-400">Branch Portal</span>
-              <h2 className="text-sm font-bold text-white leading-snug truncate max-w-[180px]">
-                {currentUser.branch_name || 'Assigned Branch'}
-              </h2>
-              <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                Zone: {currentUser.zone_name || 'Assigned Zone'}
-              </span>
-            </div>
+            <button
+              type="button"
+              onClick={() => setNavOpen(false)}
+              aria-label="Close navigation drawer"
+              className="sm:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+        <nav className="flex-1 p-2.5 sm:p-2 lg:p-3 space-y-1.5 overflow-y-auto">
           <button
             id="bm-nav-pending"
-            onClick={() => {
-              setActiveTab('pending_queue');
-              setSelectedAppId(null);
-            }}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            title="Pending Verification"
+            onClick={() => handleSelectTab('pending_queue')}
+            className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'pending_queue'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Clock className="w-4 h-4" />
-              <span>Pending Verification</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Clock className="w-4 h-4 shrink-0" />
+              <span className="sm:hidden lg:inline truncate">Pending Verification</span>
             </div>
             {metrics?.pendingVerification !== undefined && metrics.pendingVerification > 0 && (
               <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold sm:hidden lg:inline ${
                   activeTab === 'pending_queue' ? 'bg-slate-950 text-indigo-200' : 'bg-indigo-500/20 text-indigo-300'
                 }`}
               >
@@ -405,23 +446,21 @@ export function BranchManagerDashboard({ currentUser, onSignOut }: BranchManager
 
           <button
             id="bm-nav-corrections"
-            onClick={() => {
-              setActiveTab('corrections_queue');
-              setSelectedAppId(null);
-            }}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            title="Corrections & Resubmissions"
+            onClick={() => handleSelectTab('corrections_queue')}
+            className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'corrections_queue'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <RotateCcw className="w-4 h-4" />
-              <span>Corrections &amp; Resubmissions</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <RotateCcw className="w-4 h-4 shrink-0" />
+              <span className="sm:hidden lg:inline truncate">Corrections &amp; Resubmissions</span>
             </div>
             {metrics?.needsCorrection !== undefined && metrics.needsCorrection > 0 && (
               <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold sm:hidden lg:inline ${
                   activeTab === 'corrections_queue' ? 'bg-slate-950 text-rose-400' : 'bg-rose-500/20 text-rose-400'
                 }`}
               >
@@ -432,23 +471,21 @@ export function BranchManagerDashboard({ currentUser, onSignOut }: BranchManager
 
           <button
             id="bm-nav-forwarded"
-            onClick={() => {
-              setActiveTab('forwarded_queue');
-              setSelectedAppId(null);
-            }}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            title="Forwarded to Central HR"
+            onClick={() => handleSelectTab('forwarded_queue')}
+            className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'forwarded_queue'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Send className="w-4 h-4" />
-              <span>Forwarded to Central HR</span>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Send className="w-4 h-4 shrink-0" />
+              <span className="sm:hidden lg:inline truncate">Forwarded to Central HR</span>
             </div>
             {metrics?.forwardedToCentral !== undefined && metrics.forwardedToCentral > 0 && (
               <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold sm:hidden lg:inline ${
                   activeTab === 'forwarded_queue' ? 'bg-slate-950 text-indigo-200' : 'bg-indigo-500/20 text-indigo-300'
                 }`}
               >
@@ -459,40 +496,36 @@ export function BranchManagerDashboard({ currentUser, onSignOut }: BranchManager
 
           <button
             id="bm-nav-overview"
-            onClick={() => {
-              setActiveTab('branch_overview');
-              setSelectedAppId(null);
-            }}
-            className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            title="Branch Overview & Stats"
+            onClick={() => handleSelectTab('branch_overview')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-2.5 px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'branch_overview'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <Shield className="w-4 h-4" />
-            <span>Branch Overview &amp; Stats</span>
+            <Shield className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Branch Overview &amp; Stats</span>
           </button>
 
           <button
             id="bm-nav-headcount"
-            onClick={() => {
-              setActiveTab('headcount');
-              setSelectedAppId(null);
-            }}
-            className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            title="Headcount Management"
+            onClick={() => handleSelectTab('headcount')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-2.5 px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'headcount'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
-            <Users className="w-4 h-4" />
-            <span>Headcount Management</span>
+            <Users className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Headcount Management</span>
           </button>
         </nav>
 
         {/* User Profile Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
+        <div className="p-3 sm:p-2 lg:p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between sm:justify-center lg:justify-between">
+          <div className="flex items-center gap-2.5 min-w-0 sm:hidden lg:flex">
             <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-bold text-xs shrink-0">
               {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'B'}
             </div>

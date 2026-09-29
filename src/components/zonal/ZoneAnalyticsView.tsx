@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Clock,
   CheckCircle2,
@@ -11,6 +11,12 @@ import {
   StatusBadge,
   Badge,
   Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableToolbar,
 } from '../ui';
 
 interface ZoneAnalyticsViewProps {
@@ -26,6 +32,9 @@ export function ZoneAnalyticsView({
   staffList,
   zoneName,
 }: ZoneAnalyticsViewProps) {
+  const [branchSearch, setBranchSearch] = useState('');
+  const [managerStatusFilter, setManagerStatusFilter] = useState('');
+
   const approvalRate =
     metrics?.totalApplications && metrics.totalApplications > 0
       ? `${Math.round((metrics.approvedApplications / metrics.totalApplications) * 100)}%`
@@ -35,6 +44,23 @@ export function ZoneAnalyticsView({
     metrics?.totalApplications && metrics.totalApplications > 0
       ? `${Math.round((metrics.rejectedApplications / metrics.totalApplications) * 100)}%`
       : '0%';
+
+  const filteredBranches = useMemo(() => {
+    return zoneBranches.filter((br) => {
+      const managers = staffList.filter(
+        (s) => s.branches?.id === br.id || (s.branch_ids && s.branch_ids.includes(br.id))
+      );
+      if (branchSearch.trim()) {
+        const q = branchSearch.toLowerCase();
+        const matchesBranch = br.name.toLowerCase().includes(q);
+        const matchesManager = managers.some((m) => m.name.toLowerCase().includes(q));
+        if (!matchesBranch && !matchesManager) return false;
+      }
+      if (managerStatusFilter === 'assigned' && managers.length === 0) return false;
+      if (managerStatusFilter === 'unassigned' && managers.length > 0) return false;
+      return true;
+    });
+  }, [zoneBranches, staffList, branchSearch, managerStatusFilter]);
 
   return (
     <div className="space-y-6">
@@ -81,44 +107,71 @@ export function ZoneAnalyticsView({
       </div>
 
       {/* Branch Summary Breakdown */}
-      <Card className="p-6">
-        <h3 className="text-sm font-bold text-slate-900 mb-4">Branch Distribution in {zoneName}</h3>
+      <Card className="p-6 space-y-4">
+        <h3 className="text-sm font-bold text-slate-900">Branch Distribution in {zoneName}</h3>
+
+        <TableToolbar
+          searchValue={branchSearch}
+          onSearchChange={setBranchSearch}
+          searchPlaceholder="Search branch or manager name..."
+          statusPills={[
+            { value: '', label: 'All Branches', variant: 'info', count: zoneBranches.length },
+            { value: 'assigned', label: 'Manager Assigned', variant: 'success' },
+            { value: 'unassigned', label: 'Unassigned', variant: 'warning' },
+          ]}
+          activeStatus={managerStatusFilter}
+          onStatusChange={setManagerStatusFilter}
+          hasActiveFilters={Boolean(branchSearch || managerStatusFilter)}
+          onReset={() => {
+            setBranchSearch('');
+            setManagerStatusFilter('');
+          }}
+        />
+
         <Table>
-          <thead>
-            <tr>
-              <th className="py-2.5 px-4 font-semibold text-left">Branch Name</th>
-              <th className="py-2.5 px-4 font-semibold text-left">Assigned Branch Managers</th>
-              <th className="py-2.5 px-4 font-semibold text-left">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200">
-            {zoneBranches.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="py-6 text-center text-xs text-slate-500">
-                  No branches configured for this zone.
-                </td>
-              </tr>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Branch Name</TableHead>
+              <TableHead>Assigned Branch Managers</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredBranches.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={3} className="py-6 text-center text-xs text-slate-500">
+                  No branches match the selected filter criteria.
+                </TableCell>
+              </TableRow>
             ) : (
-              zoneBranches.map((br) => {
-                const managers = staffList.filter((s) => s.branches?.id === br.id);
+              filteredBranches.map((br) => {
+                const managers = staffList.filter(
+                  (s) => s.branches?.id === br.id || (s.branch_ids && s.branch_ids.includes(br.id))
+                );
                 return (
-                  <tr key={br.id} className="hover:bg-slate-50">
-                    <td className="py-3 px-4 font-bold text-slate-900">{br.name}</td>
-                    <td className="py-3 px-4 text-slate-600">
+                  <TableRow key={br.id}>
+                    <TableCell mobileRole="primary" className="font-bold text-slate-900">
+                      {br.name}
+                    </TableCell>
+                    <TableCell
+                      mobileRole="field"
+                      mobileLabel="Assigned Branch Managers"
+                      className="text-slate-600"
+                    >
                       {managers.length > 0 ? (
                         managers.map((m) => m.name).join(', ')
                       ) : (
                         <span className="text-amber-600 italic">No Manager Assigned</span>
                       )}
-                    </td>
-                    <td className="py-3 px-4">
+                    </TableCell>
+                    <TableCell mobileRole="status">
                       <StatusBadge status="active" />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })
             )}
-          </tbody>
+          </TableBody>
         </Table>
       </Card>
     </div>

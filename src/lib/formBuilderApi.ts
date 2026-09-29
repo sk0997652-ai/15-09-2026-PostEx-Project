@@ -1,24 +1,11 @@
-import { supabase } from './supabase';
+import { getStaffAccessToken } from './staffAuth';
 import { CandidateTrack, FormFieldItem, FormSectionItem, FormTemplateItem } from '../types/formTemplates';
 
 async function getAuthHeader(): Promise<Record<string, string>> {
-  // 1. Check active Supabase session (standard for Super Admin & all staff dashboards)
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.access_token) {
-      return { Authorization: `Bearer ${session.access_token}` };
-    }
-  } catch {
-    // Fallback to localStorage tokens below
-  }
-
-  // 2. Check localStorage fallback tokens
-  const token = localStorage.getItem('postex_staff_token') || localStorage.getItem('supabase_auth_token');
+  const token = await getStaffAccessToken();
   if (token) {
     return { Authorization: `Bearer ${token}` };
   }
-
-  // In local development / test mode fallback to admin bypass if available
   return {};
 }
 

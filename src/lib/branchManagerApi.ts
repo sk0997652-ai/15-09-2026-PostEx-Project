@@ -4,6 +4,7 @@
  */
 
 import { supabase } from './supabase';
+import { getStaffAccessToken } from './staffAuth';
 
 export interface BranchMetrics {
   branchId: string;
@@ -85,8 +86,7 @@ export interface BranchApplicationDetail extends BranchApplicationSummary {
 }
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
+  const token = await getStaffAccessToken();
   if (!token) {
     throw new Error('Active staff session token required. Please sign in again.');
   }

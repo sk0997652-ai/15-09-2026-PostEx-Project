@@ -1,15 +1,19 @@
 import React from 'react';
 
-export type BadgeVariant = 'primary' | 'sky' | 'success' | 'warning' | 'error' | 'info';
+export type BadgeVariant = 'primary' | 'sky' | 'success' | 'warning' | 'error' | 'info' | 'neutral' | 'outline';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
   dot?: boolean;
+  size?: 'sm' | 'md';
+  icon?: React.ReactNode;
 }
 
 export const Badge: React.FC<BadgeProps> = ({
   variant = 'info',
   dot = false,
+  size: _size,
+  icon,
   className = '',
   children,
   ...props
@@ -38,6 +42,8 @@ export const Badge: React.FC<BadgeProps> = ({
       variantClasses = 'bg-rose-50/90 text-rose-700 border border-rose-200/80';
       dotClasses = 'bg-rose-500';
       break;
+    case 'outline':
+    case 'neutral':
     case 'info':
     default:
       variantClasses = 'bg-slate-100/90 text-slate-700 border border-slate-200/80';
@@ -51,6 +57,7 @@ export const Badge: React.FC<BadgeProps> = ({
       {...props}
     >
       {dot && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClasses}`} />}
+      {icon && <span className="shrink-0 inline-flex items-center">{icon}</span>}
       {children}
     </span>
   );

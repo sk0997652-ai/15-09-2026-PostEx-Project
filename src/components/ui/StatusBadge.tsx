@@ -56,25 +56,39 @@ export interface StatusBadgeProps extends React.HTMLAttributes<HTMLSpanElement> 
   status: ApplicationStatus | string;
   customLabel?: string;
   dot?: boolean;
+  size?: 'sm' | 'md';
 }
+
+const EXTRA_STATUS_CONFIG: Record<string, StatusMeta> = {
+  active: { color: 'success', label: 'Active' },
+  inactive: { color: 'info', label: 'Inactive' },
+  suspended: { color: 'error', label: 'Suspended' },
+  verified: { color: 'success', label: 'Verified' },
+  correction_required: { color: 'warning', label: 'Correction Required' },
+  pending: { color: 'warning', label: 'Pending' },
+};
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({
   status,
   customLabel,
   dot = true,
+  size,
   className = '',
   ...props
 }) => {
-  const normalizedKey = (status || '').toLowerCase() as ApplicationStatus;
-  const config = APPLICATION_STATUS_CONFIG[normalizedKey] || {
-    color: 'info',
-    label: status ? status.replace(/_/g, ' ') : 'Unknown',
-  };
+  const normalizedKey = (status || '').toLowerCase();
+  const config =
+    APPLICATION_STATUS_CONFIG[normalizedKey as ApplicationStatus] ||
+    EXTRA_STATUS_CONFIG[normalizedKey] || {
+      color: 'info',
+      label: status ? status.replace(/_/g, ' ') : 'Unknown',
+    };
 
   return (
     <Badge
       variant={config.color}
       dot={dot}
+      size={size}
       className={className}
       {...props}
     >

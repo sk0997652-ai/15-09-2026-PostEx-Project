@@ -2,15 +2,15 @@
 // PostEx HR Onboarding Portal — Headcount Management API Client (Part B of 4)
 // ==============================================================================
 
-import { supabase } from './supabase';
+import { getStaffAccessToken } from './staffAuth';
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const token = await getStaffAccessToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`;
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
   return headers;
 }

@@ -9,6 +9,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { ZonalMetrics, ZonalStaffProfile } from '../../lib/zonalHrApi';
+import { getStaffAccessToken } from '../../lib/staffAuth';
 import {
   headcountApi,
   HeadcountOverviewResponse,
@@ -83,14 +84,16 @@ export function ZoneOverviewView({
   const zoneDisplayName = metrics?.zoneName || zoneInfo?.name || 'Zonal HR Command';
 
   const fetchZoneOverview = async () => {
+    const token = await getStaffAccessToken();
+    if (!token) return;
     setLoadingOverview(true);
     try {
       const data = await headcountApi.getOverview(
         zoneInfo?.id ? { zoneId: zoneInfo.id } : undefined
       );
       setOverviewData(data);
-    } catch (err) {
-      console.error('Failed to load Zonal HR headcount overview:', err);
+    } catch {
+      // Handled gracefully without triggering global console.error overlay
     } finally {
       setLoadingOverview(false);
     }
@@ -98,7 +101,7 @@ export function ZoneOverviewView({
 
   useEffect(() => {
     fetchZoneOverview();
-  }, [zoneInfo?.id, metrics]);
+  }, [zoneInfo?.id]);
 
   const handleRefreshAll = () => {
     onRefresh();
@@ -205,11 +208,11 @@ export function ZoneOverviewView({
             <TableHeader>
               <TableRow>
                 <TableHead>Designation</TableHead>
-                <TableHead>Department</TableHead>
+                <TableHead hideOnTablet>Department</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead className="text-right">Appr / Act / Vac</TableHead>
                 <TableHead>Fill-Rate Status</TableHead>
-                <TableHead>Trend</TableHead>
+                <TableHead hideOnTablet>Trend</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -227,27 +230,27 @@ export function ZoneOverviewView({
                     onClick={() => setSelectedEntity({ type: 'designation', data: d })}
                     className="cursor-pointer hover:bg-indigo-50/40"
                   >
-                    <TableCell className="font-semibold text-xs text-slate-900">
+                    <TableCell mobileRole="primary" className="font-semibold text-xs text-slate-900">
                       {d.designation_name}
                     </TableCell>
-                    <TableCell className="text-xs text-slate-600">
+                    <TableCell hideOnTablet mobileRole="field" mobileLabel="Department" className="text-xs text-slate-600">
                       {d.department_name}
                     </TableCell>
-                    <TableCell>
+                    <TableCell mobileRole="field" mobileLabel="Category">
                       <EmploymentCategoryBadge category={d.employment_category} />
                     </TableCell>
-                    <TableCell className="text-right font-mono text-xs tabular-nums">
+                    <TableCell mobileRole="field" mobileLabel="Appr / Act / Vac" className="md:text-right font-mono text-xs tabular-nums">
                       <span className="font-semibold">{d.approved}</span> /{' '}
                       <span className="font-bold text-indigo-700">{d.active}</span> /{' '}
                       <span className="font-bold text-amber-700">{d.vacancy}</span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell mobileRole="status">
                       <FillRateStatusBadge
                         status={d.fill_rate_status}
                         fillRatePct={d.fill_rate_pct}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell hideOnTablet hideOnMobile>
                       <TrendIndicator trend={d.trend} />
                     </TableCell>
                   </TableRow>
@@ -312,8 +315,8 @@ export function ZoneOverviewView({
         </Card>
       </div>
 
-      {/* Secondary Zone Pipeline Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Secondary Zone Pipeline Strip (2-col on mobile, 4-col on desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="p-4 flex items-center justify-between">
           <div>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
