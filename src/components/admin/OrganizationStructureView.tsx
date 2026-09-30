@@ -4,8 +4,10 @@ import {
   Edit2,
   Trash2,
   AlertTriangle,
+  Download,
 } from 'lucide-react';
 import { OrgStructure, superAdminApi } from '../../lib/superAdminApi';
+import { useHrPortalStore, exportRowsToExcel } from '../../lib/hrPortalStore';
 import {
   Button,
   Table,
@@ -180,7 +182,71 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
     }
   };
 
-  const currentItems = org ? ((org as any)[orgSubTab] || []) : [];
+  const [store] = useHrPortalStore();
+
+  const mergedOrg = useMemo(() => {
+    const baseZones = [...(org?.zones || [])];
+    const baseBranches = [...(org?.branches || [])];
+    const baseDepts = [...(org?.departments || [])];
+    const baseDesigs = [...(org?.designations || [])];
+
+    // Merge browser store departments
+    for (const d of store.departments) {
+      if (!baseDepts.some((x) => x.name.toLowerCase() === d.name.toLowerCase())) {
+        baseDepts.push({
+          id: d.id,
+          name: d.name,
+          department_code: d.code,
+          department_category: 'Field Operations',
+          is_active: true,
+          created_at: d.createdAt,
+        });
+      }
+    }
+
+    // Merge browser store designations
+    for (const d of store.designations) {
+      if (!baseDesigs.some((x) => x.name.toLowerCase() === d.name.toLowerCase())) {
+        baseDesigs.push({
+          id: d.id,
+          name: d.name,
+          department_id: d.department,
+          employment_category: d.track === 'Frontline & Field' ? 'Rider' : 'In-House Staff',
+          is_active: true,
+          created_at: d.createdAt,
+          departments: { name: d.department },
+        });
+      }
+    }
+
+    // Merge browser store branches
+    for (const b of store.branches) {
+      if (!baseBranches.some((x) => x.name.toLowerCase() === b.name.toLowerCase())) {
+        baseBranches.push({
+          id: b.id,
+          name: b.name,
+          branch_code: `BR-${b.name.replace(/[^A-Za-z]/g, '').slice(0, 4).toUpperCase()}`,
+          zone_id: b.zone,
+          branch_type: b.type,
+          city_address: b.zone,
+          address: b.zone,
+          contact_number: b.branchManager,
+          is_active: true,
+          created_at: b.createdAt,
+          zones: { name: b.zone },
+        });
+      }
+    }
+
+    return {
+      zones: baseZones,
+      branches: baseBranches,
+      departments: baseDepts,
+      designations: baseDesigs,
+    };
+  }, [org, store.departments, store.designations, store.branches]);
+
+  const currentItems = (mergedOrg as any)[orgSubTab] || [];
 
   const filteredItems = useMemo(() => {
     return currentItems.filter((item: any) => {
@@ -214,6 +280,44 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
     });
   }, [currentItems, orgSearch, orgStatusFilter, orgParentFilter, orgSubTab]);
 
+  const handleExportOrgSubTabExcel = () => {
+    if (orgSubTab === 'departments') {
+      const rows = filteredItems.map((item: any) => ({
+        'Department Name*': item.name,
+        Code: item.department_code || '',
+        Category: item.department_category || 'Field Operations',
+        Status: item.is_active === false ? 'Inactive' : 'Active',
+      }));
+      exportRowsToExcel('PostEx_Departments_Export.xlsx', 'Departments', rows);
+    } else if (orgSubTab === 'designations') {
+      const rows = filteredItems.map((item: any) => ({
+        'Designation Name*': item.name,
+        'Department*': item.departments?.name || item.department_id || '',
+        Track: item.employment_category === 'Rider' ? 'Frontline & Field' : 'Branch & Operations',
+        'Needs Machine': 'Yes',
+        Status: item.is_active === false ? 'Inactive' : 'Active',
+      }));
+      exportRowsToExcel('PostEx_Designations_Export.xlsx', 'Designations', rows);
+    } else if (orgSubTab === 'branches') {
+      const rows = filteredItems.map((item: any) => ({
+        'Branch Name*': item.name,
+        'Zone*': item.zones?.name || item.zone_id || '',
+        'Branch Manager': item.contact_number || 'HR Officer',
+        Type: item.branch_type || 'Hub',
+        Status: item.is_active === false ? 'Inactive' : 'Active',
+      }));
+      exportRowsToExcel('PostEx_Branches_Export.xlsx', 'Branches', rows);
+    } else {
+      const rows = filteredItems.map((item: any) => ({
+        'Zone Name': item.name,
+        'Zone Code': item.zone_code || '',
+        Region: item.region || '',
+        Status: item.is_active === false ? 'Inactive' : 'Active',
+      }));
+      exportRowsToExcel('PostEx_Zones_Export.xlsx', 'Zones', rows);
+    }
+  };
+
   const getColSpan = () => {
     if (orgSubTab === 'zones') return 6;
     if (orgSubTab === 'branches') return 9;
@@ -228,22 +332,33 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
         title="Organization Structure"
         description="Manage and configure operating Zones, Branches, Departments, and Designations."
         actions={
-          <Button
-            id="add-org-entity-btn"
-            variant="primary"
-            size="sm"
-            onClick={handleOpenOrgCreate}
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add {orgSubTab.slice(0, -1)}</span>
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              id="export-org-excel-btn"
+              variant="secondary"
+              size="sm"
+              onClick={handleExportOrgSubTabExcel}
+            >
+              <Download className="w-4 h-4" />
+              <span>Export to Excel</span>
+            </Button>
+            <Button
+              id="add-org-entity-btn"
+              variant="primary"
+              size="sm"
+              onClick={handleOpenOrgCreate}
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add {orgSubTab.slice(0, -1)}</span>
+            </Button>
+          </div>
         }
       />
 
       {/* Sub-tabs Navigation */}
       <div className="flex border-b border-slate-200 gap-6 text-xs font-semibold overflow-x-auto">
         {(['zones', 'branches', 'departments', 'designations'] as const).map((tab) => {
-          const count = org ? (org as any)[tab]?.length || 0 : 0;
+          const count = (mergedOrg as any)[tab]?.length || 0;
           return (
             <button
               key={tab}

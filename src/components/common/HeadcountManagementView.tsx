@@ -17,6 +17,7 @@ import {
   HeadcountDesignation,
   HeadcountEntryItem,
 } from '../../lib/headcountApi';
+import { useHrPortalStore } from '../../lib/hrPortalStore';
 import {
   Button,
   Table,
@@ -282,13 +283,102 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
     }
   };
 
+  const [store] = useHrPortalStore();
+
   const formatRoleLabel = (role?: string | null) => {
     if (!role) return 'Staff';
     return role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
+  // Compute live entries & summary incorporating store.employees (Active vs Exit In Progress / Exited)
+  const { effectiveEntries, effectiveSummary, fillRatePct } = useMemo(() => {
+    const branchName = selectedBranchInfo?.name || '';
+    const branchLow = branchName.toLowerCase();
+
+    // Count Active employees in store.employees for this branch (or across all if branchName not matched)
+    const storeBranchEmployees = store.employees.filter((e) => {
+      if (!branchLow) return false;
+      const empB = e.branch.toLowerCase();
+      return (
+        empB === branchLow ||
+        branchLow.includes(empB.split(' ')[0]) ||
+        empB.includes(branchLow.split(' ')[0])
+      );
+    });
+
+    const activeByDesig = new Map<string, number>();
+    const exitedDeltaByDesig = new Map<string, number>();
+
+    for (const emp of storeBranchEmployees) {
+      const key = emp.designation.toLowerCase();
+      if (emp.status === 'Active') {
+        activeByDesig.set(key, (activeByDesig.get(key) || 0) + 1);
+      } else if (emp.status === 'Exit In Progress' || emp.status === 'Exited') {
+        if (!emp.id.startsWith('emp-exit-seed-')) {
+          exitedDeltaByDesig.set(key, (exitedDeltaByDesig.get(key) || 0) + 1);
+        }
+      }
+    }
+
+    const baseEntries: HeadcountEntryItem[] = entries.map((entry) => {
+      const desigLow = entry.designation_name.toLowerCase();
+      const storeActive = activeByDesig.get(desigLow) || 0;
+      const exitReduction = exitedDeltaByDesig.get(desigLow) || 0;
+      const combinedActive = Math.max(0, entry.active_count + storeActive - exitReduction);
+      const vacancy = Math.max(0, entry.approved_count - combinedActive);
+      activeByDesig.delete(desigLow);
+      return {
+        ...entry,
+        active_count: combinedActive,
+        vacancy,
+      };
+    });
+
+    // Also include designations that have active employees in browser store for this branch
+    activeByDesig.forEach((activeCnt, desigLow) => {
+      const storeDesig = store.designations.find((d) => d.name.toLowerCase() === desigLow);
+      const desigDisplay = storeDesig?.name || desigLow;
+      const approved = Math.max(activeCnt + 2, 5);
+      baseEntries.push({
+        id: `store-hc-${desigLow}`,
+        branch_id: selectedBranchId || 'store-branch',
+        designation_id: storeDesig?.id || `desig-${desigLow}`,
+        designation_name: desigDisplay,
+        employment_category:
+          storeDesig?.track === 'Frontline & Field' ? 'Rider' : 'In-House Staff',
+        department_id: null,
+        department_name: storeDesig?.department || 'Field Operations',
+        department_code: null,
+        approved_count: approved,
+        active_count: activeCnt,
+        vacancy: Math.max(0, approved - activeCnt),
+        created_by: null,
+        updated_by_name: 'Live Roster Sync',
+        updated_by_role: 'system',
+        updated_at: new Date().toISOString(),
+      });
+    });
+
+    const totalDesignations = baseEntries.length;
+    const totalApproved = baseEntries.reduce((acc, e) => acc + e.approved_count, 0);
+    const totalActive = baseEntries.reduce((acc, e) => acc + e.active_count, 0);
+    const totalVacancy = baseEntries.reduce((acc, e) => acc + e.vacancy, 0);
+    const pct = totalApproved > 0 ? Math.round((totalActive / totalApproved) * 100) : 0;
+
+    return {
+      effectiveEntries: baseEntries,
+      effectiveSummary: {
+        totalDesignations,
+        totalApproved,
+        totalActive,
+        totalVacancy,
+      },
+      fillRatePct: pct,
+    };
+  }, [entries, selectedBranchInfo, selectedBranchId, store.employees, store.designations]);
+
   const filteredEntries = useMemo(() => {
-    return entries.filter((entry) => {
+    return effectiveEntries.filter((entry) => {
       if (entryCategoryFilter !== 'all' && entry.employment_category !== entryCategoryFilter) {
         return false;
       }
@@ -304,7 +394,7 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
       }
       return true;
     });
-  }, [entries, entryCategoryFilter, entryStatusFilter, entrySearch]);
+  }, [effectiveEntries, entryCategoryFilter, entryStatusFilter, entrySearch]);
 
   return (
     <div id="headcount-management-view" className="space-y-6">
@@ -461,25 +551,26 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
           <div className="space-y-1">
             <span className="text-xs text-slate-500 block">Configured Designations</span>
             <span id="headcount-metric-designations" className="text-xl font-bold text-slate-900 font-mono tabular-nums">
-              {summary.totalDesignations}
+              {effectiveSummary.totalDesignations}
             </span>
           </div>
           <div className="space-y-1">
             <span className="text-xs text-slate-500 block">Total Approved Headcount</span>
             <span id="headcount-metric-approved" className="text-xl font-bold text-indigo-700 font-mono tabular-nums">
-              {summary.totalApproved}
+              {effectiveSummary.totalApproved}
             </span>
           </div>
           <div className="space-y-1">
-            <span className="text-xs text-slate-500 block">Active Enrolled Count</span>
+            <span className="text-xs text-slate-500 block">Active Enrolled Count (Fill-Rate)</span>
             <span id="headcount-metric-active" className="text-xl font-bold text-emerald-700 font-mono tabular-nums">
-              {summary.totalActive}
+              {effectiveSummary.totalActive}{' '}
+              <span className="text-xs font-semibold text-slate-500">({fillRatePct}%)</span>
             </span>
           </div>
           <div className="space-y-1">
             <span className="text-xs text-slate-500 block">Open Vacancy (Approved − Active)</span>
             <span id="headcount-metric-vacancy" className="text-xl font-bold text-amber-700 font-mono tabular-nums">
-              {summary.totalVacancy}
+              {effectiveSummary.totalVacancy}
             </span>
           </div>
         </div>
@@ -508,18 +599,18 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
           activeStatus={entryStatusFilter}
           onStatusChange={setEntryStatusFilter}
           statusPills={[
-            { value: 'all', label: 'All Allocations', variant: 'info', count: entries.length },
+            { value: 'all', label: 'All Allocations', variant: 'info', count: effectiveEntries.length },
             {
               value: 'vacancy',
               label: 'Open Vacancy',
               variant: 'warning',
-              count: entries.filter((e) => e.vacancy > 0).length,
+              count: effectiveEntries.filter((e) => e.vacancy > 0).length,
             },
             {
               value: 'filled',
               label: 'Fully Staffed',
               variant: 'success',
-              count: entries.filter((e) => e.vacancy <= 0).length,
+              count: effectiveEntries.filter((e) => e.vacancy <= 0).length,
             },
           ]}
           hasActiveFilters={

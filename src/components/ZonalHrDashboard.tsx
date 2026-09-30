@@ -36,6 +36,10 @@ import {
 } from '../lib/zonalHrApi';
 import { DeleteConfirmationModal } from './common/DeleteConfirmationModal';
 import { HeadcountManagementView } from './common/HeadcountManagementView';
+import { WorkflowTrackerView } from './common/WorkflowTrackerView';
+import { DataImportView } from './common/DataImportView';
+import { EnrolledRosterView } from './central/EnrolledRosterView';
+import { Upload, UserCheck } from 'lucide-react';
 import {
   ZoneOverviewView,
   ZoneStaffView,
@@ -68,7 +72,7 @@ export function ZonalHrDashboard({
   mobileNavOpen,
   setMobileNavOpen,
 }: ZonalHrDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'headcount' | 'staff' | 'applications' | 'reports'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'headcount' | 'workflow_tracker' | 'data_import' | 'enrolled_roster' | 'staff' | 'applications' | 'reports'>('overview');
   const [internalNavOpen, setInternalNavOpen] = useState(false);
   const isNavOpen = mobileNavOpen !== undefined ? mobileNavOpen : internalNavOpen;
   const setNavOpen = setMobileNavOpen || setInternalNavOpen;
@@ -500,7 +504,7 @@ export function ZonalHrDashboard({
 
   const zoneDisplayName = metrics?.zoneName || zoneInfo?.name || 'Assigned Zone';
 
-  const handleSelectTab = (tab: 'overview' | 'headcount' | 'staff' | 'applications' | 'reports') => {
+  const handleSelectTab = (tab: 'overview' | 'headcount' | 'workflow_tracker' | 'data_import' | 'enrolled_roster' | 'staff' | 'applications' | 'reports') => {
     setActiveTab(tab);
     setNavOpen(false);
   };
@@ -579,6 +583,48 @@ export function ZonalHrDashboard({
           >
             <Users className="w-4 h-4 shrink-0" />
             <span className="sm:hidden lg:inline truncate">Headcount Management</span>
+          </button>
+
+          <button
+            id="zonal-tab-workflow-tracker"
+            title="Workflow Tracker"
+            onClick={() => handleSelectTab('workflow_tracker')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === 'workflow_tracker'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Workflow Tracker</span>
+          </button>
+
+          <button
+            id="zonal-tab-data-import"
+            title="Data Import"
+            onClick={() => handleSelectTab('data_import')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === 'data_import'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <Upload className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Data Import</span>
+          </button>
+
+          <button
+            id="zonal-tab-enrolled-roster"
+            title="Enrolled Employees"
+            onClick={() => handleSelectTab('enrolled_roster')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === 'enrolled_roster'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <UserCheck className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Enrolled Employees</span>
           </button>
 
           <button
@@ -710,6 +756,27 @@ export function ZonalHrDashboard({
 
         {/* TAB 1B: HEADCOUNT MANAGEMENT */}
         {activeTab === 'headcount' && <HeadcountManagementView />}
+
+        {/* TAB 1C: WORKFLOW TRACKER */}
+        {activeTab === 'workflow_tracker' && (
+          <WorkflowTrackerView role="zonal_hr" zoneName={zoneDisplayName} />
+        )}
+
+        {/* TAB 1D: DATA IMPORT */}
+        {activeTab === 'data_import' && <DataImportView />}
+
+        {/* TAB 1E: ENROLLED EMPLOYEES & EXIT LIFECYCLE */}
+        {activeTab === 'enrolled_roster' && (
+          <EnrolledRosterView
+            enrolledEmployees={[]}
+            loading={loading}
+            zoneName={zoneDisplayName}
+            onRefresh={loadDashboardData}
+            onOpenPdfDossier={() => {}}
+            role="zonal_hr"
+            actorName={currentUser.name || 'Zonal HR'}
+          />
+        )}
 
         {/* TAB 2: ZONE STAFF MANAGEMENT */}
         {activeTab === 'staff' && (

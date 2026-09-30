@@ -16,9 +16,12 @@ import {
   LogOut,
   IdCard,
   Users,
+  Upload,
   X,
 } from 'lucide-react';
 import { HeadcountManagementView } from './common/HeadcountManagementView';
+import { WorkflowTrackerView } from './common/WorkflowTrackerView';
+import { DataImportView } from './common/DataImportView';
 import {
   CentralOverviewView,
   CreateJoinerView,
@@ -94,7 +97,7 @@ export function CentralHrDashboard({
   mobileNavOpen,
   setMobileNavOpen,
 }: CentralHrDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'headcount' | 'create_joiner' | 'review_queue' | 'enrolled_roster'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'headcount' | 'workflow_tracker' | 'data_import' | 'create_joiner' | 'review_queue' | 'enrolled_roster'>('overview');
   const [internalNavOpen, setInternalNavOpen] = useState(false);
   const isNavOpen = mobileNavOpen !== undefined ? mobileNavOpen : internalNavOpen;
   const setNavOpen = setMobileNavOpen || setInternalNavOpen;
@@ -598,7 +601,7 @@ export function CentralHrDashboard({
   };
 
   const handleSelectTab = (
-    tab: 'overview' | 'headcount' | 'create_joiner' | 'review_queue' | 'enrolled_roster'
+    tab: 'overview' | 'headcount' | 'workflow_tracker' | 'data_import' | 'create_joiner' | 'review_queue' | 'enrolled_roster'
   ) => {
     setActiveTab(tab);
     setSelectedApplicationId(null);
@@ -689,6 +692,38 @@ export function CentralHrDashboard({
               <div className="flex items-center gap-2.5 min-w-0">
                 <Users className="w-4 h-4 text-indigo-300 shrink-0" />
                 <span className="sm:hidden lg:inline truncate">Headcount Management</span>
+              </div>
+            </button>
+
+            <button
+              id="central-nav-workflow-tracker"
+              title="Workflow Tracker"
+              onClick={() => handleSelectTab('workflow_tracker')}
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                activeTab === 'workflow_tracker'
+                  ? 'bg-indigo-600 text-white shadow-xs font-bold'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <CheckCircle2 className="w-4 h-4 text-indigo-300 shrink-0" />
+                <span className="sm:hidden lg:inline truncate">Workflow Tracker</span>
+              </div>
+            </button>
+
+            <button
+              id="central-nav-data-import"
+              title="Data Import"
+              onClick={() => handleSelectTab('data_import')}
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                activeTab === 'data_import'
+                  ? 'bg-indigo-600 text-white shadow-xs font-bold'
+                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Upload className="w-4 h-4 text-indigo-300 shrink-0" />
+                <span className="sm:hidden lg:inline truncate">Data Import</span>
               </div>
             </button>
 
@@ -823,6 +858,21 @@ export function CentralHrDashboard({
         {/* VIEW 1B: HEADCOUNT MANAGEMENT */}
         {activeTab === 'headcount' && <HeadcountManagementView />}
 
+        {/* VIEW 1C: WORKFLOW TRACKER */}
+        {activeTab === 'workflow_tracker' && (
+          <WorkflowTrackerView
+            role="central_hr"
+            zoneName={currentUser.zone_name || metrics?.zoneName}
+            assignedBranches={
+              metrics?.branches?.map((b) => b.name) ||
+              formOptions.branches.map((b) => b.name)
+            }
+          />
+        )}
+
+        {/* VIEW 1D: DATA IMPORT */}
+        {activeTab === 'data_import' && <DataImportView onDataImported={fetchFormOptions} />}
+
         {/* VIEW 2: CREATE NEW JOINER FORM */}
         {activeTab === 'create_joiner' && (
           <CreateJoinerView
@@ -867,6 +917,8 @@ export function CentralHrDashboard({
             zoneName={currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
             onRefresh={fetchEnrolledEmployees}
             onOpenPdfDossier={handleOpenPdfDossier}
+            role="central_hr"
+            actorName={currentUser.name || currentUser.email || 'Central HR'}
           />
         )}
       </div>

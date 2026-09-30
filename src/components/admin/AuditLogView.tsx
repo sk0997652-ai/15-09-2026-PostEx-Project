@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { AuditLogItem, superAdminApi } from '../../lib/superAdminApi';
+import { useHrPortalStore } from '../../lib/hrPortalStore';
 import {
   Button,
   Table,
@@ -20,6 +21,7 @@ export interface AuditLogViewProps {
 }
 
 export const AuditLogView: React.FC<AuditLogViewProps> = ({ setNotification }) => {
+  const [store] = useHrPortalStore();
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
   const [auditActionFilter, setAuditActionFilter] = useState('');
   const [actorTypeFilter, setActorTypeFilter] = useState('');
@@ -60,14 +62,34 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ setNotification }) =
     loadAuditLogsData(1, auditPagination.limit);
   }, []);
 
+  const combinedAuditLogs = useMemo(() => {
+    const localItems: AuditLogItem[] = (store.auditLogs || []).map((entry) => ({
+      id: entry.id,
+      action: entry.action,
+      actor_id: null,
+      actor_type: entry.actor_type,
+      entity_type: entry.entity_type,
+      entity_id: entry.entity_id,
+      metadata: entry.metadata,
+      created_at: entry.created_at,
+    }));
+    return [...localItems, ...auditLogs];
+  }, [store.auditLogs, auditLogs]);
+
   const filteredLogs = useMemo(() => {
-    return auditLogs.filter((log) => {
+    return combinedAuditLogs.filter((log) => {
+      if (
+        auditActionFilter.trim() &&
+        !(log.action || '').toLowerCase().includes(auditActionFilter.trim().toLowerCase())
+      ) {
+        return false;
+      }
       if (actorTypeFilter && log.actor_type !== actorTypeFilter) return false;
       if (categoryPill) {
         const act = (log.action || '').toLowerCase();
-        if (categoryPill === 'create' && !act.includes('create') && !act.includes('provision')) return false;
+        if (categoryPill === 'create' && !act.includes('create') && !act.includes('provision') && !act.includes('import')) return false;
         if (categoryPill === 'security' && !act.includes('password') && !act.includes('permission') && !act.includes('override') && !act.includes('auth')) return false;
-        if (categoryPill === 'update' && !act.includes('update') && !act.includes('edit') && !act.includes('status')) return false;
+        if (categoryPill === 'update' && !act.includes('update') && !act.includes('edit') && !act.includes('status') && !act.includes('exit')) return false;
         if (categoryPill === 'delete' && !act.includes('delete') && !act.includes('remove') && !act.includes('retention')) return false;
       }
       if (dateFrom) {
@@ -80,7 +102,7 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ setNotification }) =
       }
       return true;
     });
-  }, [auditLogs, actorTypeFilter, categoryPill, dateFrom, dateTo]);
+  }, [combinedAuditLogs, auditActionFilter, actorTypeFilter, categoryPill, dateFrom, dateTo]);
 
   const handleResetFilters = () => {
     setAuditActionFilter('');

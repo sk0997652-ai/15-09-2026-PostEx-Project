@@ -29,7 +29,10 @@ import { RecordBrowserView } from './admin/RecordBrowserView';
 import { AuditLogView } from './admin/AuditLogView';
 import { OrganizationSettingsView } from './admin/OrganizationSettingsView';
 import { HeadcountManagementView } from './common/HeadcountManagementView';
+import { WorkflowTrackerView } from './common/WorkflowTrackerView';
+import { DataImportView } from './common/DataImportView';
 import { Badge, Button } from './ui';
+import { Upload } from 'lucide-react';
 
 export interface SuperAdminDashboardProps {
   currentUser: { id: string; email: string; name?: string; role?: string };
@@ -42,6 +45,8 @@ export type AdminTab =
   | 'overview'
   | 'org'
   | 'headcount'
+  | 'workflow_tracker'
+  | 'data_import'
   | 'staff'
   | 'overrides'
   | 'records'
@@ -232,6 +237,34 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           </button>
 
           <button
+            id="nav-btn-workflow-tracker"
+            title="Workflow Tracker"
+            onClick={() => handleSelectTab('workflow_tracker')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
+              activeTab === 'workflow_tracker'
+                ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+            }`}
+          >
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Workflow Tracker</span>
+          </button>
+
+          <button
+            id="nav-btn-data-import"
+            title="Data Import"
+            onClick={() => handleSelectTab('data_import')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
+              activeTab === 'data_import'
+                ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+            }`}
+          >
+            <Upload className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Data Import</span>
+          </button>
+
+          <button
             id="nav-btn-staff"
             title="Staff & User Management"
             onClick={() => handleSelectTab('staff')}
@@ -377,6 +410,12 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
         {/* Tab 2b: Headcount Management */}
         {activeTab === 'headcount' && <HeadcountManagementView />}
+
+        {/* Tab 2c: Workflow Tracker */}
+        {activeTab === 'workflow_tracker' && <WorkflowTrackerView role="super_admin" />}
+
+        {/* Tab 2d: Data Import */}
+        {activeTab === 'data_import' && <DataImportView onDataImported={loadOrgData} />}
 
         {/* Tab 3: Staff Management */}
         {activeTab === 'staff' && (

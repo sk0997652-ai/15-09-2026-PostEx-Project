@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PostEx — Workflow Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f6f5;--sf:#fff;--sf2:#f8faf9;--ink:#13201e;--mut:#63716d;--line:#e3e8e6;--acc:#0e8f83;--accs:#dcf2ef;--ok:#178a56;--warn:#b26f0a;--bad:#c73a3a}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#091311;--sf:#101c1a;--sf2:#0d1816;--ink:#e7efed;--mut:#8b9d98;--line:#213230;--acc:#3ec7b8;--accs:#123632;--ok:#3fc487;--warn:#e5a444;--bad:#ef6b6b}}
+:root[data-theme="dark"]{--bg:#091311;--sf:#101c1a;--sf2:#0d1816;--ink:#e7efed;--mut:#8b9d98;--line:#213230;--acc:#3ec7b8;--accs:#123632;--ok:#3fc487;--warn:#e5a444;--bad:#ef6b6b}
+*{box-sizing:border-box;margin:0}
+body{font:14px/1.5 'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif;color:var(--ink);background:var(--bg);font-variant-numeric:tabular-nums;min-height:100vh}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.wrap{padding:26px;display:grid;gap:20px;max-width:1440px;margin:0 auto}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.head h1{font-size:23px;font-weight:800;letter-spacing:-.5px}
+.head p{color:var(--mut);margin-top:4px;max-width:70ch;font-size:13.5px}
+.card{background:var(--sf);border:1px solid var(--line);border-radius:14px}
+.pad{padding:20px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden}
+.kpi{padding:18px 20px;border-right:1px solid var(--line)}.kpi:last-child{border:0}
+.kpi .l{color:var(--mut);font-weight:600;font-size:12.5px}
+.kpi .v{font-size:29px;font-weight:800;letter-spacing:-1px;margin:7px 0 2px}
+.kpi .s{font-size:12.5px;color:var(--mut)}
+.kpi.bad .v{color:var(--bad)}.kpi.ok .v{color:var(--ok)}
+.ct{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.ct h2{font-size:15.5px;font-weight:700}.ct small{color:var(--mut);font-size:12.5px}
+.tag{border-radius:7px;padding:3px 9px;font-size:11.5px;font-weight:700;white-space:nowrap;display:inline-block}
+.t-ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 13%,transparent)}
+.t-w{color:var(--warn);background:color-mix(in srgb,var(--warn) 15%,transparent)}
+.t-b{color:var(--bad);background:color-mix(in srgb,var(--bad) 13%,transparent)}
+.t-n{color:var(--mut);background:var(--sf2);border:1px solid var(--line)}
+.bar{height:7px;background:var(--line);border-radius:7px;overflow:hidden;flex:1}
+.bar i{display:block;height:100%;border-radius:7px;background:var(--acc)}
+.bar.w i{background:var(--warn)}.bar.b i{background:var(--bad)}
+.fr{display:flex;align-items:center;gap:9px;min-width:120px}.fr span{font-weight:700;width:36px;text-align:right;font-size:12.5px}
+.scroll{overflow-x:auto;margin:0 -20px;padding:0 20px}
+table{width:100%;border-collapse:collapse;min-width:900px}
+th{font-size:12px;color:var(--mut);font-weight:600;text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--sf)}
+td{padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap;font-size:13.5px}
+tr:last-child td{border:0}tr:hover td{background:var(--sf2)}
+td small{display:block;color:var(--mut);font-size:12px}td b{font-weight:600}
+.rule{background:var(--accs);border-radius:12px;padding:11px 15px;font-size:12.5px}
+.ov{display:grid;gap:11px}.ov div{display:grid;grid-template-columns:170px 1fr auto;gap:10px;align-items:center;font-size:13px}.ov b{text-align:right}
+.g2{display:grid;grid-template-columns:1fr 1.3fr;gap:20px}
+.wseg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:3px;overflow-x:auto}
+.wseg button{border:0;background:none;padding:6px 13px;border-radius:8px;color:var(--mut);cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap}
+.wseg button.on{background:var(--sf);color:var(--acc);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.tb{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.tb input,.tb select{background:var(--sf2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;min-width:170px}
+.delb{background:none;border:1px solid var(--line);color:var(--bad);border-radius:8px;padding:5px 12px;cursor:pointer;font-weight:600;font-size:12px}
+.addrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+.addrow input{background:var(--sf2);border:1px solid var(--line);border-radius:10px;padding:8px 11px;min-width:0}
+.addb{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:8px 15px;font-weight:700;cursor:pointer;white-space:nowrap;font-size:13px}
+.btn{border:1px solid var(--line);background:var(--sf2);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:600;font-size:12.5px}
+@media(max-width:1180px){.kpis{grid-template-columns:1fr 1fr}.kpi:nth-child(2){border-right:0}.kpi:nth-child(-n+2){border-bottom:1px solid var(--line)}.g2{grid-template-columns:1fr}}
+@media(max-width:860px){.wrap{padding:14px}}
+</style></head>
+<body><div class="wrap">
+<div class="top"><div class="head"><h1>Workflow Tracker</h1><p>Onboarding tasks, exits and HR performance — issued and owned by HR.</p></div><button class="btn" id="th">Toggle theme</button></div>
+<div id="app"></div></div>
+<script>
+const $=s=>document.querySelector(s);
+let s0=7;const rnd=()=>(s0=(s0*16807)%2147483647)/2147483647;
+// name, zone, manager
+const BR=[['Gulshan Hub','South Zone','Asad Khan'],['Korangi Hub','South Zone','Bilal Ahmed'],['Clifton Sub-Hub','South Zone','Sana Iqbal'],['Gulberg Hub','Central Zone','Hamza Ali'],['Model Town Hub','Central Zone','Usman Raza'],['Johar Town Sub-Hub','Central Zone','Ayesha Noor'],['Blue Area Hub','North Zone','Farhan Shah'],['Saddar Warehouse','North Zone','Kamran Butt']];
+const DES=[['Delivery Courier I',1],['Rider II',1],['Loader',0],['Pickup Helper',0],['Branch Assistant',1],['Last Mile Assistant',1],['Sweeper',0],['Branch Supervisor',1],['Sorting Assistant',0],['Store Assistant',1]];
+const F=['Ahmed','Usman','Bilal','Hassan','Zain','Imran','Faisal','Asif','Saad','Owais'],L=['Khan','Ali','Raza','Malik','Butt','Shah'];
+let T=[['Employee code opened',0,'Code'],['Machine enrolment',1,'Machine'],['Login credentials',1,'Login'],['SIM issued',2,'SIM'],['ID card issued',3,'ID card'],['Documents sent to head office',5,'Docs to HO']];
+let X=['ID card','SIM','Login','Machine','Assets','ECF to HO'];
+const SLA_X=7,MIN=4;
+const PEOPLE=Array.from({length:28},(_,i)=>{const b=BR[i%8],d=DES[Math.floor(rnd()*DES.length)],ago=1+Math.floor(rnd()*30),stall=rnd()<.25;
+ const done=T.map(([lbl,t])=>{if(!d[1]&&(lbl=='Login credentials'||lbl=='SIM issued'))return 'x';if(stall&&t>=3)return null;const dd=t+Math.round(rnd()*8);return dd<=ago?dd:null});
+ return{n:F[i%10]+' '+L[(i*3+1)%6],d:d[0],b,ago,done,hr:b[2]}});
+const EXITS=Array.from({length:8},(_,i)=>{const b=BR[(i*3)%8],ago=1+Math.floor(rnd()*18),k=ago>10?(rnd()<.6?6:Math.floor(rnd()*6)):Math.floor(rnd()*6);return{n:F[(i+4)%10]+' '+L[(i*5)%6],d:DES[i%10][0],b,ago,k,type:['Resignation','Termination','Absconding'][i%3]}});
+let wview='j',q='',fs='',lvl='Zone';
+const bar=(f,c='')=>`<div class="bar ${c}"><i style="width:${Math.min(Math.max(f,0),100)}%"></i></div>`;
+const kp=(l,v,s,c='')=>`<div class="kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+const ts=(j,k)=>{const v=j.done[k];if(v==='x')return['na'];if(v!=null)return[v<=T[k][1]?'ok':'late',v-T[k][1]];return j.ago>T[k][1]?['over',j.ago-T[k][1]]:['pend']};
+const chip=(j,k)=>{const[st,d]=ts(j,k);return st=='na'?'<span style="color:var(--mut)">Not needed</span>':st=='ok'?'<span class="tag t-ok">Done</span>':st=='late'?`<span class="tag t-w">Done +${d}d</span>`:st=='over'?`<span class="tag t-b">Overdue ${d}d</span>`:'<span class="tag t-n">Pending</span>'};
+const jstat=j=>{const a=j.done.filter((v,k)=>k<T.length&&v!=='x').length,dn=j.done.filter((v,k)=>k<T.length&&v!=null&&v!=='x').length,ov=T.filter((_,k)=>ts(j,k)[0]=='over').length;return{a,dn,ov,st:ov?'Has overdue':dn==a?'Complete':'In progress'}};
+const exDone=e=>Math.min(e.k,X.length);
+const exS=e=>exDone(e)>=X.length?['Cleared','t-ok']:e.ago>SLA_X?['Overdue','t-b']:['In progress','t-w'];
+const ag=(js,es)=>{let tot=0,ok=0,ov=0,cd=[];js.forEach(j=>{T.forEach((_,k)=>{const st=ts(j,k)[0];if(st=='na'||st=='pend')return;tot++;if(st=='ok')ok++;if(st=='over')ov++});if(jstat(j).st=='Complete'){const vals=j.done.filter((v,k)=>k<T.length&&v!=='x'&&v!=null);if(vals.length)cd.push(Math.max(...vals))}});return{n:js.length,pct:tot?ok/tot*100:0,ov,avg:cd.length?cd.reduce((a,b)=>a+b,0)/cd.length:0,ecf:es.filter(e=>exDone(e)<X.length).length}};
+const flag=a=>a.n<MIN?['Low volume','t-n','']:a.pct>=85?['On track','t-ok','']:a.pct>=65?['Watch','t-w','w']:['Needs action','t-b','b'];
+function jRows(){return PEOPLE.map(j=>[j,jstat(j)]).filter(([j])=>!q||(j.n+j.b[0]+j.hr).toLowerCase().includes(q)).filter(([,st])=>!fs||st.st==fs).sort((a,b)=>a[0].ago-b[0].ago).map(([j,st])=>`<tr><td><b>${j.n}</b><small>${j.d}</small></td><td>${j.b[0]}</td><td>${j.hr}</td><td>${j.ago}d ago</td>${T.map((_,k)=>`<td>${chip(j,k)}</td>`).join('')}<td><span class="tag ${st.st=='Complete'?'t-ok':st.ov?'t-b':'t-n'}">${st.dn}/${st.a}</span></td></tr>`).join('')||`<tr><td colspan="${T.length+5}" style="text-align:center;color:var(--mut);padding:26px">No joiners match.</td></tr>`}
+function vJ(){const A=ag(PEOPLE,EXITS),comp=PEOPLE.filter(j=>jstat(j).st=='Complete').length,oc=T.map((_,k)=>PEOPLE.filter(j=>ts(j,k)[0]=='over').length),mx=Math.max(...oc,1);
+ return `<div class="card kpis">${kp('Joiners in view',PEOPLE.length,'across scope')}${kp('Fully onboarded',comp,Math.round(comp/PEOPLE.length*100)+'% of joiners','ok')}${kp('Overdue tasks',A.ov,'past target day','bad')}${kp('Tasks done on time',A.pct.toFixed(0)+'%','of all due tasks')}</div>
+ <div class="card pad"><div class="ct"><h2>Overdue by task</h2></div><div class="ov">${T.map((t,k)=>`<div><span>${t[0]}</span>${bar(oc[k]/mx*100,oc[k]?'b':'')}<b>${oc[k]}</b></div>`).join('')}</div></div>
+ <div class="card pad"><div class="ct"><h2>Joiners</h2></div><div class="tb"><input id="q" placeholder="Search joiner, branch or HR" value="${q}"><select id="fs">${['','Has overdue','In progress','Complete'].map(s=>`<option value="${s}" ${s==fs?'selected':''}>${s||'All statuses'}</option>`).join('')}</select></div><div class="scroll"><table><thead><tr><th>Joiner</th><th>Branch</th><th>HR officer</th><th>Joined</th>${T.map(t=>`<th>${t[2]}</th>`).join('')}<th>Progress</th></tr></thead><tbody id="tb">${jRows()}</tbody></table></div></div>`}
+function vE(){const totX=Math.max(X.length,1),op=EXITS.filter(e=>exDone(e)<X.length),od=op.filter(e=>e.ago>SLA_X).length;
+ return `<div class="card kpis">${kp('Open ECFs',op.length,'clearance not complete')}${kp('Overdue ECFs',od,'open past '+SLA_X+' days','bad')}${kp('Cleared',EXITS.length-op.length,'ECF fully complete','ok')}${kp('Exits in view',EXITS.length,'all exit types')}</div>
+ <div class="card pad"><div class="ct"><h2>Employee clearance forms</h2></div><div class="scroll"><table><thead><tr><th>Employee</th><th>Branch</th><th>HR officer</th><th>Exit type</th><th>Left</th>${X.map(x=>`<th>${x}</th>`).join('')}<th>Progress</th><th>Status</th></tr></thead><tbody>${EXITS.map(e=>{const st=exS(e),dn=exDone(e);return `<tr><td><b>${e.n}</b><small>${e.d}</small></td><td>${e.b[0]}</td><td>${e.b[2]}</td><td><span class="tag ${e.type=='Absconding'?'t-b':'t-n'}">${e.type}</span></td><td>${e.ago}d ago</td>${X.map((_,i)=>`<td>${i<dn?'<span class="tag t-ok">Done</span>':`<span class="tag ${e.ago>SLA_X?'t-b':'t-n'}">Pending</span>`}</td>`).join('')}<td><div class="fr">${bar(dn/totX*100,e.ago>SLA_X&&dn<X.length?'b':'')}<span>${dn}/${X.length}</span></div></td><td><span class="tag ${st[1]}">${st[0]}</span></td></tr>`}).join('')}</tbody></table></div></div>`}
+function vS(){const A=ag(PEOPLE,EXITS),zs=[...new Set(BR.map(b=>b[1]))],G=lvl=='Zone'?zs.map(z=>[z,'',x=>x[1]==z]):lvl=='Branch'?BR.map(b=>[b[0],b[1],x=>x[0]==b[0]]):BR.map(b=>[b[2],b[0],x=>x[2]==b[2]]);
+ const rows=G.map(([nm,sub,f])=>{const a=ag(PEOPLE.filter(j=>f(j.b)),EXITS.filter(e=>f(e.b)));return{n:nm,sub,a,fl:flag(a)}}).sort((x,y)=>(x.a.n<MIN)-(y.a.n<MIN)||x.a.pct-y.a.pct);
+ return `<div class="card kpis">${kp('On-time task rate',A.pct.toFixed(0)+'%','all HR officers',A.pct>=85?'ok':'')}${kp('Avg days to onboard',A.avg.toFixed(1),'fully onboarded joiners')}${kp('Overdue tasks',A.ov,'across scope','bad')}${kp('Open ECFs',A.ecf,'awaiting clearance')}</div>
+ <div class="card pad"><div class="ct"><h2>Scorecard by ${lvl.toLowerCase()}</h2><div class="wseg" id="lv">${['Zone','Branch','HR officer'].map(l=>`<button class="${l==lvl||(lvl=='HR'&&l=='HR officer')?'on':''}" data-l="${l=='HR officer'?'HR':l}">${l}</button>`).join('')}</div></div><p class="rule" style="margin-bottom:14px">Worst performers listed first. Fewer than ${MIN} joiners is marked Low volume and not judged.</p><div class="scroll"><table style="min-width:760px"><thead><tr><th>${lvl=='HR'?'HR officer':lvl}</th><th>Joiners</th><th>On-time rate</th><th>Avg days</th><th>Overdue</th><th>Open ECFs</th><th>Flag</th></tr></thead><tbody>${rows.map(r=>`<tr><td><b>${r.n}</b>${r.sub?`<small>${r.sub}</small>`:''}</td><td>${r.a.n}</td><td><div class="fr">${bar(r.a.pct,r.fl[2])}<span>${r.a.pct.toFixed(0)}%</span></div></td><td>${r.a.avg?r.a.avg.toFixed(1):'—'}</td><td>${r.a.ov}</td><td>${r.a.ecf}</td><td><span class="tag ${r.fl[1]}">${r.fl[0]}</span></td></tr>`).join('')}</tbody></table></div></div>`}
+function vT(){return `<div class="rule">Deleting a task only stops tracking it going forward — it does not touch any record already saved.</div>
+ <div class="g2"><div class="card pad"><div class="ct"><h2>Onboarding tasks</h2></div><div class="scroll" style="margin:0"><table style="min-width:0"><thead><tr><th>Task</th><th>Target day</th><th>Label</th><th></th></tr></thead><tbody>${T.map((t,i)=>`<tr><td><b>${t[0]}</b></td><td>Day ${t[1]}</td><td><span class="tag t-n">${t[2]}</span></td><td><button class="delb" data-kind="t" data-i="${i}">Delete</button></td></tr>`).join('')}</tbody></table></div><div class="addrow"><input id="tn" placeholder="Task name"><input id="td" placeholder="Day" type="number" style="width:70px"><input id="tsl" placeholder="Label" style="width:100px"><button class="addb" data-kind="t">Add task</button></div></div>
+ <div class="card pad"><div class="ct"><h2>ECF checklist items</h2></div><div class="scroll" style="margin:0"><table style="min-width:0"><thead><tr><th>Item</th><th></th></tr></thead><tbody>${X.map((x,i)=>`<tr><td><b>${x}</b></td><td><button class="delb" data-kind="x" data-i="${i}">Delete</button></td></tr>`).join('')}</tbody></table></div><div class="addrow"><input id="xn" placeholder="Item name" style="flex:1"><button class="addb" data-kind="x">Add item</button></div></div></div>`}
+function render(){const WV=[['j','Joiner Tracker'],['e','Exits & ECF'],['s','HR Performance'],['t','Task Settings']];
+ $('#app').innerHTML=`<div class="wseg" id="wseg" style="margin-bottom:20px;width:fit-content;max-width:100%">${WV.map(v=>`<button class="${v[0]==wview?'on':''}" data-w="${v[0]}">${v[1]}</button>`).join('')}</div><div style="display:grid;gap:20px">${{j:vJ,e:vE,s:vS,t:vT}[wview]()}</div>`;
+ document.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{wview=b.dataset.w;render()});
+ if($('#q')){$('#q').oninput=e=>{q=e.target.value.toLowerCase();$('#tb').innerHTML=jRows()};$('#fs').onchange=e=>{fs=e.target.value;$('#tb').innerHTML=jRows()}}
+ if($('#lv'))document.querySelectorAll('#lv button').forEach(b=>b.onclick=()=>{lvl=b.dataset.l;render()});
+ document.querySelectorAll('.delb').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(b.dataset.kind=='t'){T.splice(i,1);PEOPLE.forEach(j=>j.done.splice(i,1))}else{X.splice(i,1)}render()});
+ document.querySelectorAll('.addb').forEach(b=>b.onclick=()=>{if(b.dataset.kind=='t'){const nm=$('#tn').value.trim(),d=$('#td').value,sl=$('#tsl').value.trim();if(!nm)return;const td=d?+d:0;T.push([nm,td,sl||nm.split(' ')[0]]);PEOPLE.forEach(j=>{const dd=td+Math.round(rnd()*8);j.done.push(dd<=j.ago?dd:null)})}else{const nm=$('#xn').value.trim();if(!nm)return;X.push(nm)}render()});
+}
+$('#th').onclick=()=>{const d=document.documentElement,dk=d.dataset.theme?d.dataset.theme=='dark':matchMedia('(prefers-color-scheme:dark)').matches;d.dataset.theme=dk?'light':'dark'};
+render();
+</script></body></html>

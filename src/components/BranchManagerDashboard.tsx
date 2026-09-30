@@ -33,6 +33,7 @@ import {
   X,
 } from 'lucide-react';
 import { HeadcountManagementView } from './common/HeadcountManagementView';
+import { WorkflowTrackerView } from './common/WorkflowTrackerView';
 import {
   BranchOverviewView,
   ApplicationsQueueView,
@@ -64,7 +65,7 @@ export function BranchManagerDashboard({
   setMobileNavOpen,
 }: BranchManagerDashboardProps) {
   // Navigation tabs
-  const [activeTab, setActiveTab] = useState<'pending_queue' | 'corrections_queue' | 'forwarded_queue' | 'branch_overview' | 'headcount'>('pending_queue');
+  const [activeTab, setActiveTab] = useState<'pending_queue' | 'corrections_queue' | 'forwarded_queue' | 'branch_overview' | 'headcount' | 'workflow_tracker'>('pending_queue');
   const [internalNavOpen, setInternalNavOpen] = useState(false);
   const isNavOpen = mobileNavOpen !== undefined ? mobileNavOpen : internalNavOpen;
   const setNavOpen = setMobileNavOpen || setInternalNavOpen;
@@ -361,7 +362,7 @@ export function BranchManagerDashboard({
   };
 
   const handleSelectTab = (
-    tab: 'pending_queue' | 'corrections_queue' | 'forwarded_queue' | 'branch_overview' | 'headcount'
+    tab: 'pending_queue' | 'corrections_queue' | 'forwarded_queue' | 'branch_overview' | 'headcount' | 'workflow_tracker'
   ) => {
     setActiveTab(tab);
     setSelectedAppId(null);
@@ -521,6 +522,20 @@ export function BranchManagerDashboard({
             <Users className="w-4 h-4 shrink-0" />
             <span className="sm:hidden lg:inline truncate">Headcount Management</span>
           </button>
+
+          <button
+            id="bm-nav-workflow-tracker"
+            title="Workflow Tracker"
+            onClick={() => handleSelectTab('workflow_tracker')}
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-2.5 px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === 'workflow_tracker'
+                ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+            }`}
+          >
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span className="sm:hidden lg:inline truncate">Workflow Tracker</span>
+          </button>
         </nav>
 
         {/* User Profile Footer */}
@@ -588,6 +603,7 @@ export function BranchManagerDashboard({
                 {activeTab === 'forwarded_queue' && 'Branch Manager — Forwarded Applications'}
                 {activeTab === 'branch_overview' && 'Branch Manager — Branch Overview & Operations'}
                 {activeTab === 'headcount' && 'Branch Manager — Branch Headcount (Read-Only)'}
+                {activeTab === 'workflow_tracker' && 'Branch Manager — Workflow Tracker'}
               </h1>
               <p className="text-xs text-slate-500 mt-0.5">
                 {activeTab === 'pending_queue' && 'Conduct in-person document verification, apply digital signature attestation, and forward to Central HR.'}
@@ -595,6 +611,7 @@ export function BranchManagerDashboard({
                 {activeTab === 'forwarded_queue' && 'Track applications verified by this branch currently awaiting final Central HR enrollment decision.'}
                 {activeTab === 'branch_overview' && 'You can only view and manage records, document verifications, and headcount for your assigned branch.'}
                 {activeTab === 'headcount' && 'Read-only view of approved designation headcount targets, active enrolled employees, and open vacancies for your branch.'}
+                {activeTab === 'workflow_tracker' && 'Track onboarding tasks and employee clearance forms scoped to your assigned branch.'}
               </p>
             </div>
 
@@ -678,6 +695,14 @@ export function BranchManagerDashboard({
         ) : activeTab === 'headcount' ? (
           <div className="p-6">
             <HeadcountManagementView />
+          </div>
+        ) : activeTab === 'workflow_tracker' ? (
+          <div className="p-4 sm:p-6">
+            <WorkflowTrackerView
+              role="branch_manager"
+              branchName={currentUser.branch_name}
+              zoneName={currentUser.zone_name}
+            />
           </div>
         ) : (
           <ApplicationsQueueView
