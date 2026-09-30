@@ -246,7 +246,7 @@ export function BranchOverviewView({
           <TableBody>
             {filteredDesignations.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-xs text-slate-500">
+                <TableCell colSpan={9} className="text-center py-8 text-caption text-slate-500">
                   No designation headcount entries match the active search or filter criteria.
                 </TableCell>
               </TableRow>
@@ -258,23 +258,23 @@ export function BranchOverviewView({
                   onClick={() => setSelectedEntity({ type: 'designation', data: d })}
                   className="cursor-pointer hover:bg-indigo-50/40"
                 >
-                  <TableCell mobileRole="primary" className="font-semibold text-xs text-slate-900">
+                  <TableCell mobileRole="primary" className="font-semibold text-body text-slate-900">
                     {d.designation_name}
                   </TableCell>
-                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Department" className="text-xs text-slate-600">
+                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Department" className="text-body text-slate-600">
                     {d.department_name}
                     {d.department_code ? ` (${d.department_code})` : ''}
                   </TableCell>
                   <TableCell mobileRole="field" mobileLabel="Category">
                     <EmploymentCategoryBadge category={d.employment_category} />
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right font-mono text-xs font-semibold tabular-nums">
+                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right font-mono text-body font-semibold tabular-nums">
                     {d.approved}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right font-mono text-xs font-bold text-indigo-700 tabular-nums">
+                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right font-mono text-body font-bold text-indigo-700 tabular-nums">
                     {d.active}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right font-mono text-xs font-bold text-amber-700 tabular-nums">
+                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right font-mono text-body font-bold text-amber-700 tabular-nums">
                     {d.vacancy}
                   </TableCell>
                   <TableCell mobileRole="status">
@@ -287,7 +287,7 @@ export function BranchOverviewView({
                     <TrendIndicator trend={d.trend} />
                   </TableCell>
                   <TableCell mobileRole="actions" className="text-right">
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600">
+                    <span className="inline-flex items-center gap-1 text-caption font-semibold text-indigo-600">
                       <BarChart3 className="w-3.5 h-3.5" />
                       <span>History</span>
                     </span>
@@ -307,27 +307,27 @@ export function BranchOverviewView({
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <span className="text-table-header uppercase text-slate-500 flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5 text-indigo-600" />
                 Branch Name &amp; ID
               </span>
-              <p className="text-sm font-bold text-slate-900 mt-1.5">
+              <p className="text-body font-bold text-slate-900 mt-1.5">
                 {currentUser.branch_name}
               </p>
-              <code className="text-[10px] text-slate-500 font-mono mt-0.5 block">
+              <code className="text-caption text-slate-500 font-mono mt-0.5 block">
                 {currentUser.branch_id}
               </code>
             </div>
 
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <span className="text-table-header uppercase text-slate-500 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-emerald-600" />
                 Zone Name &amp; ID
               </span>
-              <p className="text-sm font-bold text-slate-900 mt-1.5">
+              <p className="text-body font-bold text-slate-900 mt-1.5">
                 {currentUser.zone_name}
               </p>
-              <code className="text-[10px] text-slate-500 font-mono mt-0.5 block">
+              <code className="text-caption text-slate-500 font-mono mt-0.5 block">
                 {currentUser.zone_id}
               </code>
             </div>
@@ -338,7 +338,7 @@ export function BranchOverviewView({
           title="Verification Protocol Checklist"
           description="Mandatory physical inspection standards prior to digital signature seal."
         >
-          <ul className="text-xs text-slate-600 space-y-2.5 leading-relaxed">
+          <ul className="text-body text-slate-600 space-y-2.5">
             <li className="flex items-start gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
               <span>

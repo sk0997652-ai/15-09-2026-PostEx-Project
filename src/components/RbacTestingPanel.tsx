@@ -318,12 +318,12 @@ export function RbacTestingPanel() {
       <div className="bg-slate-900 text-white p-6 border-b border-slate-800">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs font-semibold mb-2">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-tag mb-2">
               <Shield className="w-3.5 h-3.5" />
               <span>Step 4 Verification &bull; RBAC &amp; RLS Policies</span>
             </div>
-            <h2 className="text-xl font-bold tracking-tight">Access Control &amp; Geographic Zoning Suite</h2>
-            <p className="text-xs text-slate-400 mt-1 max-w-2xl">
+            <h2 className="text-page-title">Access Control &amp; Geographic Zoning Suite</h2>
+            <p className="text-caption text-slate-400 mt-1 max-w-2xl">
               Verifies dual-layer security: Postgres RLS policies, geographic boundaries (Zonal HR Zone A cannot access Zone B),
               candidate session isolation, and Edge Function privileged action guards.
             </p>
@@ -349,7 +349,7 @@ export function RbacTestingPanel() {
             size="small"
             variant={activeTab === 'runner' ? 'secondary' : 'secondary'}
             onClick={() => setActiveTab('runner')}
-            className={`border text-xs ${
+            className={`border text-caption ${
               activeTab === 'runner'
                 ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-850'
                 : 'bg-transparent text-slate-400 border-transparent hover:text-white hover:bg-slate-800/50'
@@ -361,7 +361,7 @@ export function RbacTestingPanel() {
             size="small"
             variant={activeTab === 'matrix' ? 'secondary' : 'secondary'}
             onClick={() => setActiveTab('matrix')}
-            className={`border text-xs ${
+            className={`border text-caption ${
               activeTab === 'matrix'
                 ? 'bg-slate-800 text-white border-slate-700 hover:bg-slate-850'
                 : 'bg-transparent text-slate-400 border-transparent hover:text-white hover:bg-slate-800/50'
@@ -379,8 +379,8 @@ export function RbacTestingPanel() {
             {results.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-lg">
                 <Shield className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-                <h3 className="text-sm font-bold text-slate-800">RBAC Suite Ready</h3>
-                <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                <h3 className="text-card-heading text-slate-800">RBAC Suite Ready</h3>
+                <p className="text-caption text-slate-500 mt-1 max-w-md mx-auto">
                   Click the button above to run empirical integration tests verifying that Zonal HR from Zone A is denied
                   access to Zone B data, Branch Managers are restricted to their branch, and privileged action guards prevent unauthorized credential generation.
                 </p>
@@ -402,15 +402,15 @@ export function RbacTestingPanel() {
                       <AlertTriangle className="w-5 h-5 text-rose-600" />
                     )}
                     <div>
-                      <span className="text-xs font-bold uppercase tracking-wider block">
+                      <span className="text-table-header uppercase tracking-wider block">
                         Self-Test Outcome: {passedCount === totalCount ? 'All 10 Tests Passed' : `${passedCount}/${totalCount} Passed`}
                       </span>
-                      <span className="text-xs opacity-80">
+                      <span className="text-caption opacity-80">
                         Geographic boundaries verified: Cross-zone access strictly blocked, Super Admin company-wide access confirmed.
                       </span>
                     </div>
                   </div>
-                  <span className="text-sm font-mono font-bold">
+                  <span className="text-body font-mono font-bold">
                     {passedCount} / {totalCount}
                   </span>
                 </div>
@@ -431,22 +431,22 @@ export function RbacTestingPanel() {
                         )}
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-900">{res.name}</span>
-                            <span className="px-2 py-0.5 rounded-xs bg-slate-100 text-slate-700 text-[10px] font-mono font-semibold">
+                            <span className="text-caption font-bold text-slate-900">{res.name}</span>
+                            <span className="px-2 py-0.5 rounded-xs bg-slate-100 text-slate-700 text-tag font-mono">
                               {res.role}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-600 mt-0.5">{res.description}</p>
-                          <p className="text-[11px] text-slate-400 font-mono mt-1">&rarr; {res.details}</p>
+                          <p className="text-caption text-slate-600 mt-0.5">{res.description}</p>
+                          <p className="text-caption text-slate-400 font-mono mt-1">&rarr; {res.details}</p>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                        <span className="text-[10px] font-mono uppercase px-2 py-1 rounded-lg bg-slate-100 text-slate-600">
+                        <span className="text-tag font-mono uppercase px-2 py-1 rounded-lg bg-slate-100 text-slate-600">
                           Expect: {res.expected}
                         </span>
                         <span
-                          className={`text-[10px] font-mono uppercase px-2 py-1 rounded-lg font-bold ${
+                          className={`text-tag font-mono uppercase px-2 py-1 rounded-lg ${
                             res.status === 'passed'
                               ? 'bg-emerald-100 text-emerald-800'
                               : 'bg-rose-100 text-rose-800'
@@ -464,7 +464,7 @@ export function RbacTestingPanel() {
         ) : (
           /* Role Permission Matrix View */
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border border-slate-200 rounded-lg overflow-hidden">
+            <table className="w-full text-left text-caption border border-slate-200 rounded-lg overflow-hidden">
               <thead className="bg-slate-50 text-slate-700 border-b border-slate-200">
                 <tr>
                   <th className="p-3 font-bold">Role</th>

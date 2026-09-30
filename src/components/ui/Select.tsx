@@ -38,7 +38,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="w-full space-y-1.5">
         {label && (
-          <label htmlFor={selectId} className="block text-sm font-medium text-slate-900">
+          <label htmlFor={selectId} className="block text-body font-medium text-slate-900">
             {label}
           </label>
         )}
@@ -47,7 +47,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             id={selectId}
             disabled={disabled}
-            className={`w-full h-10 pl-4 pr-10 py-2.5 text-sm text-slate-900 bg-white border ${borderFocusClasses} rounded-lg shadow-xs focus:outline-none focus:ring-2 transition-colors appearance-none cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed ${className}`}
+            className={`w-full h-10 pl-4 pr-10 py-2.5 text-body text-slate-900 bg-white border ${borderFocusClasses} rounded-lg shadow-xs focus:outline-none focus:ring-2 transition-colors appearance-none cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed ${className}`}
             {...props}
           >
             {options
@@ -63,9 +63,9 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           </div>
         </div>
         {error ? (
-          <p className="text-xs font-medium text-rose-600">{error}</p>
+          <p className="text-caption font-medium text-rose-600">{error}</p>
         ) : hint ? (
-          <p className="text-xs font-medium text-slate-500">{hint}</p>
+          <p className="text-caption text-slate-500">{hint}</p>
         ) : null}
       </div>
     );

@@ -3,6 +3,7 @@ import { Languages, Check, ArrowRight, Globe, ShieldCheck } from 'lucide-react';
 import { Language, useI18n } from '../../lib/i18n';
 import { useBranding } from '../../lib/branding';
 import { Button } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface LanguageScreenProps {
   candidateName: string;
@@ -41,15 +42,15 @@ export const LanguageScreen: React.FC<LanguageScreenProps> = ({
         <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-md shadow-indigo-200">
           <Languages className="w-7 h-7" />
         </div>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-semibold">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800 text-caption font-semibold">
           <span className="font-mono">{joiningId}</span>
           <span>&bull;</span>
-          <span>{candidateName}</span>
+          <span>{toTitleCase(candidateName)}</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+        <h1 className="text-page-title text-slate-900">
           Select Your Preferred Language / زبان منتخب کریں
         </h1>
-        <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
+        <p className="text-body text-slate-600 max-w-md mx-auto">
           Please select the language you would like to use during your PostEx digital onboarding journey.
           <span className="block mt-0.5 text-slate-500 font-urdu" dir="rtl">
             براہ کرم پوسٹ ایکس ڈیجیٹل آن بورڈنگ کے لیے اپنی پسندیدہ زبان کا انتخاب کریں۔
@@ -71,7 +72,7 @@ export const LanguageScreen: React.FC<LanguageScreenProps> = ({
           }`}
         >
           <div className="flex items-start justify-between mb-4">
-            <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-indigo-600 font-bold text-base shadow-xs">
+            <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-indigo-600 text-card-heading shadow-xs">
               EN
             </div>
             {selectedLanguage === 'en' && (
@@ -80,13 +81,13 @@ export const LanguageScreen: React.FC<LanguageScreenProps> = ({
               </div>
             )}
           </div>
-          <h3 className="text-lg font-bold text-slate-900">English</h3>
-          <p className="text-xs text-slate-500 mt-1">
+          <h3 className="text-card-heading text-slate-900">English</h3>
+          <p className="text-caption text-slate-500 mt-1">
             Official corporate language for contracts, offer letters, and policy disclosures.
           </p>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-semibold text-indigo-700">
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-tag text-indigo-700">
             <Globe className="w-3.5 h-3.5" />
-            <span>Recommended for Executive Track</span>
+            <span>Recommended For Executive Track</span>
           </div>
         </button>
 
@@ -108,15 +109,15 @@ export const LanguageScreen: React.FC<LanguageScreenProps> = ({
                 <Check className="w-4 h-4" />
               </div>
             )}
-            <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-indigo-600 font-bold text-base shadow-xs ml-auto font-urdu">
+            <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-indigo-600 text-card-heading shadow-xs ml-auto font-urdu">
               اردو
             </div>
           </div>
-          <h3 className="text-lg font-bold text-slate-900 font-urdu">اردو (قومی زبان)</h3>
-          <p className="text-xs text-slate-500 mt-1 font-urdu leading-relaxed">
+          <h3 className="text-card-heading text-slate-900 font-urdu">اردو (قومی زبان)</h3>
+          <p className="text-caption text-slate-500 mt-1 font-urdu">
             آن بورڈنگ فارم، ہدایات اور تصدیقی اعلانات مکمل طور پر اردو زبان میں دستیاب ہیں۔
           </p>
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-[11px] font-semibold text-indigo-700 font-urdu justify-end">
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-tag text-indigo-700 font-urdu justify-end">
             <span>نان ایگزیکٹو اور فیلڈ عملے کے لیے تجویز کردہ</span>
             <Globe className="w-3.5 h-3.5" />
           </div>
@@ -130,12 +131,12 @@ export const LanguageScreen: React.FC<LanguageScreenProps> = ({
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-800">
+            <p className="text-body font-bold text-slate-800">
               {selectedLanguage === 'en'
                 ? 'Selected Language: English'
                 : 'منتخب کردہ زبان: اردو'}
             </p>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-caption text-slate-500">
               You can toggle language anytime using the header selector.
             </p>
           </div>
@@ -150,7 +151,7 @@ export const LanguageScreen: React.FC<LanguageScreenProps> = ({
           rightIcon={<ArrowRight className="w-4 h-4" />}
           className="w-full sm:w-auto px-8"
         >
-          {selectedLanguage === 'en' ? 'Continue to Consent' : 'جاری رکھیں (شرائط و ضوابط)'}
+          {selectedLanguage === 'en' ? 'Continue To Consent' : 'جاری رکھیں (شرائط و ضوابط)'}
         </Button>
       </div>
     </div>

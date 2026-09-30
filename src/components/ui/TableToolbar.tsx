@@ -164,7 +164,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                 }
               }}
               placeholder={searchPlaceholder}
-              className="w-full h-9 pl-9 pr-3.5 text-[13px] text-slate-900 bg-slate-50/70 hover:bg-white focus:bg-white rounded-full border border-slate-200/90 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
+              className="w-full h-9 pl-9 pr-3.5 text-body text-slate-900 bg-slate-50/70 hover:bg-white focus:bg-white rounded-full border border-slate-200/90 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
             />
           </div>
         )}
@@ -177,7 +177,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
               aria-label={f.label || 'Filter'}
               value={f.value}
               onChange={(e) => f.onChange(e.target.value)}
-              className="w-full h-9 px-3 text-xs font-medium text-slate-700 bg-white rounded-xl border border-slate-200/90 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 cursor-pointer transition-colors"
+              className="w-full h-9 px-3 text-caption font-medium text-slate-700 bg-white rounded-xl border border-slate-200/90 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 cursor-pointer transition-colors"
             >
               {f.options.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -199,10 +199,10 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                 aria-label="From date"
                 value={dateRange.from}
                 onChange={(e) => dateRange.onFromChange(e.target.value)}
-                className="w-full sm:w-36 h-9 pl-8 pr-2.5 text-xs font-medium text-slate-700 bg-white rounded-xl border border-slate-200/90 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600"
+                className="w-full sm:w-36 h-9 pl-8 pr-2.5 text-caption font-medium text-slate-700 bg-white rounded-xl border border-slate-200/90 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600"
               />
             </div>
-            <span className="text-xs text-slate-400 font-medium">to</span>
+            <span className="text-caption text-slate-400 font-medium">to</span>
             <div className="relative flex items-center flex-1 sm:flex-initial">
               <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
               <input
@@ -211,7 +211,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                 aria-label="To date"
                 value={dateRange.to}
                 onChange={(e) => dateRange.onToChange(e.target.value)}
-                className="w-full sm:w-36 h-9 pl-8 pr-2.5 text-xs font-medium text-slate-700 bg-white rounded-xl border border-slate-200/90 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600"
+                className="w-full sm:w-36 h-9 pl-8 pr-2.5 text-caption font-medium text-slate-700 bg-white rounded-xl border border-slate-200/90 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600"
               />
             </div>
           </div>
@@ -258,7 +258,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
           role="tablist"
           aria-label="Status filters"
         >
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mr-1 shrink-0 select-none">
+          <span className="text-table-header text-slate-400 mr-1 shrink-0 select-none">
             Status:
           </span>
           {statusPills.map((pill) => {
@@ -272,7 +272,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                 aria-selected={isActive}
                 data-testid={`status-pill-${pill.value || 'all'}`}
                 onClick={() => onStatusChange(pill.value)}
-                className={`rounded-full px-3 py-1 text-[11px] font-semibold tracking-tight inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all duration-150 cursor-pointer select-none ${
+                className={`rounded-full px-3 py-1 text-tag inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all duration-150 cursor-pointer select-none ${
                   isActive
                     ? 'bg-indigo-600 text-white border border-indigo-600 shadow-xs'
                     : getInactivePillClasses(variant)
@@ -286,7 +286,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                 <span>{pill.label}</span>
                 {typeof pill.count === 'number' && (
                   <span
-                    className={`ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                    className={`ml-0.5 px-1.5 py-0.2 rounded-full text-tag font-mono ${
                       isActive ? 'bg-indigo-700 text-indigo-100' : 'bg-black/5 text-current'
                     }`}
                   >

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Trash2, X, AlertCircle } from 'lucide-react';
 import { Button, Textarea } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 export interface DeleteConfirmationModalProps {
   isOpen: boolean;
@@ -59,10 +60,10 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <h3 id="delete-modal-title" className="text-sm font-bold text-slate-900">
-                {title}
+              <h3 id="delete-modal-title" className="text-card-heading text-slate-900">
+                {toTitleCase(title)}
               </h3>
-              <p className="text-xs text-rose-700 font-medium mt-0.5">Destructive action requires confirmation</p>
+              <p className="text-caption text-rose-700 font-medium mt-0.5">Destructive action requires confirmation</p>
             </div>
           </div>
           <Button
@@ -79,23 +80,23 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
 
         {/* Content Body */}
         <div className="p-5 space-y-4">
-          <div className="text-xs text-slate-600 leading-relaxed">
+          <div className="text-body text-slate-600">
             Are you sure you want to permanently delete{' '}
             <strong className="text-slate-900 font-bold bg-slate-100 px-1.5 py-0.5 rounded">
               "{itemName}"
             </strong>{' '}
             {itemType ? `(${itemType})` : ''}?
             {contextInfo && (
-              <div className="mt-2 text-[11px] font-medium text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100">
+              <div className="mt-2 text-caption font-medium text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100">
                 Location: <span className="text-slate-800 font-semibold">{contextInfo}</span>
               </div>
             )}
           </div>
 
           {warningMessage && (
-            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-caption">
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div className="flex-1 text-[11px] leading-relaxed">{warningMessage}</div>
+              <div className="flex-1 text-caption">{warningMessage}</div>
             </div>
           )}
 

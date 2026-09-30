@@ -15,6 +15,7 @@ import {
 import { BranchApplicationDetail, BranchDocument, CorrectionFormState, formatDocType } from './types';
 import { VerificationStampSeal } from '../common/VerificationStampSeal';
 import { Card, Button, StatusBadge } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface DocumentReviewWorkspaceViewProps {
   appDetail: BranchApplicationDetail | null;
@@ -72,14 +73,14 @@ export function DocumentReviewWorkspaceView({
           onClick={onBack}
           leftIcon={<ChevronLeft className="w-4 h-4" />}
         >
-          Back to Application Queue
+          Back To Application Queue
         </Button>
       </div>
 
       {loading ? (
         <Card className="p-12 text-center">
           <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-3" />
-          <p className="text-xs text-slate-600 font-medium">
+          <p className="text-caption text-slate-600 font-medium">
             Retrieving candidate records and uploaded verification documents...
           </p>
         </Card>
@@ -89,20 +90,22 @@ export function DocumentReviewWorkspaceView({
           <Card className="p-6">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-700 font-black text-xl shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold text-card-heading shrink-0">
                   {appDetail.candidate?.full_name?.charAt(0) || 'C'}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-bold text-slate-900">{appDetail.candidate?.full_name}</h2>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                    <h2 className="text-card-heading text-slate-900">
+                      {appDetail.candidate?.full_name ? toTitleCase(appDetail.candidate.full_name) : ''}
+                    </h2>
+                    <span className="px-2 py-0.5 rounded text-tag font-mono bg-slate-100 text-slate-700 border border-slate-200">
                       {appDetail.candidate?.joining_id}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-caption text-slate-500 mt-0.5">
                     Mobile: {appDetail.candidate?.mobile}
                   </p>
-                  <p className="text-xs text-slate-600 font-mono mt-0.5">
+                  <p className="text-caption text-slate-600 font-mono mt-0.5">
                     CNIC: {appDetail.candidate?.masked_cnic || 'N/A'} &bull; Branch:{' '}
                     <span className="font-semibold text-slate-800">{currentUser.branch_name}</span>
                   </p>
@@ -111,7 +114,7 @@ export function DocumentReviewWorkspaceView({
 
               <div className="flex flex-col items-start md:items-end gap-1.5 w-full md:w-auto">
                 <StatusBadge status={appDetail.status} size="md" />
-                <span className="text-[11px] text-slate-500">
+                <span className="text-caption text-slate-500">
                   Application ID: <span className="font-mono text-slate-700">{appDetail.id.slice(0, 8)}...</span>
                 </span>
               </div>
@@ -119,7 +122,7 @@ export function DocumentReviewWorkspaceView({
 
             {/* Verification Progress Meter */}
             <div className="mt-6 pt-5 border-t border-slate-100 space-y-2">
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center justify-between text-caption">
                 <span className="font-bold text-slate-700 flex items-center gap-1.5">
                   <FileCheck className="w-4 h-4 text-indigo-600" />
                   Verification Clearance Progress
@@ -142,7 +145,7 @@ export function DocumentReviewWorkspaceView({
                 />
               </div>
               {appDetail.correctionDocs > 0 && (
-                <p className="text-[11px] text-rose-600 font-semibold flex items-center gap-1">
+                <p className="text-caption text-rose-600 font-semibold flex items-center gap-1">
                   <AlertTriangle className="w-3.5 h-3.5" />
                   {appDetail.correctionDocs} document(s) flagged as requiring correction.
                 </p>
@@ -151,7 +154,7 @@ export function DocumentReviewWorkspaceView({
 
             {/* Prior Correction Notice (Resubmitted Candidate Journey) */}
             {appDetail.documents.some((d) => d.remark && d.verification_status !== 'correction_required') && (
-              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-800">
+              <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5 text-caption text-amber-800">
                 <RotateCcw className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div>
                   <span className="font-bold">Resubmitted Candidate Application:</span> Candidate has uploaded revised
@@ -162,7 +165,7 @@ export function DocumentReviewWorkspaceView({
 
             {/* Resubmission Alert if previous corrections existed */}
             {appDetail.decision_reason && (
-              <div className="mt-4 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+              <div className="mt-4 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-caption text-amber-900 flex items-start gap-2.5">
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div>
                   <span className="font-bold">Previous Remarks / Correction Feedback:</span>
@@ -176,11 +179,11 @@ export function DocumentReviewWorkspaceView({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <h3 className="text-card-heading text-slate-900 flex items-center gap-2">
                   <FileCheck className="w-5 h-5 text-amber-600" />
                   Uploaded Credentials &amp; Verification Documents
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-caption text-slate-500">
                   Physically and digitally cross-reference each document against original certificates.
                 </p>
               </div>
@@ -189,10 +192,10 @@ export function DocumentReviewWorkspaceView({
             {appDetail.documents.length === 0 ? (
               <Card className="p-8 text-center">
                 <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                <p className="text-xs text-slate-600 font-semibold">
+                <p className="text-caption text-slate-600 font-semibold">
                   No uploaded documents found for this candidate yet.
                 </p>
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-caption text-slate-400 mt-1">
                   Documents will appear once candidate finishes Step 9 upload journey.
                 </p>
               </Card>
@@ -216,12 +219,12 @@ export function DocumentReviewWorkspaceView({
                     >
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-2">
-                          <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="text-caption font-bold text-slate-900 flex items-center gap-1.5">
                             <FileText className="w-4 h-4 text-slate-500" />
-                            {formatDocType(doc.type)}
+                            {toTitleCase(formatDocType(doc.type))}
                           </span>
                           <span
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            className={`px-2 py-0.5 rounded-full text-tag ${
                               isVerified
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : isCorrection
@@ -233,15 +236,15 @@ export function DocumentReviewWorkspaceView({
                           </span>
                         </div>
 
-                        <p className="text-[11px] text-slate-500 font-mono break-all">{doc.storage_path}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
+                        <p className="text-caption text-slate-500 font-mono break-all">{doc.storage_path}</p>
+                        <p className="text-caption text-slate-400 mt-0.5">
                           Uploaded on {new Date(doc.uploaded_at).toLocaleDateString()} at{' '}
                           {new Date(doc.uploaded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
 
                         {/* Prior Remark Display */}
                         {doc.remark && (
-                          <div className="mt-3 p-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
+                          <div className="mt-3 p-2 bg-rose-50 border border-rose-200 rounded-lg text-caption text-rose-800">
                             <span className="font-bold">Correction Flag: </span>
                             {doc.remark}
                           </div>
@@ -254,7 +257,7 @@ export function DocumentReviewWorkspaceView({
                             size="small"
                             onClick={() => onPreviewDoc(doc)}
                             leftIcon={<Eye className="w-3.5 h-3.5" />}
-                            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 p-0 h-auto"
+                            className="text-caption font-semibold text-indigo-600 hover:text-indigo-800 p-0 h-auto"
                           >
                             Preview Document
                           </Button>
@@ -265,14 +268,14 @@ export function DocumentReviewWorkspaceView({
                       <div className="mt-4 pt-3 border-t border-slate-100">
                         {form?.isOpen ? (
                           <div className="space-y-2">
-                            <label className="block text-[11px] font-bold text-slate-700">
-                              Reason for Correction <span className="text-rose-600">* (Mandatory)</span>
+                            <label className="block text-caption font-bold text-slate-700">
+                              Reason For Correction <span className="text-rose-600">* (Mandatory)</span>
                             </label>
                             <textarea
                               value={form.reason}
                               onChange={(e) => onReasonChange(doc.id, e.target.value)}
                               placeholder="Explain why this document is rejected/requires re-upload (e.g. Blurry scan, CNIC expired, name mismatch)..."
-                              className="w-full text-xs p-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                              className="w-full text-caption p-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500"
                               rows={2}
                             />
                             <div className="flex items-center justify-end gap-2">
@@ -327,7 +330,7 @@ export function DocumentReviewWorkspaceView({
                                 size="small"
                                 onClick={() => onSimulateResubmit(doc.id)}
                                 title="Simulate candidate re-uploading this section"
-                                className="text-[10px] text-indigo-600 hover:text-indigo-800 underline p-0 h-auto"
+                                className="text-tag text-indigo-600 hover:text-indigo-800 underline p-0 h-auto"
                               >
                                 Simulate Resubmit
                               </Button>
@@ -362,15 +365,15 @@ export function DocumentReviewWorkspaceView({
                   <Stamp className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <h3 className="text-card-heading text-slate-900 flex items-center gap-2">
                     Branch Manager Digital Signature
                     {appDetail.digitalSignature && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                      <span className="px-2 py-0.5 rounded-full text-tag bg-emerald-100 text-emerald-800">
                         Officially Signed
                       </span>
                     )}
                   </h3>
-                  <p className="text-xs text-slate-600 mt-0.5">
+                  <p className="text-caption text-slate-600 mt-0.5">
                     Cryptographic attestation certifying that all presented credentials have been inspected and
                     verified at <span className="font-semibold text-slate-800">{currentUser.branch_name}</span>.
                   </p>
@@ -383,18 +386,18 @@ export function DocumentReviewWorkspaceView({
                 <div className="shrink-0">
                   <VerificationStampSeal
                     stage="branch_signature"
-                    signerName={appDetail.digitalSignature.signerName}
+                    signerName={toTitleCase(appDetail.digitalSignature.signerName)}
                     timestamp={appDetail.digitalSignature.signedAt}
                     code={appDetail.digitalSignature.signatureHash}
                     size="md"
                     showDetails={false}
                   />
                 </div>
-                <div className="space-y-2 flex-1 w-full text-xs">
+                <div className="space-y-2 flex-1 w-full text-caption">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-emerald-100">
                     <div>
                       <span className="font-semibold text-slate-500">Certifying Official: </span>
-                      <span className="font-bold text-slate-900">{appDetail.digitalSignature.signerName}</span>
+                      <span className="font-bold text-slate-900">{toTitleCase(appDetail.digitalSignature.signerName)}</span>
                       <span className="text-slate-500"> (Branch Manager)</span>
                     </div>
                     <div>
@@ -405,14 +408,14 @@ export function DocumentReviewWorkspaceView({
                     </div>
                   </div>
                   <div>
-                    <span className="text-[11px] font-semibold text-slate-500 block">
+                    <span className="text-caption font-semibold text-slate-500 block">
                       SHA-256 Signature Certificate Hash:
                     </span>
-                    <code className="text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg block mt-1 break-all border border-emerald-200">
+                    <code className="text-caption font-mono text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-lg block mt-1 break-all border border-emerald-200">
                       {appDetail.digitalSignature.signatureHash}
                     </code>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold pt-1">
+                  <div className="flex items-center gap-1.5 text-caption text-emerald-700 font-semibold pt-1">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Credentials attested and cryptographic seal bound for Central HR formal review.</span>
                   </div>
@@ -428,10 +431,10 @@ export function DocumentReviewWorkspaceView({
                     onChange={(e) => setSignatureConfirm(e.target.checked)}
                     className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                   />
-                  <label htmlFor="bm-sign-attest" className="text-xs text-slate-700 leading-snug cursor-pointer">
-                    I, <span className="font-bold text-slate-900">{signerName}</span>, hereby certify under
+                  <label htmlFor="bm-sign-attest" className="text-caption text-slate-700 cursor-pointer">
+                    I, <span className="font-bold text-slate-900">{toTitleCase(signerName)}</span>, hereby certify under
                     corporate policy that all {appDetail.totalDocs} required documents have been reviewed for candidate{' '}
-                    <span className="font-bold text-slate-900">{appDetail.candidate?.full_name}</span>.
+                    <span className="font-bold text-slate-900">{appDetail.candidate?.full_name ? toTitleCase(appDetail.candidate.full_name) : ''}</span>.
                   </label>
                 </div>
 
@@ -449,7 +452,7 @@ export function DocumentReviewWorkspaceView({
                 </div>
               </div>
             ) : (
-              <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500">
+              <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200 text-caption text-slate-500">
                 <span className="font-semibold text-slate-700">Action Required: </span>
                 Please mark all {appDetail.totalDocs} documents as Verified or Needs Correction above to enable the
                 digital signature step.
@@ -460,8 +463,8 @@ export function DocumentReviewWorkspaceView({
           {/* 4. ACTIONS BAR */}
           <Card className="p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
-              <span className="text-xs font-bold text-slate-900">Application Dispatch</span>
-              <p className="text-[11px] text-slate-500">
+              <span className="text-caption font-bold text-slate-900">Application Dispatch</span>
+              <p className="text-caption text-slate-500">
                 {appDetail.digitalSignature
                   ? 'Digital signature applied. Ready to advance to Central HR review.'
                   : 'Complete digital signature above to forward to Central HR.'}
@@ -477,7 +480,7 @@ export function DocumentReviewWorkspaceView({
                 leftIcon={<RotateCcw className="w-4 h-4 text-rose-600" />}
                 className="flex-1 sm:flex-none text-rose-700 hover:text-rose-800"
               >
-                Return to Candidate
+                Return To Candidate
               </Button>
 
               <Button
@@ -495,7 +498,7 @@ export function DocumentReviewWorkspaceView({
                 leftIcon={<Send className="w-4 h-4" />}
                 className="flex-1 sm:flex-none"
               >
-                {appDetail.status === 'hr_review' ? 'Already Forwarded to Central HR' : 'Forward to Central HR'}
+                {appDetail.status === 'hr_review' ? 'Already Forwarded To Central HR' : 'Forward To Central HR'}
               </Button>
             </div>
           </Card>

@@ -27,6 +27,7 @@ import {
   undoEmployeeExit,
 } from '../../lib/hrPortalStore';
 import { MarkExitModal } from '../common/MarkExitModal';
+import { toTitleCase } from '../../lib/formatText';
 
 export interface RecordBrowserViewProps {
   org: OrgStructure | null;
@@ -219,7 +220,7 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
       />
 
       {/* Mode Switcher: Employees (with Exit Lifecycle & Exited/Archive) vs Candidate Directory */}
-      <div className="flex border-b border-slate-200 gap-6 text-xs font-semibold overflow-x-auto">
+      <div className="flex border-b border-slate-200 gap-6 text-body font-semibold overflow-x-auto">
         <button
           type="button"
           id="directory-subtab-employees"
@@ -338,43 +339,43 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
                       <TableCell
                         mobileRole="field"
                         mobileLabel="Employee Code"
-                        className="font-mono font-bold text-indigo-700 text-xs"
+                        className="font-mono font-bold text-indigo-700 text-body"
                       >
                         {emp.employeeCode}
                       </TableCell>
                       <TableCell mobileRole="primary">
-                        <span className="font-bold text-slate-900 block">{emp.fullName}</span>
+                        <span className="font-bold text-slate-900 block">{toTitleCase(emp.fullName)}</span>
                       </TableCell>
                       <TableCell
                         mobileRole="field"
                         mobileLabel="Designation"
-                        className="text-slate-700 text-xs"
+                        className="text-slate-700 text-body"
                       >
                         {emp.designation}
                       </TableCell>
                       <TableCell
                         mobileRole="field"
                         mobileLabel="CNIC / Phone"
-                        className="font-mono text-xs text-slate-600"
+                        className="font-mono text-body text-slate-600"
                       >
                         <div>{emp.cnic}</div>
-                        <div className="text-[11px] text-slate-400">{emp.contactNumber}</div>
+                        <div className="text-caption text-slate-400">{emp.contactNumber}</div>
                       </TableCell>
                       <TableCell
                         mobileRole="field"
                         mobileLabel="Branch / Zone"
                         className="text-slate-600"
                       >
-                        <span className="font-medium text-slate-800 block text-xs">
+                        <span className="font-medium text-slate-800 block text-body">
                           {emp.branch}
                         </span>
-                        <span className="text-[11px] text-slate-400 block">{emp.zone}</span>
+                        <span className="text-caption text-slate-400 block">{emp.zone}</span>
                       </TableCell>
                       <TableCell
                         mobileRole="field"
                         mobileLabel="Joining Date"
                         hideOnTablet
-                        className="text-slate-500 font-mono text-xs"
+                        className="text-slate-500 font-mono text-body"
                       >
                         {emp.joiningDate}
                       </TableCell>
@@ -421,7 +422,7 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
                                 if (res.success) {
                                   setNotification({
                                     type: 'success',
-                                    text: `Undid exit for ${emp.fullName} (${emp.employeeCode}). Restored to Active headcount.`,
+                                    text: `Undid exit for ${toTitleCase(emp.fullName)} (${emp.employeeCode}). Restored to Active headcount.`,
                                   });
                                 } else {
                                   setNotification({
@@ -432,7 +433,7 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
                               }}
                               leftIcon={<RotateCcw className="w-3.5 h-3.5 text-indigo-600" />}
                             >
-                              Undo exit
+                              Undo Exit
                             </Button>
                           )}
                         </div>
@@ -574,17 +575,17 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
                       <TableRow key={r.id}>
                         <TableCell mobileRole="primary">
                           <div>
-                            <span className="font-bold text-slate-900 block">{r.full_name}</span>
-                            <span className="text-xs text-slate-500 font-mono">{r.mobile}</span>
+                            <span className="font-bold text-slate-900 block">{toTitleCase(r.full_name)}</span>
+                            <span className="text-caption text-slate-500 font-mono">{r.mobile}</span>
                           </div>
                         </TableCell>
                         <TableCell mobileRole="field" mobileLabel="Joining ID" hideOnTablet>
-                          <span className="font-mono font-bold text-slate-800 text-xs">
+                          <span className="font-mono font-bold text-slate-800 text-body">
                             {r.joining_id}
                           </span>
                         </TableCell>
                         <TableCell mobileRole="field" mobileLabel="Masked CNIC">
-                          <span className="font-mono text-xs text-slate-700 bg-slate-50 px-2 py-1 rounded border border-slate-200 inline-block">
+                          <span className="font-mono text-body text-slate-700 bg-slate-50 px-2 py-1 rounded border border-slate-200 inline-block">
                             {r.masked_cnic}
                           </span>
                         </TableCell>
@@ -593,10 +594,10 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
                           mobileLabel="Zone / Branch"
                           className="text-slate-600"
                         >
-                          <span className="font-medium text-slate-800 block text-xs">
+                          <span className="font-medium text-slate-800 block text-body">
                             {r.zones?.name || '—'}
                           </span>
-                          <span className="text-[11px] text-slate-400 block">
+                          <span className="text-caption text-slate-400 block">
                             {r.branches?.name || '—'}
                           </span>
                         </TableCell>
@@ -607,7 +608,7 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
                           mobileRole="field"
                           mobileLabel="Registered"
                           hideOnTablet
-                          className="text-slate-400 font-mono text-xs"
+                          className="text-slate-400 font-mono text-body"
                         >
                           {new Date(r.created_at).toLocaleDateString()}
                         </TableCell>

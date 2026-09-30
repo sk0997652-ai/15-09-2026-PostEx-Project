@@ -41,6 +41,7 @@ import {
   DocumentPreviewModal,
   ReturnToCandidateModal,
 } from './branch';
+import { toTitleCase } from '../lib/formatText';
 
 interface BranchManagerDashboardProps {
   currentUser: {
@@ -398,11 +399,11 @@ export function BranchManagerDashboard({
                 <Building2 className="w-4 h-4" />
               </div>
               <div className="min-w-0 sm:hidden lg:block">
-                <span className="text-xs uppercase tracking-wider font-bold text-indigo-400">Branch Portal</span>
-                <h2 className="text-sm font-bold text-white leading-snug truncate max-w-[160px]">
+                <span className="text-tag uppercase tracking-wider text-indigo-400">Branch Portal</span>
+                <h2 className="text-card-heading text-white leading-snug truncate max-w-[160px]">
                   {currentUser.branch_name || 'Assigned Branch'}
                 </h2>
-                <span className="text-[11px] text-slate-400 flex items-center gap-1 truncate">
+                <span className="text-caption text-slate-400 flex items-center gap-1 truncate">
                   Zone: {currentUser.zone_name || 'Assigned Zone'}
                 </span>
               </div>
@@ -424,7 +425,7 @@ export function BranchManagerDashboard({
             id="bm-nav-pending"
             title="Pending Verification"
             onClick={() => handleSelectTab('pending_queue')}
-            className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'pending_queue'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -436,7 +437,7 @@ export function BranchManagerDashboard({
             </div>
             {metrics?.pendingVerification !== undefined && metrics.pendingVerification > 0 && (
               <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-bold sm:hidden lg:inline ${
+                className={`px-2 py-0.5 rounded-full text-tag sm:hidden lg:inline ${
                   activeTab === 'pending_queue' ? 'bg-slate-950 text-indigo-200' : 'bg-indigo-500/20 text-indigo-300'
                 }`}
               >
@@ -449,7 +450,7 @@ export function BranchManagerDashboard({
             id="bm-nav-corrections"
             title="Corrections & Resubmissions"
             onClick={() => handleSelectTab('corrections_queue')}
-            className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'corrections_queue'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -461,7 +462,7 @@ export function BranchManagerDashboard({
             </div>
             {metrics?.needsCorrection !== undefined && metrics.needsCorrection > 0 && (
               <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-bold sm:hidden lg:inline ${
+                className={`px-2 py-0.5 rounded-full text-tag sm:hidden lg:inline ${
                   activeTab === 'corrections_queue' ? 'bg-slate-950 text-rose-400' : 'bg-rose-500/20 text-rose-400'
                 }`}
               >
@@ -474,7 +475,7 @@ export function BranchManagerDashboard({
             id="bm-nav-forwarded"
             title="Forwarded to Central HR"
             onClick={() => handleSelectTab('forwarded_queue')}
-            className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'forwarded_queue'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -486,7 +487,7 @@ export function BranchManagerDashboard({
             </div>
             {metrics?.forwardedToCentral !== undefined && metrics.forwardedToCentral > 0 && (
               <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-bold sm:hidden lg:inline ${
+                className={`px-2 py-0.5 rounded-full text-tag sm:hidden lg:inline ${
                   activeTab === 'forwarded_queue' ? 'bg-slate-950 text-indigo-200' : 'bg-indigo-500/20 text-indigo-300'
                 }`}
               >
@@ -499,7 +500,7 @@ export function BranchManagerDashboard({
             id="bm-nav-overview"
             title="Branch Overview & Stats"
             onClick={() => handleSelectTab('branch_overview')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-2.5 px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-2.5 px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'branch_overview'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -513,7 +514,7 @@ export function BranchManagerDashboard({
             id="bm-nav-headcount"
             title="Headcount Management"
             onClick={() => handleSelectTab('headcount')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-2.5 px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-2.5 px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'headcount'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -527,7 +528,7 @@ export function BranchManagerDashboard({
             id="bm-nav-workflow-tracker"
             title="Workflow Tracker"
             onClick={() => handleSelectTab('workflow_tracker')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-2.5 px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-2.5 px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'workflow_tracker'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -541,12 +542,12 @@ export function BranchManagerDashboard({
         {/* User Profile Footer */}
         <div className="p-3 sm:p-2 lg:p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between sm:justify-center lg:justify-between">
           <div className="flex items-center gap-2.5 min-w-0 sm:hidden lg:flex">
-            <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 font-bold text-xs shrink-0">
+            <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 text-tag shrink-0">
               {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'B'}
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-white truncate">{currentUser.name || 'Branch Manager'}</p>
-              <p className="text-[10px] text-slate-400 truncate">{currentUser.email}</p>
+              <p className="text-caption font-semibold text-white truncate">{toTitleCase(currentUser.name || 'Branch Manager')}</p>
+              <p className="text-caption text-slate-400 truncate">{currentUser.email}</p>
             </div>
           </div>
           <button
@@ -567,7 +568,7 @@ export function BranchManagerDashboard({
         {/* Notification Toast */}
         {notificationMsg && (
           <div
-            className={`m-4 p-3.5 rounded-xl border flex items-center justify-between text-xs font-semibold shadow-xs animate-in fade-in duration-200 ${
+            className={`m-4 p-3.5 rounded-xl border flex items-center justify-between text-caption font-semibold shadow-xs animate-in fade-in duration-200 ${
               notificationMsg.type === 'success'
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                 : 'bg-rose-50 border-rose-200 text-rose-800'
@@ -594,10 +595,10 @@ export function BranchManagerDashboard({
         <div className="bg-white border-b border-slate-200 px-6 py-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-[11px] font-bold uppercase tracking-wider mb-1">
+              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-tag uppercase tracking-wider mb-1">
                 Branch Manager Workstation &bull; {currentUser.branch_name || 'Assigned Branch'}
               </div>
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              <h1 className="text-page-title text-slate-900 flex items-center gap-2">
                 {activeTab === 'pending_queue' && 'Branch Manager — Pending Verification Queue'}
                 {activeTab === 'corrections_queue' && 'Branch Manager — Corrections & Resubmissions Queue'}
                 {activeTab === 'forwarded_queue' && 'Branch Manager — Forwarded Applications'}
@@ -605,7 +606,7 @@ export function BranchManagerDashboard({
                 {activeTab === 'headcount' && 'Branch Manager — Branch Headcount (Read-Only)'}
                 {activeTab === 'workflow_tracker' && 'Branch Manager — Workflow Tracker'}
               </h1>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-caption text-slate-500 mt-0.5">
                 {activeTab === 'pending_queue' && 'Conduct in-person document verification, apply digital signature attestation, and forward to Central HR.'}
                 {activeTab === 'corrections_queue' && 'Review corrected candidate documents returned by Central HR for re-verification.'}
                 {activeTab === 'forwarded_queue' && 'Track applications verified by this branch currently awaiting final Central HR enrollment decision.'}
@@ -616,8 +617,8 @@ export function BranchManagerDashboard({
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium shadow-xs hidden sm:inline-block">
-                Logged in as: <strong className="text-slate-900">{currentUser.name}</strong>
+              <span className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-caption font-medium shadow-xs hidden sm:inline-block">
+                Logged in as: <strong className="text-slate-900">{toTitleCase(currentUser.name)}</strong>
               </span>
               <button
                 onClick={() => {
@@ -625,7 +626,7 @@ export function BranchManagerDashboard({
                   if (selectedAppId) loadAppDetail(selectedAppId);
                   else loadApplications(currentPage);
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-caption font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 transition-colors cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Refresh</span>
@@ -636,20 +637,20 @@ export function BranchManagerDashboard({
           {/* Quick Metrics Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
             <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-              <span className="text-[11px] font-semibold text-slate-500">Pending Verification</span>
-              <p className="text-xl font-black text-amber-600 mt-1">{metrics?.pendingVerification ?? 0}</p>
+              <span className="text-table-header text-slate-500">Pending Verification</span>
+              <p className="text-kpi-number text-amber-600 mt-1">{metrics?.pendingVerification ?? 0}</p>
             </div>
             <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-              <span className="text-[11px] font-semibold text-slate-500">Needs Correction</span>
-              <p className="text-xl font-black text-rose-600 mt-1">{metrics?.needsCorrection ?? 0}</p>
+              <span className="text-table-header text-slate-500">Needs Correction</span>
+              <p className="text-kpi-number text-rose-600 mt-1">{metrics?.needsCorrection ?? 0}</p>
             </div>
             <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-              <span className="text-[11px] font-semibold text-slate-500">Forwarded to Central HR</span>
-              <p className="text-xl font-black text-indigo-600 mt-1">{metrics?.forwardedToCentral ?? 0}</p>
+              <span className="text-table-header text-slate-500">Forwarded to Central HR</span>
+              <p className="text-kpi-number text-indigo-600 mt-1">{metrics?.forwardedToCentral ?? 0}</p>
             </div>
             <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-              <span className="text-[11px] font-semibold text-slate-500">Enrolled / Approved</span>
-              <p className="text-xl font-black text-emerald-600 mt-1">{metrics?.approved ?? 0}</p>
+              <span className="text-table-header text-slate-500">Enrolled / Approved</span>
+              <p className="text-kpi-number text-emerald-600 mt-1">{metrics?.approved ?? 0}</p>
             </div>
           </div>
         </div>

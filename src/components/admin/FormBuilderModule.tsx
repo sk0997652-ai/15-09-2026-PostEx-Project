@@ -24,6 +24,7 @@ import {
 } from '../../types/formTemplates';
 import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 import { Button, Input, Select, Textarea } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 export const FormBuilderModule: React.FC = () => {
   const [selectedTrack, setSelectedTrack] = useState<CandidateTrack>('executive');
@@ -278,12 +279,12 @@ export const FormBuilderModule: React.FC = () => {
       {/* Header and Track Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
         <div>
-          <div className="flex items-center gap-2 text-indigo-600 text-xs font-bold uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-indigo-600 text-tag uppercase mb-1">
             <Sliders className="w-4 h-4" />
             <span>Super Admin Dynamic Form Builder</span>
           </div>
-          <h2 className="text-lg font-black text-slate-900">Joining Dossier Template Manager</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h2 className="text-card-heading text-slate-900">Joining Dossier Template Manager</h2>
+          <p className="text-caption text-slate-500 mt-0.5">
             Configure sections, input fields, validations, and tables for both onboarding tracks.
           </p>
         </div>
@@ -293,7 +294,7 @@ export const FormBuilderModule: React.FC = () => {
           <button
             id="tab-track-executive"
             onClick={() => setSelectedTrack('executive')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-lg text-tag transition-all cursor-pointer ${
               selectedTrack === 'executive'
                 ? 'bg-white text-indigo-700 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -304,7 +305,7 @@ export const FormBuilderModule: React.FC = () => {
           <button
             id="tab-track-non-executive"
             onClick={() => setSelectedTrack('non_executive')}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-lg text-tag transition-all cursor-pointer ${
               selectedTrack === 'non_executive'
                 ? 'bg-white text-indigo-700 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -318,7 +319,7 @@ export const FormBuilderModule: React.FC = () => {
       {/* Action Notification */}
       {actionMessage && (
         <div
-          className={`p-3.5 rounded-lg border flex items-center justify-between text-xs font-medium ${
+          className={`p-3.5 rounded-lg border flex items-center justify-between text-caption font-medium ${
             actionMessage.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
               : 'bg-rose-50 border-rose-200 text-rose-800'
@@ -332,7 +333,7 @@ export const FormBuilderModule: React.FC = () => {
             )}
             <span>{actionMessage.text}</span>
           </div>
-          <button onClick={() => setActionMessage(null)} className="text-xs font-bold opacity-60 hover:opacity-100 cursor-pointer">
+          <button onClick={() => setActionMessage(null)} className="text-tag opacity-60 hover:opacity-100 cursor-pointer">
             &times;
           </button>
         </div>
@@ -345,15 +346,15 @@ export const FormBuilderModule: React.FC = () => {
             <FileText className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
+            <div className="text-body font-bold text-slate-900 flex items-center gap-2">
               <span>
                 Active Template: {selectedTrack === 'executive' ? 'Executive Track' : 'Non-Executive Track'}
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-100 text-emerald-800 font-bold">
+              <span className="px-2 py-0.5 rounded-full text-tag font-mono bg-emerald-100 text-emerald-800">
                 v{template?.version || 1}
               </span>
             </div>
-            <p className="text-[11px] text-slate-600 mt-0.5">
+            <p className="text-caption text-slate-600 mt-0.5">
               {selectedTrack === 'executive'
                 ? 'Corporate & management dossier: 12 sections including Education, Employment, Benefits & Referees.'
                 : 'Operational frontline dossier: 8 sections including Employee Info, Address & Family, Academic, References & Job Info.'}
@@ -391,19 +392,19 @@ export const FormBuilderModule: React.FC = () => {
             {/* Section Header */}
             <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold">
+                <span className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-tag">
                   {sIdx + 1}
                 </span>
                 <div>
-                  <h3 className="text-xs font-bold text-slate-900">{section.title}</h3>
+                  <h3 className="text-card-heading text-slate-900">{toTitleCase(section.title)}</h3>
                   {section.description && (
-                    <p className="text-[11px] text-slate-500">{section.description}</p>
+                    <p className="text-caption text-slate-500">{section.description}</p>
                   )}
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-mono text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200">
+                <span className="text-tag font-mono text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200">
                   {section.fields.length} {section.fields.length === 1 ? 'field' : 'fields'}
                 </span>
                 <Button
@@ -460,17 +461,17 @@ export const FormBuilderModule: React.FC = () => {
                     {/* Field Info */}
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-900 truncate">{field.label}</span>
+                        <span className="text-body font-bold text-slate-900 truncate">{toTitleCase(field.label)}</span>
                         {field.is_required && (
-                          <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-100">
+                          <span className="px-1.5 py-0.2 rounded text-tag bg-rose-50 text-rose-600 border border-rose-100">
                             Required
                           </span>
                         )}
-                        <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-slate-100 text-slate-600">
+                        <span className="px-1.5 py-0.2 rounded text-tag font-mono bg-slate-100 text-slate-600">
                           {field.field_type}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-[11px] text-slate-400 font-mono mt-0.5 truncate">
+                      <div className="flex items-center gap-3 text-caption text-slate-400 font-mono mt-0.5 truncate">
                         <span>key: {field.field_key}</span>
                         {field.placeholder && <span>• placeholder: "{field.placeholder}"</span>}
                         {field.options && field.options.length > 0 && (
@@ -506,7 +507,7 @@ export const FormBuilderModule: React.FC = () => {
               ))}
 
               {section.fields.length === 0 && (
-                <div className="p-6 text-center text-xs text-slate-400">
+                <div className="p-6 text-center text-caption text-slate-400">
                   No fields in this section yet. Click "Add Field" to create one.
                 </div>
               )}
@@ -520,7 +521,7 @@ export const FormBuilderModule: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-card-heading text-slate-900">
                 {fieldModal.mode === 'create' ? 'Add New Form Field' : 'Edit Form Field'}
               </h3>
               <Button
@@ -533,7 +534,7 @@ export const FormBuilderModule: React.FC = () => {
               </Button>
             </div>
 
-            <form onSubmit={handleSaveField} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveField} className="space-y-4 text-body">
               <Input
                 id="input-field-label"
                 label="Field Label *"
@@ -684,7 +685,7 @@ export const FormBuilderModule: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-bold text-slate-900">Add New Section</h3>
+              <h3 className="text-card-heading text-slate-900">Add New Section</h3>
               <Button
                 variant="ghost"
                 size="small"
@@ -695,7 +696,7 @@ export const FormBuilderModule: React.FC = () => {
               </Button>
             </div>
 
-            <form onSubmit={handleSaveSection} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveSection} className="space-y-4 text-body">
               <Input
                 id="input-section-title"
                 label="Section Title *"

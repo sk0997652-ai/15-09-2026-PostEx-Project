@@ -16,6 +16,7 @@ import {
   Badge,
 } from '../ui';
 import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
+import { toTitleCase } from '../../lib/formatText';
 
 // Friendly human-readable labels for all 18 system permissions
 export const PERMISSION_LABELS: Record<string, { label: string; description: string }> = {
@@ -193,8 +194,8 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
         {/* Staff Member Search & Selection Column */}
         <Card className="p-4 flex flex-col h-fit">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-bold text-slate-900">Find Staff Member</h3>
-            <span className="text-[11px] text-slate-400">
+            <h3 className="text-caption font-bold text-slate-900">Find Staff Member</h3>
+            <span className="text-caption text-slate-400">
               {filteredStaffList.length} found
             </span>
           </div>
@@ -223,8 +224,8 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
                 }`}
               >
                 <div className="min-w-0 pr-2">
-                  <span className="text-xs block font-medium truncate">{s.name}</span>
-                  <span className="text-[11px] text-slate-500 block truncate">{s.email}</span>
+                  <span className="text-caption block font-medium truncate">{toTitleCase(s.name)}</span>
+                  <span className="text-caption text-slate-500 block truncate">{s.email}</span>
                   <div className="flex items-center gap-1.5 mt-1">
                     <Badge variant="primary" size="sm">
                       {s.roles?.name || 'Staff'}
@@ -239,7 +240,7 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
             ))}
 
             {filteredStaffList.length === 0 && (
-              <div className="p-6 text-center text-xs text-slate-400">
+              <div className="p-6 text-center text-caption text-slate-400">
                 No staff members match "{permissionStaffSearch}".
               </div>
             )}
@@ -255,12 +256,12 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-slate-900">{selectedStaffForOverride.name}</h3>
+                      <h3 className="text-body font-bold text-slate-900">{toTitleCase(selectedStaffForOverride.name)}</h3>
                       <Badge variant={selectedStaffForOverride.is_active ? 'success' : 'error'} size="sm" dot>
                         {selectedStaffForOverride.is_active ? 'Active' : 'Suspended'}
                       </Badge>
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5">{selectedStaffForOverride.email}</p>
+                    <p className="text-caption text-slate-500 mt-0.5">{selectedStaffForOverride.email}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="primary">
@@ -270,21 +271,21 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
                 </div>
 
                 {/* Profile Details Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 text-caption">
                   <div>
-                    <span className="text-slate-400 text-[11px] block">Role</span>
+                    <span className="text-slate-400 text-caption block">Role</span>
                     <span className="font-semibold text-slate-800">{selectedStaffForOverride.roles?.name || '—'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-[11px] block">Zone</span>
+                    <span className="text-slate-400 text-caption block">Zone</span>
                     <span className="font-semibold text-slate-800">{selectedStaffForOverride.zones?.name || 'All Zones (HQ)'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-[11px] block">Branch</span>
+                    <span className="text-slate-400 text-caption block">Branch</span>
                     <span className="font-semibold text-slate-800">{selectedStaffForOverride.branches?.name || 'All Branches'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 text-[11px] block">Active Overrides</span>
+                    <span className="text-slate-400 text-caption block">Active Overrides</span>
                     <span className="font-semibold text-indigo-600">{staffOverrides.length} customized</span>
                   </div>
                 </div>
@@ -294,12 +295,12 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
               <Card className="p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-xs font-bold text-slate-900">System Permissions Checklist</h3>
-                    <p className="text-[11px] text-slate-500">
+                    <h3 className="text-caption font-bold text-slate-900">System Permissions Checklist</h3>
+                    <p className="text-caption text-slate-500">
                       Check to grant, uncheck to revoke. Overrides from role default are flagged automatically.
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px]">
+                  <div className="flex items-center gap-2 text-caption">
                     <span className="flex items-center gap-1 text-slate-500">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Granted
                     </span>
@@ -325,7 +326,7 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
                         <label
                           key={perm.id}
                           htmlFor={`perm-checkbox-${perm.key}`}
-                          className={`p-3 rounded-lg border text-xs flex items-start gap-3 cursor-pointer transition-all ${
+                          className={`p-3 rounded-lg border text-caption flex items-start gap-3 cursor-pointer transition-all ${
                             isChecked
                               ? 'bg-white border-indigo-200 shadow-xs ring-1 ring-indigo-50'
                               : 'bg-white/60 border-slate-200 opacity-85 hover:opacity-100'
@@ -340,10 +341,10 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-1">
-                              <span className="font-bold text-slate-900 block truncate">{meta.label}</span>
+                              <span className="font-bold text-slate-900 block truncate">{toTitleCase(meta.label)}</span>
                               {isOverride && (
                                 <span
-                                  className={`text-[9px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider ${
+                                  className={`text-tag px-1.5 py-0.5 rounded uppercase ${
                                     isChecked
                                       ? 'bg-amber-100 text-amber-800'
                                       : 'bg-rose-100 text-rose-800'
@@ -353,10 +354,10 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
                                 </span>
                               )}
                             </div>
-                            <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2 leading-tight">
+                            <p className="text-caption text-slate-500 mt-0.5 line-clamp-2">
                               {meta.description}
                             </p>
-                            <span className="text-[10px] text-slate-400 font-mono block mt-1">
+                            <span className="text-caption text-slate-400 font-mono block mt-1">
                               Key: {perm.key} {isRoleDefault ? '• (Role Default)' : ''}
                             </span>
                           </div>
@@ -367,10 +368,10 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
 
                   {/* Mandatory Reason Input */}
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                    <label className="text-xs font-bold text-slate-800 block mb-1">
-                      Reason for permission change <span className="text-rose-600">* [MANDATORY]</span>
+                    <label className="text-caption font-bold text-slate-800 block mb-1">
+                      Reason For Permission Change <span className="text-rose-600">* [MANDATORY]</span>
                     </label>
-                    <p className="text-[11px] text-slate-500 mb-2">
+                    <p className="text-caption text-slate-500 mb-2">
                       Every permission update creates an immutable entry in the system audit trail. Please provide a clear operational justification.
                     </p>
                     <Input
@@ -391,7 +392,7 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
                       size="sm"
                       onClick={() => handleSelectStaffForOverride(selectedStaffForOverride)}
                     >
-                      Reset to Current
+                      Reset To Current
                     </Button>
                     <Button
                       id="save-user-permissions-btn"
@@ -410,10 +411,10 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
               {/* Active Individual Overrides List */}
               <Card className="p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs font-bold text-slate-900">
-                    Specific Overrides for {selectedStaffForOverride.name} ({staffOverrides.length})
+                  <h3 className="text-caption font-bold text-slate-900">
+                    Specific Overrides For {toTitleCase(selectedStaffForOverride.name)} ({staffOverrides.length})
                   </h3>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-caption text-slate-400">
                     These explicit overrides deviate from role defaults
                   </span>
                 </div>
@@ -421,7 +422,7 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
                 {staffOverrides.length > 0 ? (
                   <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
                     {staffOverrides.map((ov) => (
-                      <div key={ov.id} className="p-3 flex items-center justify-between text-xs bg-white">
+                      <div key={ov.id} className="p-3 flex items-center justify-between text-caption bg-white">
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-mono font-bold text-slate-900">{ov.permissions?.key}</span>
@@ -429,7 +430,7 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
                               {ov.granted ? 'Explicit Grant' : 'Explicit Revoke'}
                             </Badge>
                           </div>
-                          <p className="text-slate-600 text-[11px] mt-0.5">
+                          <p className="text-slate-600 text-caption mt-0.5">
                             <span className="font-semibold text-slate-700">Reason:</span> {ov.reason}
                           </p>
                         </div>
@@ -447,14 +448,14 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs text-slate-400 italic">
+                  <p className="text-caption text-slate-400 italic">
                     No specific overrides applied. Standard role permissions govern this user.
                   </p>
                 )}
               </Card>
             </>
           ) : (
-            <div className="p-12 text-center border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-xs">
+            <div className="p-12 text-center border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-caption">
               Select a staff member from the search list on the left to view their profile and manage their permissions.
             </div>
           )}
@@ -467,11 +468,11 @@ export const UserPermissionsView: React.FC<UserPermissionsViewProps> = ({
         title="Remove Permission Override"
         itemName={deleteModalState.permissionKey}
         itemType="Override"
-        contextInfo={`Staff Member: ${selectedStaffForOverride?.name || ''}`}
+        contextInfo={`Staff Member: ${selectedStaffForOverride?.name ? toTitleCase(selectedStaffForOverride.name) : ''}`}
         warningMessage="Removing this override will revert the user's access for this permission to their role default."
         requireReason={true}
         reasonPlaceholder="State the justification for reverting this override (mandatory for audit log)..."
-        confirmButtonLabel="Yes, Revert to Role Default"
+        confirmButtonLabel="Yes, Revert To Role Default"
         isDeleting={deleteModalState.isDeleting}
         onConfirm={handleConfirmDeleteOverride}
         onCancel={() => setDeleteModalState((prev) => ({ ...prev, open: false }))}

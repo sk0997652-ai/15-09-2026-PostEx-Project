@@ -15,6 +15,7 @@ import {
 import { useI18n, LanguageSelector } from '../../lib/i18n';
 import { VerificationStampSeal } from '../common/VerificationStampSeal';
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge, StatusBadge, PageHeader } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface StatusTrackerProps {
   candidate: {
@@ -126,10 +127,10 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
           />
           <div className="space-y-1">
             <StatusBadge status="approved" size="sm" />
-            <h3 className="text-base font-black text-slate-900">
-              Welcome to the PostEx Team!
+            <h3 className="text-card-heading text-slate-900">
+              {toTitleCase('Welcome to the PostEx Team!')}
             </h3>
-            <p className="text-xs text-slate-600 max-w-md leading-relaxed">
+            <p className="text-caption text-slate-600 max-w-md">
               Your onboarding application has been formally approved and enrolled. Official corporate seals and verification stamps have been applied to your permanent employee record.
             </p>
           </div>
@@ -142,11 +143,11 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
             <div className="space-y-1.5 flex-1">
-              <h3 className="text-xs font-bold text-amber-950 uppercase tracking-wide">
-                {t('tracker.correctionNotice')}
+              <h3 className="text-card-heading text-amber-950">
+                {toTitleCase(t('tracker.correctionNotice'))}
               </h3>
               {application?.decision_reason && (
-                <div className="p-3 bg-white/90 rounded-xl border border-amber-200 text-xs text-slate-800 mt-2">
+                <div className="p-3 bg-white/90 rounded-xl border border-amber-200 text-body text-slate-800 mt-2">
                   <span className="font-semibold text-amber-900 block mb-1">{t('tracker.remarksTitle')}</span>
                   <p className="font-medium text-slate-700">{application.decision_reason}</p>
                 </div>
@@ -166,7 +167,7 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
 
       {/* 4-Stage Stepper Progression */}
       <Card className="rounded-2xl border-slate-200 p-6 mb-6">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-6">
+        <h3 className="text-card-heading text-slate-700 mb-6">
           Onboarding Lifecycle Stages
         </h3>
 
@@ -207,7 +208,7 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
                 <div className="flex-1 pt-1 pb-4">
                   <div className="flex items-center justify-between">
                     <h4
-                      className={`text-sm font-bold ${
+                      className={`text-card-heading ${
                         stg.isCurrent
                           ? 'text-indigo-900'
                           : stg.isCompleted
@@ -215,7 +216,7 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
                           : 'text-slate-400'
                       }`}
                     >
-                      {stg.title}
+                      {toTitleCase(stg.title)}
                     </h4>
                     {stg.isCompleted && (
                       <StatusBadge status="approved" customLabel="Verified • Complete" />
@@ -230,7 +231,7 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
                       <StatusBadge status="draft" customLabel="Pending" dot={false} />
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  <p className="text-caption text-slate-500 mt-1">
                     {stg.desc}
                   </p>
                 </div>
@@ -244,14 +245,14 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
       <Card className="rounded-2xl border-slate-200 p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Building2 className="w-5 h-5 text-indigo-600" />
-          <h3 className="text-sm font-bold text-slate-900">{t('tracker.assignedBranch')}</h3>
+          <h3 className="text-card-heading text-slate-900">{toTitleCase(t('tracker.assignedBranch'))}</h3>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-caption">
           <div className="flex items-start gap-2">
             <Building2 className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
             <div>
-              <span className="font-bold text-slate-800 text-sm">
+              <span className="font-bold text-slate-800 text-body">
                 {candidate.branches?.name || 'PostEx Regional Branch Hub'}
               </span>
               <p className="text-slate-500 mt-0.5">
@@ -259,7 +260,7 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
               </p>
             </div>
           </div>
-          <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-600">
+          <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-caption text-slate-600">
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>Working Hours: Mon–Sat, 9:00 AM – 6:00 PM</span>

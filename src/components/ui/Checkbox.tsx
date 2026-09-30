@@ -27,13 +27,13 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             {...props}
           />
           {(label || description) && (
-            <div className="flex-1 text-xs">
-              {label && <span className="font-medium text-slate-800 leading-snug block">{label}</span>}
-              {description && <span className="text-slate-500 text-[11px] block mt-0.5">{description}</span>}
+            <div className="flex-1 text-body">
+              {label && <span className="font-medium text-slate-800 block">{label}</span>}
+              {description && <span className="text-slate-500 text-caption block mt-0.5">{description}</span>}
             </div>
           )}
         </label>
-        {error && <p className="text-xs font-medium text-rose-600">{error}</p>}
+        {error && <p className="text-caption font-medium text-rose-600">{error}</p>}
       </div>
     );
   }

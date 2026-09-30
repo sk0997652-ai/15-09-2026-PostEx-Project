@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { ShieldCheck, CheckCircle2, Award, FileCheck } from 'lucide-react';
+import { toTitleCase } from '../../lib/formatText';
 
 export type VerificationStage = 'candidate_signature' | 'branch_signature' | 'central_approval';
 
@@ -97,22 +98,22 @@ export const VerificationStampSeal: React.FC<VerificationStampSealProps> = ({
       outer: 'w-16 h-16',
       inner: 'w-13 h-13',
       icon: 'w-6 h-6',
-      title: 'text-xs font-bold',
-      sub: 'text-[10px]',
+      title: 'text-caption font-bold',
+      sub: 'text-tag',
     },
     md: {
       outer: 'w-22 h-22 sm:w-24 sm:h-24',
       inner: 'w-18 h-18 sm:w-20 sm:h-20',
       icon: 'w-8 h-8 sm:w-9 sm:h-9',
-      title: 'text-sm sm:text-base font-black',
-      sub: 'text-xs',
+      title: 'text-card-heading',
+      sub: 'text-caption',
     },
     lg: {
       outer: 'w-28 h-28 sm:w-32 sm:h-32',
       inner: 'w-24 h-24 sm:w-28 sm:h-28',
       icon: 'w-10 h-10 sm:w-12 sm:h-12',
-      title: 'text-base sm:text-lg font-black',
-      sub: 'text-xs sm:text-sm',
+      title: 'text-card-heading',
+      sub: 'text-body',
     },
   }[size];
 
@@ -155,7 +156,7 @@ export const VerificationStampSeal: React.FC<VerificationStampSealProps> = ({
             className={`${sealDimensions.inner} rounded-full border-2 ${config.sealBorder} flex flex-col items-center justify-center relative p-1 bg-gradient-to-br from-white to-slate-50`}
           >
             {/* Top Star Accent */}
-            <div className="absolute top-1 text-[8px] text-indigo-700 tracking-widest font-black">
+            <div className="absolute top-1 text-caption text-indigo-700 font-bold">
               ★ ★ ★
             </div>
 
@@ -164,7 +165,7 @@ export const VerificationStampSeal: React.FC<VerificationStampSealProps> = ({
 
             {/* Bottom Verified Label */}
             <span
-              className={`text-[8px] font-black tracking-widest uppercase ${config.accentColor} absolute bottom-1 px-1 font-mono`}
+              className={`text-caption font-bold uppercase ${config.accentColor} absolute bottom-1 px-1 font-mono`}
             >
               VERIFIED
             </span>
@@ -173,7 +174,7 @@ export const VerificationStampSeal: React.FC<VerificationStampSealProps> = ({
 
         {/* Small "OFFICIAL SEAL" Ribbon Badge */}
         <div
-          className={`absolute -bottom-2 px-2.5 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase bg-white border border-slate-200 shadow-2xs ${config.textColor} flex items-center gap-1`}
+          className={`absolute -bottom-2 px-2.5 py-0.5 rounded-full text-caption font-bold uppercase bg-white border border-slate-200 shadow-2xs ${config.textColor} flex items-center gap-1`}
         >
           <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
           <span>OFFICIAL SEAL</span>
@@ -183,22 +184,22 @@ export const VerificationStampSeal: React.FC<VerificationStampSealProps> = ({
       {/* Optional Accompanying Verification Certificate Text */}
       {showDetails && (
         <div className="text-center mt-3 max-w-sm space-y-1">
-          <h4 className={`${sealDimensions.title} ${config.textColor} tracking-tight`}>
-            {displayTitle}
+          <h4 className={`${sealDimensions.title} ${config.textColor}`}>
+            {toTitleCase(displayTitle)}
           </h4>
-          <p className={`${sealDimensions.sub} text-slate-500 leading-snug`}>
+          <p className={`${sealDimensions.sub} text-slate-500`}>
             {displaySubtitle}
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
             {displaySigner && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
+              <span className="inline-flex items-center gap-1 text-tag text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
                 <span>By:</span>
-                <strong className="text-slate-900">{displaySigner}</strong>
+                <strong className="text-slate-900">{toTitleCase(displaySigner)}</strong>
               </span>
             )}
             {timestamp && (
-              <span className="text-[11px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+              <span className="text-tag font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
                 {new Date(timestamp).toLocaleDateString(undefined, {
                   month: 'short',
                   day: 'numeric',
@@ -210,7 +211,7 @@ export const VerificationStampSeal: React.FC<VerificationStampSealProps> = ({
 
           {code && (
             <div className="pt-1">
-              <span className="text-[10px] font-mono text-slate-400 block truncate max-w-[260px] mx-auto">
+              <span className="text-table-header font-mono text-slate-400 block truncate max-w-[260px] mx-auto">
                 Cert: {code}
               </span>
             </div>

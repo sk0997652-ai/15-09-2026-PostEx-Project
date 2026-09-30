@@ -18,6 +18,7 @@ import { Building2, Shield, Users, Smartphone, Activity, Lock, Wrench, ChevronDo
 import { ComponentLibraryShowcase } from './components/ui/ComponentLibraryShowcase';
 import { Button } from './components/ui';
 import { useBranding } from './lib/branding';
+import { toTitleCase } from './lib/formatText';
 
 export default function App() {
   const { companyName, portalName, logoUrl, loginBgUrl, defaultLoginBg } = useBranding();
@@ -120,7 +121,7 @@ export default function App() {
               </div>
             )}
             <div className="min-w-0">
-              <span className="text-sm sm:text-base font-bold tracking-tight text-white flex items-center gap-2 truncate">
+              <span className="text-card-heading tracking-tight text-white flex items-center gap-2 truncate">
                 <span className="truncate">{companyName || portalName}</span>
                 <span className="text-slate-400 font-normal hidden md:inline">| HR Onboarding Portal</span>
               </span>
@@ -141,18 +142,18 @@ export default function App() {
                   <span className="w-2 h-2 rounded-full bg-indigo-500 absolute top-1.5 right-1.5" />
                 </button>
 
-                <div className="flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs max-w-[160px] sm:max-w-none">
-                  <div className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-caption max-w-[160px] sm:max-w-none">
+                  <div className="w-5 h-5 rounded-full bg-indigo-600 text-white text-tag flex items-center justify-center shrink-0">
                     {(currentUser.name || currentUser.email || 'U').charAt(0).toUpperCase()}
                   </div>
                   <span className="font-semibold text-slate-200 truncate hidden sm:inline">
-                    {currentUser.name || currentUser.email}
+                    {currentUser.name ? toTitleCase(currentUser.name) : currentUser.email}
                   </span>
-                  <span className="text-indigo-400 font-mono text-[10px] sm:text-[11px] font-bold uppercase truncate">
+                  <span className="text-indigo-400 font-mono text-tag uppercase truncate">
                     {currentUser.role?.replace(/_/g, ' ')}
                   </span>
                   {currentUser.zone_name && (
-                    <span className="text-slate-400 text-[10px] hidden lg:inline">
+                    <span className="text-slate-400 text-caption hidden lg:inline">
                       ({currentUser.zone_name})
                     </span>
                   )}
@@ -177,8 +178,8 @@ export default function App() {
                 </Button>
 
                 {showDevMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-1.5 z-40 text-xs space-y-1">
-                    <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-1.5 z-40 text-caption space-y-1">
+                    <div className="px-2 py-1 text-table-header text-slate-400 uppercase tracking-wider">
                       Step Diagnostics (Super Admin Only)
                     </div>
                     <Button
@@ -282,15 +283,15 @@ export default function App() {
         ) : activeDevTab === 'connectivity' ? (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
             <div className="mb-4">
-              <h2 className="text-lg font-bold text-slate-900">Backend Diagnostics &amp; Status</h2>
-              <p className="text-xs text-slate-500">Live connection check for database and authentication services.</p>
+              <h2 className="text-card-heading text-slate-900">Backend Diagnostics &amp; Status</h2>
+              <p className="text-caption text-slate-500">Live connection check for database and authentication services.</p>
             </div>
             <ConnectivityStatus />
           </div>
         ) : activeDevTab === 'auth' ? (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
             <div className="text-center max-w-xl mx-auto mb-6">
-              <h2 className="text-2xl font-black text-slate-900 tracking-tight">Portal Access Verification</h2>
+              <h2 className="text-page-title text-slate-900">Portal Access Verification</h2>
               <div className="mt-5 inline-flex p-1 bg-slate-200/80 rounded-xl border border-slate-300 gap-1">
                 <Button
                   variant={authPortalType === 'staff' ? 'secondary' : 'secondary'}
@@ -365,14 +366,14 @@ export default function App() {
                   <UserCheck className="w-7 h-7" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">Welcome, {currentUser.name}</h2>
-                  <p className="text-xs text-slate-500 font-mono mt-1">{currentUser.email}</p>
+                  <h2 className="text-card-heading text-slate-900">Welcome, {toTitleCase(currentUser.name)}</h2>
+                  <p className="text-caption text-slate-500 font-mono mt-1">{currentUser.email}</p>
                 </div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-semibold">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800 text-tag">
                   <span>Role: {currentUser.role?.replace(/_/g, ' ').toUpperCase()}</span>
                   {currentUser.zone_name && <span>&bull; {currentUser.zone_name}</span>}
                 </div>
-                <p className="text-xs text-slate-600 max-w-md mx-auto">
+                <p className="text-caption text-slate-600 max-w-md mx-auto">
                   You are authenticated with an active enterprise session. Your account does not have a designated workstation role assigned. Please contact the Super Admin for role assignment.
                 </p>
                 <div className="pt-4 border-t border-slate-100 flex justify-center">
@@ -445,7 +446,7 @@ export default function App() {
               </div>
 
               {/* Subtle Footer Bar */}
-              <div className="relative z-10 py-3 text-center text-xs text-slate-300/80 bg-slate-950/40 backdrop-blur-xs border-t border-white/10">
+              <div className="relative z-10 py-3 text-center text-caption text-slate-300/80 bg-slate-950/40 backdrop-blur-xs border-t border-white/10">
                 {companyName || 'PostEx'} &bull; Enterprise HR Onboarding &amp; Dossier Verification Portal
               </div>
             </div>
@@ -455,7 +456,7 @@ export default function App() {
 
       {/* Footer (shown when authenticated) */}
       {currentUser && (
-        <footer className="border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-500">
+        <footer className="border-t border-slate-200 bg-white py-4 text-center text-caption text-slate-500">
           {companyName || 'PostEx'} HR Onboarding Portal &bull; Enterprise HR System
         </footer>
       )}

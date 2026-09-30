@@ -23,6 +23,7 @@ import {
   TablePagination,
   TableToolbar,
 } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface ApplicationsQueueViewProps {
   applications: BranchApplicationSummary[];
@@ -143,7 +144,7 @@ export function ApplicationsQueueView({
             >
               Search
             </Button>
-            <span className="text-xs text-slate-500 hidden sm:inline">
+            <span className="text-caption text-slate-500 hidden sm:inline">
               Showing <span className="font-bold text-slate-800">{filteredApps.length}</span> of{' '}
               {totalApps}
             </span>
@@ -156,15 +157,15 @@ export function ApplicationsQueueView({
         {loading ? (
           <div className="p-12 text-center">
             <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-3" />
-            <p className="text-xs text-slate-600 font-medium">Loading branch applications...</p>
+            <p className="text-caption text-slate-600 font-medium">Loading branch applications...</p>
           </div>
         ) : applications.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <div className="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600 mx-auto">
               <Clock className="w-6 h-6" />
             </div>
-            <h3 className="text-sm font-bold text-slate-900">No applications in this queue</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            <h3 className="text-card-heading text-slate-900">{toTitleCase('No Applications In This Queue')}</h3>
+            <p className="text-caption text-slate-500 max-w-sm mx-auto">
               There are currently no candidates awaiting action in this branch queue. Click below to generate a test candidate.
             </p>
             <Button
@@ -206,9 +207,9 @@ export function ApplicationsQueueView({
                     <TableRow key={app.id}>
                       <TableCell mobileRole="primary">
                         <span className="font-bold text-slate-900 block">
-                          {cand?.full_name || 'Unnamed'}
+                          {toTitleCase(cand?.full_name || 'Unnamed')}
                         </span>
-                        <span className="text-[11px] text-slate-500 font-mono">
+                        <span className="text-caption text-slate-500 font-mono">
                           {cand?.mobile || 'No mobile'}
                         </span>
                       </TableCell>
@@ -233,7 +234,7 @@ export function ApplicationsQueueView({
                           {app.documents_verified} / {app.documents_total} Verified
                         </span>
                         {app.documents_correction_required > 0 && (
-                          <span className="block text-[10px] text-rose-600 font-semibold">
+                          <span className="block text-tag text-rose-600">
                             {app.documents_correction_required} flagged
                           </span>
                         )}

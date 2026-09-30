@@ -150,7 +150,7 @@ export function AddStaffModal({
         >
           <div className="flex items-center gap-2 pb-2 border-b border-slate-200/80">
             <User className="w-4 h-4 text-indigo-600 shrink-0" />
-            <span className="font-bold text-slate-900 uppercase tracking-wider text-xs">
+            <span className="text-tag text-slate-900 uppercase">
               Section A — Personal
             </span>
           </div>
@@ -196,11 +196,11 @@ export function AddStaffModal({
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/80">
             <div className="flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-indigo-600 shrink-0" />
-              <span className="font-bold text-slate-900 uppercase tracking-wider text-xs">
+              <span className="text-tag text-slate-900 uppercase">
                 Section B — Employment Identity
               </span>
             </div>
-            <span className="text-xs text-slate-500">
+            <span className="text-caption text-slate-500">
               Staff ID sequence (separate from EMP-branch candidate IDs)
             </span>
           </div>
@@ -267,11 +267,11 @@ export function AddStaffModal({
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/80">
             <div className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-indigo-600 shrink-0" />
-              <span className="font-bold text-slate-900 uppercase tracking-wider text-xs">
+              <span className="text-tag text-slate-900 uppercase">
                 Section C — System Access
               </span>
             </div>
-            <span className="text-xs text-slate-500">
+            <span className="text-caption text-slate-500">
               One-time temporary password generated on creation
             </span>
           </div>
@@ -287,7 +287,7 @@ export function AddStaffModal({
               placeholder="e.g. usman.tariq@postex.pk"
             />
 
-            <div className="p-3.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-600 leading-relaxed md:mt-6">
+            <div className="p-3.5 rounded-lg bg-white border border-slate-200 text-caption text-slate-600 md:mt-6">
               A random 14-character password meeting company policy will be generated and shown once. The user will be forced to change it on first login.
             </div>
           </div>
@@ -301,11 +301,11 @@ export function AddStaffModal({
           <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/80">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-indigo-600 shrink-0" />
-              <span className="font-bold text-slate-900 uppercase tracking-wider text-xs">
+              <span className="text-tag text-slate-900 uppercase">
                 Section D — Role &amp; Scope Assignment
               </span>
             </div>
-            <span className="text-xs text-slate-500">
+            <span className="text-caption text-slate-500">
               Zonal HR is authorized to provision Central HR &amp; Branch Managers
             </span>
           </div>
@@ -346,12 +346,12 @@ export function AddStaffModal({
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <span className="font-bold text-slate-800 block text-xs">
+                <span className="font-bold text-slate-800 block text-body">
                   Branch Tagging Checklist ({zoneDisplayName})
                 </span>
                 <span
                   id="zonal-branch-tag-counter"
-                  className="text-xs font-semibold text-indigo-700"
+                  className="text-caption font-semibold text-indigo-700"
                 >
                   {effectiveBranchIds.length} of {zoneBranches.length} branches selected
                 </span>
@@ -359,7 +359,7 @@ export function AddStaffModal({
 
               <div className="flex items-center gap-3">
                 {isBranchManager && (
-                  <label className="inline-flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+                  <label className="inline-flex items-center gap-1.5 text-caption text-slate-600 cursor-pointer">
                     <input
                       id="zonal-bm-single-branch-toggle"
                       type="checkbox"
@@ -374,7 +374,7 @@ export function AddStaffModal({
                       }}
                       className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
-                    <span>Single-branch default</span>
+                    <span>Single-Branch Default</span>
                   </label>
                 )}
 
@@ -385,7 +385,7 @@ export function AddStaffModal({
                     variant="secondary"
                     size="sm"
                     onClick={handleSelectAllBranches}
-                    className="py-1.5 px-3 text-xs"
+                    className="py-1.5 px-3 text-tag"
                   >
                     {zoneBranches.every((b) => effectiveBranchIds.includes(b.id))
                       ? 'Clear All'
@@ -396,7 +396,7 @@ export function AddStaffModal({
             </div>
 
             {zoneBranches.length === 0 ? (
-              <div className="py-4 text-center text-slate-400 text-xs">
+              <div className="py-4 text-center text-slate-400 text-caption">
                 No branches found in {zoneDisplayName}.
               </div>
             ) : (
@@ -407,7 +407,7 @@ export function AddStaffModal({
                     <label
                       key={br.id}
                       htmlFor={`zonal-branch-tag-checkbox-${br.id}`}
-                      className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition-colors ${
+                      className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-body cursor-pointer transition-colors ${
                         isChecked
                           ? 'bg-indigo-50/70 border-indigo-300 text-indigo-950 font-semibold'
                           : 'bg-slate-50/50 border-slate-200 text-slate-700 hover:bg-slate-100/70'
@@ -423,7 +423,7 @@ export function AddStaffModal({
                       <div className="min-w-0 flex-1">
                         <span className="block truncate">{br.name}</span>
                         {br.branch_code && (
-                          <span className="text-[11px] text-slate-500 font-mono">
+                          <span className="text-caption text-slate-500 font-mono">
                             {br.branch_code} {br.branch_type ? `· ${br.branch_type}` : ''}
                           </span>
                         )}

@@ -205,7 +205,7 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
           <TableBody>
             {zoneRows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8 text-xs text-slate-500">
+                <TableCell colSpan={10} className="text-center py-8 text-caption text-slate-500">
                   No zones configured yet. Create zones and headcount entries to view rollups.
                 </TableCell>
               </TableRow>
@@ -218,34 +218,34 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
                   className="cursor-pointer hover:bg-indigo-50/40"
                 >
                   <TableCell mobileRole="primary">
-                    <div className="flex items-center gap-2 font-semibold text-xs text-slate-900">
+                    <div className="flex items-center gap-2 font-semibold text-body text-slate-900">
                       <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                       <span>{z.zone_name}</span>
                     </div>
-                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                    <div className="text-caption text-slate-400 font-mono mt-0.5">
                       {z.zone_code || 'NO-CODE'} {z.region ? `· ${z.region}` : ''}
                     </div>
                   </TableCell>
-                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Branches" className="md:text-right font-mono text-xs text-slate-700">
+                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Branches" className="md:text-right font-mono text-body text-slate-700">
                     {z.branches_count}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Rider (Appr / Act / Vac)" className="md:text-right font-mono text-xs">
+                  <TableCell mobileRole="field" mobileLabel="Rider (Appr / Act / Vac)" className="md:text-right font-mono text-body">
                     <span className="text-slate-700">{z.rider.approved}</span> /{' '}
                     <span className="font-bold text-sky-700">{z.rider.active}</span> /{' '}
                     <span className="text-amber-700">{z.rider.vacancy}</span>
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="In-House (Appr / Act / Vac)" className="md:text-right font-mono text-xs">
+                  <TableCell mobileRole="field" mobileLabel="In-House (Appr / Act / Vac)" className="md:text-right font-mono text-body">
                     <span className="text-slate-700">{z.in_house.approved}</span> /{' '}
                     <span className="font-bold text-emerald-700">{z.in_house.active}</span> /{' '}
                     <span className="text-amber-700">{z.in_house.vacancy}</span>
                   </TableCell>
-                  <TableCell hideOnTablet hideOnMobile className="text-right font-mono text-xs font-semibold text-slate-900">
+                  <TableCell hideOnTablet hideOnMobile className="text-right font-mono text-body font-semibold text-slate-900">
                     {z.total.approved}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Total Active" className="md:text-right font-mono text-xs font-bold text-indigo-700">
+                  <TableCell mobileRole="field" mobileLabel="Total Active" className="md:text-right font-mono text-body font-bold text-indigo-700">
                     {z.total.active}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Total Vacancy" className="md:text-right font-mono text-xs font-bold text-amber-700">
+                  <TableCell mobileRole="field" mobileLabel="Total Vacancy" className="md:text-right font-mono text-body font-bold text-amber-700">
                     {z.total.vacancy}
                   </TableCell>
                   <TableCell mobileRole="status">
@@ -258,7 +258,7 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
                     <TrendIndicator trend={z.total.trend} />
                   </TableCell>
                   <TableCell mobileRole="actions" className="text-right">
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600">
+                    <span className="inline-flex items-center gap-1 text-caption font-semibold text-indigo-600">
                       <BarChart3 className="w-3.5 h-3.5" />
                       <span>History</span>
                     </span>
@@ -306,7 +306,7 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
           <TableBody>
             {filteredDesignations.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-xs text-slate-500">
+                <TableCell colSpan={9} className="text-center py-8 text-caption text-slate-500">
                   No designation headcount entries found for the selected category filter.
                 </TableCell>
               </TableRow>
@@ -318,23 +318,23 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
                   onClick={() => setSelectedEntity({ type: 'designation', data: d })}
                   className="cursor-pointer hover:bg-indigo-50/40"
                 >
-                  <TableCell mobileRole="primary" className="font-semibold text-xs text-slate-900">
+                  <TableCell mobileRole="primary" className="font-semibold text-body text-slate-900">
                     {d.designation_name}
                   </TableCell>
-                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Department" className="text-xs text-slate-600">
+                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Department" className="text-body text-slate-600">
                     {d.department_name}
                     {d.department_code ? ` (${d.department_code})` : ''}
                   </TableCell>
                   <TableCell mobileRole="field" mobileLabel="Category">
                     <EmploymentCategoryBadge category={d.employment_category} />
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right font-mono text-xs font-semibold">
+                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right font-mono text-body font-semibold">
                     {d.approved}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right font-mono text-xs font-bold text-indigo-700">
+                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right font-mono text-body font-bold text-indigo-700">
                     {d.active}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right font-mono text-xs font-bold text-amber-700">
+                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right font-mono text-body font-bold text-amber-700">
                     {d.vacancy}
                   </TableCell>
                   <TableCell mobileRole="status">
@@ -347,7 +347,7 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
                     <TrendIndicator trend={d.trend} />
                   </TableCell>
                   <TableCell mobileRole="actions" className="text-right">
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600">
+                    <span className="inline-flex items-center gap-1 text-caption font-semibold text-indigo-600">
                       <BarChart3 className="w-3.5 h-3.5" />
                       <span>History</span>
                     </span>
@@ -363,10 +363,10 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="p-4 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-table-header uppercase text-slate-500">
               Total Candidates
             </span>
-            <span className="text-xl font-black text-slate-900 font-mono tabular-nums block mt-0.5">
+            <span className="text-kpi-number text-slate-900 font-mono tabular-nums block mt-0.5">
               {metrics?.totalCandidates ?? 0}
             </span>
           </div>
@@ -377,10 +377,10 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
 
         <Card className="p-4 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-table-header uppercase text-slate-500">
               Pending Review
             </span>
-            <span className="text-xl font-black text-amber-600 font-mono tabular-nums block mt-0.5">
+            <span className="text-kpi-number text-amber-600 font-mono tabular-nums block mt-0.5">
               {metrics?.pendingApplications ?? 0}
             </span>
           </div>
@@ -391,10 +391,10 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
 
         <Card className="p-4 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-table-header uppercase text-slate-500">
               Approved Applications
             </span>
-            <span className="text-xl font-black text-emerald-600 font-mono tabular-nums block mt-0.5">
+            <span className="text-kpi-number text-emerald-600 font-mono tabular-nums block mt-0.5">
               {metrics?.approvedApplications ?? 0}
             </span>
           </div>
@@ -405,10 +405,10 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
 
         <Card className="p-4 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-table-header uppercase text-slate-500">
               Active Staff Accounts
             </span>
-            <span className="text-xl font-black text-indigo-700 font-mono tabular-nums block mt-0.5">
+            <span className="text-kpi-number text-indigo-700 font-mono tabular-nums block mt-0.5">
               {metrics?.totalStaff ?? 0}
             </span>
           </div>

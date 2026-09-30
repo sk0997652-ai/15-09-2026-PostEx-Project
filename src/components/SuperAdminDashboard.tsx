@@ -33,6 +33,7 @@ import { WorkflowTrackerView } from './common/WorkflowTrackerView';
 import { DataImportView } from './common/DataImportView';
 import { Badge, Button } from './ui';
 import { Upload } from 'lucide-react';
+import { toTitleCase } from '../lib/formatText';
 
 export interface SuperAdminDashboardProps {
   currentUser: { id: string; email: string; name?: string; role?: string };
@@ -172,13 +173,13 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       >
         <div className="p-4 sm:p-3 lg:p-5 border-b border-slate-800 flex items-center justify-between sm:justify-center lg:justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-tag shadow-xs shrink-0">
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div className="min-w-0 sm:hidden lg:block">
-              <span className="font-bold text-white tracking-tight block text-sm truncate">Super Admin Portal</span>
-              <span className="text-[11px] text-slate-400 font-medium block truncate">
-                {currentUser.name || currentUser.email}
+              <span className="text-card-heading text-white block truncate">Super Admin Portal</span>
+              <span className="text-caption text-slate-400 font-medium block truncate">
+                {currentUser.name ? toTitleCase(currentUser.name) : currentUser.email}
               </span>
             </div>
           </div>
@@ -193,7 +194,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="p-2.5 sm:p-2 lg:p-3 space-y-1 text-xs flex-1 overflow-y-auto">
+        <nav className="p-2.5 sm:p-2 lg:p-3 space-y-1 text-caption flex-1 overflow-y-auto">
           <button
             id="nav-btn-overview"
             title="Overview"
@@ -351,15 +352,15 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
         {/* User Session & Sign Out */}
         <div className="p-2.5 sm:p-2 lg:p-3 border-t border-slate-800 space-y-2">
-          <div className="px-2 py-1 text-xs sm:hidden lg:block">
-            <span className="text-[11px] text-slate-400 block">Logged in as</span>
-            <span className="font-semibold text-white truncate block">{currentUser.name || currentUser.email}</span>
+          <div className="px-2 py-1 text-caption sm:hidden lg:block">
+            <span className="text-caption text-slate-400 block">Logged in as</span>
+            <span className="font-semibold text-white truncate block">{currentUser.name ? toTitleCase(currentUser.name) : currentUser.email}</span>
           </div>
           <button
             id="super-admin-signout-btn"
             title="Sign Out"
             onClick={onSignOut}
-            className="w-full flex items-center justify-center gap-2 px-3 sm:px-0 lg:px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 sm:px-0 lg:px-3 py-2 rounded-xl text-caption font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5 shrink-0" />
             <span className="sm:hidden lg:inline">Sign Out</span>
@@ -373,7 +374,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
         {notification && (
           <div
             id="super-admin-notification-banner"
-            className={`mb-6 p-4 rounded-xl text-xs font-medium flex items-center gap-3 border ${
+            className={`mb-6 p-4 rounded-xl text-caption font-medium flex items-center gap-3 border ${
               notification.type === 'success'
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                 : 'bg-rose-50 border-rose-200 text-rose-800'

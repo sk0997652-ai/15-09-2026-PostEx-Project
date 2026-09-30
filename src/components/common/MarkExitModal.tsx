@@ -6,6 +6,7 @@ import {
   PortalEmployee,
   markEmployeeExit,
 } from '../../lib/hrPortalStore';
+import { toTitleCase } from '../../lib/formatText';
 
 export interface MarkExitModalProps {
   isOpen: boolean;
@@ -76,7 +77,7 @@ export const MarkExitModal: React.FC<MarkExitModalProps> = ({
 
     if (onSuccess) {
       onSuccess(
-        `Exit initiated for ${employee.fullName} (${employee.employeeCode}). Status is now "Exit In Progress", removed from Active headcount, and added to Workflow Tracker > Exits & ECF.`
+        `Exit initiated for ${toTitleCase(employee.fullName)} (${employee.employeeCode}). Status is now "Exit In Progress", removed from Active headcount, and added to Workflow Tracker > Exits & ECF.`
       );
     }
     onClose();
@@ -86,7 +87,7 @@ export const MarkExitModal: React.FC<MarkExitModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={confirmStep ? 'Confirm Employee Exit' : `Mark Exit — ${employee.fullName}`}
+      title={confirmStep ? 'Confirm Employee Exit' : `Mark Exit — ${toTitleCase(employee.fullName)}`}
       description={
         confirmStep
           ? 'Please confirm this exit lifecycle transition.'
@@ -95,14 +96,14 @@ export const MarkExitModal: React.FC<MarkExitModalProps> = ({
       size="small"
     >
       {error && (
-        <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 flex items-start gap-2 text-xs font-medium">
+        <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 flex items-start gap-2 text-caption font-medium">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
           <span>{error}</span>
         </div>
       )}
 
       {!confirmStep ? (
-        <form onSubmit={handleProceedToConfirm} className="space-y-4 text-xs" id="mark-exit-form">
+        <form onSubmit={handleProceedToConfirm} className="space-y-4 text-body" id="mark-exit-form">
           <Select
             id="mark-exit-type-select"
             label="Exit Type *"
@@ -137,7 +138,7 @@ export const MarkExitModal: React.FC<MarkExitModalProps> = ({
           <div className="space-y-1.5">
             <label
               htmlFor="mark-exit-notes-textarea"
-              className="block text-xs font-semibold text-slate-700"
+              className="block text-body font-medium text-slate-900"
             >
               Notes
             </label>
@@ -147,7 +148,7 @@ export const MarkExitModal: React.FC<MarkExitModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Optional clearance instructions or handover notes..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-900 focus:border-indigo-500 focus:bg-white focus:outline-hidden"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-body text-slate-900 focus:border-indigo-500 focus:bg-white focus:outline-hidden"
             />
           </div>
 
@@ -167,13 +168,13 @@ export const MarkExitModal: React.FC<MarkExitModalProps> = ({
           </div>
         </form>
       ) : (
-        <div className="space-y-4 text-xs" id="mark-exit-confirm-dialog">
+        <div className="space-y-4 text-body" id="mark-exit-confirm-dialog">
           <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-2">
             <div className="font-bold flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>Confirm Exit In Progress for {employee.fullName}?</span>
+              <span>Confirm Exit In Progress for {toTitleCase(employee.fullName)}?</span>
             </div>
-            <p className="text-[11px] leading-relaxed">
+            <p className="text-caption">
               • Status will change from <strong>Active</strong> to{' '}
               <strong>Exit In Progress</strong> (no hard delete).
               <br />• Employee will be immediately removed from <strong>Active headcount</strong>,

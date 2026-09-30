@@ -32,7 +32,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full space-y-1.5">
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-slate-900">
+          <label htmlFor={inputId} className="block text-body font-medium text-slate-900">
             {label}
           </label>
         )}
@@ -46,7 +46,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             disabled={disabled}
-            className={`w-full h-10 px-4 py-2.5 text-sm text-slate-900 bg-white border ${borderFocusClasses} rounded-lg shadow-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-colors disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed ${
+            className={`w-full h-10 px-4 py-2.5 text-body text-slate-900 bg-white border ${borderFocusClasses} rounded-lg shadow-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-colors disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed ${
               leftIcon ? 'pl-10' : ''
             } ${rightIcon ? 'pr-10' : ''} ${className}`}
             {...props}
@@ -58,9 +58,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error ? (
-          <p className="text-xs font-medium text-rose-600">{error}</p>
+          <p className="text-caption font-medium text-rose-600">{error}</p>
         ) : hint ? (
-          <p className="text-xs font-medium text-slate-500">{hint}</p>
+          <p className="text-caption text-slate-500">{hint}</p>
         ) : null}
       </div>
     );

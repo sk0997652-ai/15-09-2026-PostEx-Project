@@ -3,6 +3,7 @@ import { GraduationCap, Briefcase, Building, Calendar, DollarSign, Clock } from 
 import { useI18n } from '../../lib/i18n';
 import { Step2Data } from '../../lib/candidateApi';
 import { Input, Select } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface WizardStep2Props {
   data: Step2Data;
@@ -16,15 +17,15 @@ export const WizardStep2: React.FC<WizardStep2Props> = ({ data, onChange, disabl
   return (
     <div id="candidate-wizard-step-2" className="space-y-6">
       <div>
-        <h2 className="text-lg font-bold text-slate-900">{t('step2.heading')}</h2>
-        <p className="text-xs text-slate-500 mt-0.5">{t('step2.subheading')}</p>
+        <h2 className="text-card-heading text-slate-900">{toTitleCase(t('step2.heading'))}</h2>
+        <p className="text-caption text-slate-500 mt-0.5">{t('step2.subheading')}</p>
       </div>
 
       {/* Academic Qualifications Section */}
       <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
         <div className="flex items-center gap-2">
           <GraduationCap className="w-5 h-5 text-indigo-600" />
-          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Academic Record</h3>
+          <h3 className="text-card-heading text-slate-900">Academic Record</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -90,7 +91,7 @@ export const WizardStep2: React.FC<WizardStep2Props> = ({ data, onChange, disabl
       <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
         <div className="flex items-center gap-2">
           <Briefcase className="w-5 h-5 text-indigo-600" />
-          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Work History &amp; Employment</h3>
+          <h3 className="text-card-heading text-slate-900">Work History &amp; Employment</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

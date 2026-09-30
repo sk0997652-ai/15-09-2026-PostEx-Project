@@ -18,6 +18,7 @@ import {
   TableCell,
   TableToolbar,
 } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface ZoneAnalyticsViewProps {
   metrics: ZonalMetrics | null;
@@ -74,33 +75,33 @@ export function ZoneAnalyticsView({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6">
           <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-bold">Average Turnaround</span>
+            <span className="text-table-header">Average Turnaround</span>
             <Clock className="w-4 h-4 text-indigo-600" />
           </div>
-          <div className="text-3xl font-black text-indigo-900">{metrics?.avgTurnaroundHours ?? 'N/A'}</div>
-          <p className="text-xs text-slate-600 mt-2">
+          <div className="text-kpi-number text-indigo-900">{metrics?.avgTurnaroundHours ?? 'N/A'}</div>
+          <p className="text-caption text-slate-600 mt-2">
             Calculated from submission timestamp to final HR decision timestamp across all candidates in this zone.
           </p>
         </Card>
 
         <Card className="p-6">
           <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-bold">Approval Rate</span>
+            <span className="text-table-header">Approval Rate</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-3xl font-black text-emerald-600">{approvalRate}</div>
-          <p className="text-xs text-slate-600 mt-2">
+          <div className="text-kpi-number text-emerald-600">{approvalRate}</div>
+          <p className="text-caption text-slate-600 mt-2">
             {metrics?.approvedApplications ?? 0} approved applications out of {metrics?.totalApplications ?? 0} total applications.
           </p>
         </Card>
 
         <Card className="p-6">
           <div className="flex items-center justify-between text-slate-500 mb-3">
-            <span className="text-xs font-bold">Rejection Rate</span>
+            <span className="text-table-header">Rejection Rate</span>
             <XCircle className="w-4 h-4 text-rose-600" />
           </div>
-          <div className="text-3xl font-black text-rose-600">{rejectionRate}</div>
-          <p className="text-xs text-slate-600 mt-2">
+          <div className="text-kpi-number text-rose-600">{rejectionRate}</div>
+          <p className="text-caption text-slate-600 mt-2">
             {metrics?.rejectedApplications ?? 0} rejected applications out of {metrics?.totalApplications ?? 0} total applications.
           </p>
         </Card>
@@ -108,7 +109,7 @@ export function ZoneAnalyticsView({
 
       {/* Branch Summary Breakdown */}
       <Card className="p-6 space-y-4">
-        <h3 className="text-sm font-bold text-slate-900">Branch Distribution in {zoneName}</h3>
+        <h3 className="text-card-heading text-slate-900">{toTitleCase(`Branch Distribution in ${zoneName}`)}</h3>
 
         <TableToolbar
           searchValue={branchSearch}
@@ -139,7 +140,7 @@ export function ZoneAnalyticsView({
           <TableBody>
             {filteredBranches.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="py-6 text-center text-xs text-slate-500">
+                <TableCell colSpan={3} className="py-6 text-center text-caption text-slate-500">
                   No branches match the selected filter criteria.
                 </TableCell>
               </TableRow>
@@ -159,7 +160,7 @@ export function ZoneAnalyticsView({
                       className="text-slate-600"
                     >
                       {managers.length > 0 ? (
-                        managers.map((m) => m.name).join(', ')
+                        managers.map((m) => toTitleCase(m.name)).join(', ')
                       ) : (
                         <span className="text-amber-600 italic">No Manager Assigned</span>
                       )}

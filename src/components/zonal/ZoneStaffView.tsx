@@ -23,6 +23,7 @@ import {
   TablePagination,
   TableToolbar,
 } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface ZoneStaffViewProps {
   staffList: ZonalStaffProfile[];
@@ -182,10 +183,10 @@ export function ZoneStaffView({
       {/* Staff Table */}
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs font-bold text-slate-700">
-            Staff Directory ({filteredStaffList.length} of {uniqueStaffList.length})
+          <span className="text-card-heading text-slate-700">
+            Staff Directory ({filteredStaffList.length} Of {uniqueStaffList.length})
           </span>
-          <span className="text-[11px] text-slate-500">
+          <span className="text-caption text-slate-500">
             Policy: Min 10 chars, forced password change on first login
           </span>
         </div>
@@ -221,10 +222,10 @@ export function ZoneStaffView({
                 return (
                   <TableRow key={staff.id}>
                     <TableCell mobileRole="primary">
-                      <div className="font-bold text-slate-900">{staff.name}</div>
-                      <div className="text-[11px] text-slate-600 font-mono">{staff.email}</div>
+                      <div className="font-bold text-slate-900">{toTitleCase(staff.name)}</div>
+                      <div className="text-caption text-slate-600 font-mono">{staff.email}</div>
                       {(staff.personal_email || staff.phone_number || staff.phone) && (
-                        <div className="text-[10px] text-slate-400 mt-0.5">
+                        <div className="text-caption text-slate-400 mt-0.5">
                           {[staff.personal_email, staff.phone_number || staff.phone]
                             .filter(Boolean)
                             .join(' · ')}
@@ -232,19 +233,19 @@ export function ZoneStaffView({
                       )}
                     </TableCell>
                     <TableCell mobileRole="field" mobileLabel="Employment Identity" hideOnTablet>
-                      <div className="font-mono text-xs font-bold text-indigo-950">
+                      <div className="font-mono text-caption font-bold text-indigo-950">
                         {staff.staff_employee_id || '—'}
                       </div>
-                      <div className="text-xs text-slate-700">
+                      <div className="text-body text-slate-700">
                         {staff.designations?.name || 'No Designation'}
                       </div>
-                      <div className="text-[10px] text-slate-400">
+                      <div className="text-caption text-slate-400">
                         {staff.departments?.name || 'No Department'}
                       </div>
                     </TableCell>
                     <TableCell mobileRole="field" mobileLabel="Assigned Role">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-tag uppercase ${
                           staff.roles?.name === 'central_hr'
                             ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
                             : staff.roles?.name === 'branch_manager'
@@ -258,7 +259,7 @@ export function ZoneStaffView({
                     <TableCell
                       mobileRole="field"
                       mobileLabel="Tagged Branches"
-                      className="text-slate-700 text-xs"
+                      className="text-slate-700 text-body"
                     >
                       {taggedList.length > 0 ? (
                         <span>
@@ -272,12 +273,12 @@ export function ZoneStaffView({
                     </TableCell>
                     <TableCell mobileRole="field" mobileLabel="Password Status" hideOnTablet>
                       {staff.must_change_password ? (
-                        <span className="inline-flex items-center gap-1 text-amber-700 text-[11px] font-medium bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                        <span className="inline-flex items-center gap-1 text-amber-700 text-tag bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                           <KeyRound className="w-3 h-3 text-amber-600" />
                           <span>Change Pending</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-emerald-700 text-[11px] font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        <span className="inline-flex items-center gap-1 text-emerald-700 text-tag bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                           <Check className="w-3 h-3 text-emerald-600" />
                           <span>Active &amp; Set</span>
                         </span>

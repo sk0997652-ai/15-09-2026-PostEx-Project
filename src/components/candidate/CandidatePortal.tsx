@@ -10,6 +10,7 @@ import { WelcomeScreen } from './WelcomeScreen';
 import { CandidateWizard } from './CandidateWizard';
 import { StatusTracker } from './StatusTracker';
 import { Button } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface CandidatePortalProps {
   session: CandidateSessionState;
@@ -57,8 +58,8 @@ const PortalInner: React.FC<CandidatePortalProps> = ({ session, onSignOut }) => 
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 text-center">
         <div className="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-sm font-semibold text-slate-700">{t('common.loading')}</p>
-        <p className="text-xs text-slate-400 mt-1">Fetching candidate record &amp; joining dossier...</p>
+        <p className="text-body font-semibold text-slate-700">{t('common.loading')}</p>
+        <p className="text-caption text-slate-400 mt-1">Fetching candidate record &amp; joining dossier...</p>
       </div>
     );
   }
@@ -76,8 +77,8 @@ const PortalInner: React.FC<CandidatePortalProps> = ({ session, onSignOut }) => 
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-sm font-black text-slate-900 tracking-tight flex items-center gap-2">
-                {branding.companyName} <span className="text-slate-400 font-normal">| {t('app.title')}</span>
+              <span className="text-card-heading text-slate-900 flex items-center gap-2">
+                {branding.companyName} <span className="text-slate-400 font-normal">| {toTitleCase(t('app.title'))}</span>
               </span>
             </div>
           </div>
@@ -97,10 +98,10 @@ const PortalInner: React.FC<CandidatePortalProps> = ({ session, onSignOut }) => 
               </Button>
             )}
 
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-xs">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-caption">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span className="font-bold text-slate-900">{session.candidate.full_name}</span>
-              <span className="text-indigo-700 font-mono text-[11px] font-semibold">({session.candidate.joining_id})</span>
+              <span className="font-bold text-slate-900">{toTitleCase(session.candidate.full_name)}</span>
+              <span className="text-indigo-700 font-mono text-tag">({session.candidate.joining_id})</span>
             </div>
 
             <LanguageSelector />

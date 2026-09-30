@@ -209,7 +209,7 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ setNotification }) =
                     mobileRole="field"
                     mobileLabel="Timestamp"
                     hideOnTablet
-                    className="text-slate-500 whitespace-nowrap font-mono text-xs"
+                    className="text-slate-500 whitespace-nowrap font-mono text-caption"
                   >
                     {new Date(log.created_at).toLocaleString()}
                   </TableCell>
@@ -218,7 +218,7 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ setNotification }) =
                       {log.action}
                     </Badge>
                   </TableCell>
-                  <TableCell mobileRole="status" className="text-slate-600 text-xs">
+                  <TableCell mobileRole="status" className="text-slate-600 text-caption">
                     <Badge variant="info" size="sm">
                       {log.actor_type}
                     </Badge>
@@ -226,7 +226,7 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ setNotification }) =
                   <TableCell
                     mobileRole="field"
                     mobileLabel="Entity"
-                    className="text-slate-700 font-mono text-xs"
+                    className="text-slate-700 font-mono text-caption"
                   >
                     {log.entity_type}
                   </TableCell>
@@ -234,7 +234,7 @@ export const AuditLogView: React.FC<AuditLogViewProps> = ({ setNotification }) =
                     mobileRole="field"
                     mobileLabel="Metadata Details"
                     hideOnTablet
-                    className="text-slate-500 max-w-md truncate font-mono text-[11px]"
+                    className="text-slate-500 max-w-md truncate font-mono text-caption"
                   >
                     {JSON.stringify(log.metadata)}
                   </TableCell>

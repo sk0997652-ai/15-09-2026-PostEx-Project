@@ -33,6 +33,7 @@ import {
   Select,
 } from '../ui';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { toTitleCase } from '../../lib/formatText';
 
 export interface HeadcountManagementViewProps {
   roleContext?: string;
@@ -437,7 +438,7 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
       {notification && (
         <div
           id="headcount-notification-banner"
-          className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-medium ${
+          className={`p-3.5 rounded-xl border flex items-center justify-between text-caption font-medium ${
             notification.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
               : 'bg-rose-50 border-rose-200 text-rose-900'
@@ -464,7 +465,7 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
       {!canEdit && (
         <div
           id="headcount-readonly-notice"
-          className="px-4 py-3 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-between text-xs text-slate-700"
+          className="px-4 py-3 rounded-xl bg-slate-100 border border-slate-200/80 flex items-center justify-between text-caption text-slate-700"
         >
           <div className="flex items-center gap-2.5">
             <Lock className="w-4 h-4 text-slate-500 shrink-0" />
@@ -519,14 +520,14 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
             </Select>
           </div>
 
-          <div className="md:col-span-3 flex items-center justify-end text-xs text-slate-500">
+          <div className="md:col-span-3 flex items-center justify-end text-caption text-slate-500">
             {selectedBranchInfo && (
               <div className="text-right space-y-0.5">
                 <div className="font-semibold text-slate-800 flex items-center justify-end gap-1.5">
                   <Building2 className="w-3.5 h-3.5 text-indigo-600" />
                   <span>{selectedBranchInfo.name}</span>
                 </div>
-                <div className="text-[11px] text-slate-500">
+                <div className="text-tag text-slate-500">
                   <span>{selectedBranchInfo.branch_code || 'No Code'}</span>
                   {selectedBranchInfo.branch_type && (
                     <>
@@ -549,27 +550,27 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
         {/* Summary Metrics Strip */}
         <div className="pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="space-y-1">
-            <span className="text-xs text-slate-500 block">Configured Designations</span>
-            <span id="headcount-metric-designations" className="text-xl font-bold text-slate-900 font-mono tabular-nums">
+            <span className="text-caption text-slate-500 block">Configured Designations</span>
+            <span id="headcount-metric-designations" className="text-kpi-number text-slate-900 font-mono tabular-nums">
               {effectiveSummary.totalDesignations}
             </span>
           </div>
           <div className="space-y-1">
-            <span className="text-xs text-slate-500 block">Total Approved Headcount</span>
-            <span id="headcount-metric-approved" className="text-xl font-bold text-indigo-700 font-mono tabular-nums">
+            <span className="text-caption text-slate-500 block">Total Approved Headcount</span>
+            <span id="headcount-metric-approved" className="text-kpi-number text-indigo-700 font-mono tabular-nums">
               {effectiveSummary.totalApproved}
             </span>
           </div>
           <div className="space-y-1">
-            <span className="text-xs text-slate-500 block">Active Enrolled Count (Fill-Rate)</span>
-            <span id="headcount-metric-active" className="text-xl font-bold text-emerald-700 font-mono tabular-nums">
+            <span className="text-caption text-slate-500 block">Active Enrolled Count (Fill-Rate)</span>
+            <span id="headcount-metric-active" className="text-kpi-number text-emerald-700 font-mono tabular-nums">
               {effectiveSummary.totalActive}{' '}
-              <span className="text-xs font-semibold text-slate-500">({fillRatePct}%)</span>
+              <span className="text-caption font-semibold text-slate-500">({fillRatePct}%)</span>
             </span>
           </div>
           <div className="space-y-1">
-            <span className="text-xs text-slate-500 block">Open Vacancy (Approved − Active)</span>
-            <span id="headcount-metric-vacancy" className="text-xl font-bold text-amber-700 font-mono tabular-nums">
+            <span className="text-caption text-slate-500 block">Open Vacancy (Approved − Active)</span>
+            <span id="headcount-metric-vacancy" className="text-kpi-number text-amber-700 font-mono tabular-nums">
               {effectiveSummary.totalVacancy}
             </span>
           </div>
@@ -639,13 +640,13 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
           <TableBody>
             {loadingContext || loadingEntries ? (
               <TableRow>
-                <TableCell colSpan={canEdit ? 6 : 5} className="py-12 text-center text-slate-400 text-xs">
+                <TableCell colSpan={canEdit ? 6 : 5} className="py-12 text-center text-slate-400 text-caption">
                   Loading branch headcount allocations...
                 </TableCell>
               </TableRow>
             ) : !selectedBranchId ? (
               <TableRow>
-                <TableCell colSpan={canEdit ? 6 : 5} className="py-12 text-center text-slate-400 text-xs">
+                <TableCell colSpan={canEdit ? 6 : 5} className="py-12 text-center text-slate-400 text-caption">
                   No branch available in your scope. Please configure a branch in Organization Structure first.
                 </TableCell>
               </TableRow>
@@ -653,8 +654,8 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
               filteredEntries.map((entry) => (
                 <TableRow key={entry.id} data-designation-id={entry.designation_id}>
                   <TableCell mobileRole="primaryFull">
-                    <div className="font-semibold text-slate-900 text-xs">{entry.designation_name}</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1.5">
+                    <div className="font-semibold text-slate-900 text-body">{entry.designation_name}</div>
+                    <div className="text-caption text-slate-500 mt-0.5 flex items-center gap-1.5">
                       <span>{entry.department_name || 'Unassigned Department'}</span>
                       {entry.employment_category && (
                         <>
@@ -695,8 +696,8 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
                   </TableCell>
 
                   <TableCell hideOnTablet mobileRole="field" mobileLabel="Last Updated By">
-                    <div className="text-xs text-slate-800 font-medium">{entry.updated_by_name}</div>
-                    <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                    <div className="text-body text-slate-800 font-medium">{toTitleCase(entry.updated_by_name)}</div>
+                    <div className="text-caption text-slate-500 flex items-center gap-1.5">
                       {entry.updated_by_role && (
                         <>
                           <span>{formatRoleLabel(entry.updated_by_role)}</span>
@@ -739,7 +740,7 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={canEdit ? 6 : 5} className="py-12 text-center text-slate-400 text-xs">
+                <TableCell colSpan={canEdit ? 6 : 5} className="py-12 text-center text-slate-400 text-caption">
                   {entries.length > 0
                     ? 'No headcount entries match the active search or filter criteria.'
                     : `No headcount entries configured for this branch yet.${
@@ -766,11 +767,11 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
         }
         size="small"
       >
-        <form onSubmit={handleSaveHeadcount} className="space-y-4 text-xs">
+        <form onSubmit={handleSaveHeadcount} className="space-y-4 text-body">
           {modalError && (
             <div
               id="headcount-modal-error-banner"
-              className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 flex items-start gap-2 text-xs font-medium"
+              className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 flex items-start gap-2 text-caption font-medium"
             >
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
               <span>{modalError}</span>

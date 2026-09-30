@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Download } from 'lucide-react';
 import {
   useHrPortalStore,
   BranchTuple,
@@ -9,6 +10,22 @@ import {
   undoEmployeeExit,
   exportRowsToExcel,
 } from '../../lib/hrPortalStore';
+import {
+  Badge,
+  BadgeVariant,
+  Button,
+  Card,
+  Input,
+  PageHeader,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableToolbar,
+} from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 export type WorkflowTrackerRole = 'super_admin' | 'zonal_hr' | 'central_hr' | 'branch_manager';
 
@@ -76,376 +93,6 @@ function resolveCentralHrBranchSet(
   return matched;
 }
 
-const WORKFLOW_TRACKER_CSS = `
-.wt-root {
-  --bg: #f4f6f5;
-  --sf: #fff;
-  --sf2: #f8faf9;
-  --ink: #13201e;
-  --mut: #63716d;
-  --line: #e3e8e6;
-  --acc: #0e8f83;
-  --accs: #dcf2ef;
-  --ok: #178a56;
-  --warn: #b26f0a;
-  --bad: #c73a3a;
-  font: 14px/1.5 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  color: var(--ink);
-  background: var(--bg);
-  font-variant-numeric: tabular-nums;
-  min-height: 100%;
-  border-radius: 14px;
-}
-@media (prefers-color-scheme: dark) {
-  .wt-root:not([data-theme="light"]) {
-    --bg: #091311;
-    --sf: #101c1a;
-    --sf2: #0d1816;
-    --ink: #e7efed;
-    --mut: #8b9d98;
-    --line: #213230;
-    --acc: #3ec7b8;
-    --accs: #123632;
-    --ok: #3fc487;
-    --warn: #e5a444;
-    --bad: #ef6b6b;
-  }
-}
-.wt-root[data-theme="dark"] {
-  --bg: #091311;
-  --sf: #101c1a;
-  --sf2: #0d1816;
-  --ink: #e7efed;
-  --mut: #8b9d98;
-  --line: #213230;
-  --acc: #3ec7b8;
-  --accs: #123632;
-  --ok: #3fc487;
-  --warn: #e5a444;
-  --bad: #ef6b6b;
-}
-.wt-root * {
-  box-sizing: border-box;
-}
-.wt-root button,
-.wt-root input,
-.wt-root select {
-  font: inherit;
-  color: inherit;
-}
-.wt-root :focus-visible {
-  outline: 2px solid var(--acc);
-  outline-offset: 2px;
-}
-.wt-root .wrap {
-  padding: 26px;
-  display: grid;
-  gap: 20px;
-  max-width: 1440px;
-  margin: 0 auto;
-}
-.wt-root .top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-.wt-root .head h1 {
-  font-size: 23px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  margin: 0;
-}
-.wt-root .head p {
-  color: var(--mut);
-  margin: 4px 0 0;
-  max-width: 70ch;
-  font-size: 13.5px;
-}
-.wt-root .card {
-  background: var(--sf);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-}
-.wt-root .pad {
-  padding: 20px;
-}
-.wt-root .kpis {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  overflow: hidden;
-}
-.wt-root .kpi {
-  padding: 18px 20px;
-  border-right: 1px solid var(--line);
-}
-.wt-root .kpi:last-child {
-  border: 0;
-}
-.wt-root .kpi .l {
-  color: var(--mut);
-  font-weight: 600;
-  font-size: 12.5px;
-}
-.wt-root .kpi .v {
-  font-size: 29px;
-  font-weight: 800;
-  letter-spacing: -1px;
-  margin: 7px 0 2px;
-}
-.wt-root .kpi .s {
-  font-size: 12.5px;
-  color: var(--mut);
-}
-.wt-root .kpi.bad .v {
-  color: var(--bad);
-}
-.wt-root .kpi.ok .v {
-  color: var(--ok);
-}
-.wt-root .ct {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-.wt-root .ct h2 {
-  font-size: 15.5px;
-  font-weight: 700;
-  margin: 0;
-}
-.wt-root .ct small {
-  color: var(--mut);
-  font-size: 12.5px;
-}
-.wt-root .tag {
-  border-radius: 7px;
-  padding: 3px 9px;
-  font-size: 11.5px;
-  font-weight: 700;
-  white-space: nowrap;
-  display: inline-block;
-}
-.wt-root .t-ok {
-  color: var(--ok);
-  background: color-mix(in srgb, var(--ok) 13%, transparent);
-}
-.wt-root .t-w {
-  color: var(--warn);
-  background: color-mix(in srgb, var(--warn) 15%, transparent);
-}
-.wt-root .t-b {
-  color: var(--bad);
-  background: color-mix(in srgb, var(--bad) 13%, transparent);
-}
-.wt-root .t-n {
-  color: var(--mut);
-  background: var(--sf2);
-  border: 1px solid var(--line);
-}
-.wt-root .bar {
-  height: 7px;
-  background: var(--line);
-  border-radius: 7px;
-  overflow: hidden;
-  flex: 1;
-}
-.wt-root .bar i {
-  display: block;
-  height: 100%;
-  border-radius: 7px;
-  background: var(--acc);
-}
-.wt-root .bar.w i {
-  background: var(--warn);
-}
-.wt-root .bar.b i {
-  background: var(--bad);
-}
-.wt-root .fr {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 120px;
-}
-.wt-root .fr span {
-  font-weight: 700;
-  width: 36px;
-  text-align: right;
-  font-size: 12.5px;
-}
-.wt-root .scroll {
-  overflow-x: auto;
-  margin: 0 -20px;
-  padding: 0 20px;
-}
-.wt-root table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 900px;
-}
-.wt-root th {
-  font-size: 12px;
-  color: var(--mut);
-  font-weight: 600;
-  text-align: left;
-  padding: 9px 10px;
-  border-bottom: 1px solid var(--line);
-  white-space: nowrap;
-  background: var(--sf);
-}
-.wt-root td {
-  padding: 11px 10px;
-  border-bottom: 1px solid var(--line);
-  white-space: nowrap;
-  font-size: 13.5px;
-}
-.wt-root tr:last-child td {
-  border: 0;
-}
-.wt-root tr:hover td {
-  background: var(--sf2);
-}
-.wt-root td small {
-  display: block;
-  color: var(--mut);
-  font-size: 12px;
-}
-.wt-root td b {
-  font-weight: 600;
-}
-.wt-root .rule {
-  background: var(--accs);
-  border-radius: 12px;
-  padding: 11px 15px;
-  font-size: 12.5px;
-  margin: 0;
-}
-.wt-root .ov {
-  display: grid;
-  gap: 11px;
-}
-.wt-root .ov div {
-  display: grid;
-  grid-template-columns: 170px 1fr auto;
-  gap: 10px;
-  align-items: center;
-  font-size: 13px;
-}
-.wt-root .ov b {
-  text-align: right;
-}
-.wt-root .g2 {
-  display: grid;
-  grid-template-columns: 1fr 1.3fr;
-  gap: 20px;
-}
-.wt-root .wseg {
-  display: flex;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  padding: 3px;
-  overflow-x: auto;
-}
-.wt-root .wseg button {
-  border: 0;
-  background: none;
-  padding: 6px 13px;
-  border-radius: 8px;
-  color: var(--mut);
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 13px;
-  white-space: nowrap;
-}
-.wt-root .wseg button.on {
-  background: var(--sf);
-  color: var(--acc);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-}
-.wt-root .tb {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-.wt-root .tb input,
-.wt-root .tb select {
-  background: var(--sf2);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 8px 12px;
-  min-width: 170px;
-}
-.wt-root .delb {
-  background: none;
-  border: 1px solid var(--line);
-  color: var(--bad);
-  border-radius: 8px;
-  padding: 5px 12px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 12px;
-}
-.wt-root .addrow {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px dashed var(--line);
-}
-.wt-root .addrow input {
-  background: var(--sf2);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 8px 11px;
-  min-width: 0;
-}
-.wt-root .addb {
-  background: var(--acc);
-  color: #fff;
-  border: 0;
-  border-radius: 10px;
-  padding: 8px 15px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  font-size: 13px;
-}
-.wt-root .btn {
-  border: 1px solid var(--line);
-  background: var(--sf2);
-  border-radius: 10px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 12.5px;
-}
-@media (max-width: 1180px) {
-  .wt-root .kpis {
-    grid-template-columns: 1fr 1fr;
-  }
-  .wt-root .kpi:nth-child(2) {
-    border-right: 0;
-  }
-  .wt-root .kpi:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--line);
-  }
-  .wt-root .g2 {
-    grid-template-columns: 1fr;
-  }
-}
-@media (max-width: 860px) {
-  .wt-root .wrap {
-    padding: 14px;
-  }
-}
-`;
-
 export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
   role,
   zoneName,
@@ -470,7 +117,6 @@ export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
   const [exitQ, setExitQ] = useState('');
   const [exitFs, setExitFs] = useState('');
   const [lvl, setLvl] = useState<'Zone' | 'Branch' | 'HR'>('Zone');
-  const [theme, setTheme] = useState<'light' | 'dark' | undefined>(undefined);
 
   // Task Settings inputs
   const [newTaskName, setNewTaskName] = useState('');
@@ -536,11 +182,11 @@ export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
 
   const renderChip = (j: JoinerRecord, k: number) => {
     const [st, d] = ts(j, k);
-    if (st === 'na') return <span style={{ color: 'var(--mut)' }}>Not needed</span>;
-    if (st === 'ok') return <span className="tag t-ok">Done</span>;
-    if (st === 'late') return <span className="tag t-w">Done +{d}d</span>;
-    if (st === 'over') return <span className="tag t-b">Overdue {d}d</span>;
-    return <span className="tag t-n">Pending</span>;
+    if (st === 'na') return <span className="text-caption text-slate-400">Not needed</span>;
+    if (st === 'ok') return <Badge variant="success">Done</Badge>;
+    if (st === 'late') return <Badge variant="warning">Done +{d}d</Badge>;
+    if (st === 'over') return <Badge variant="error">Overdue {d}d</Badge>;
+    return <Badge variant="neutral">Pending</Badge>;
   };
 
   const jstat = (j: JoinerRecord) => {
@@ -562,12 +208,12 @@ export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
     return ecfItems.filter((_, idx) => isEcfItemDone(e, idx)).length;
   };
 
-  const exS = (e: ExitRecord): [string, string] =>
+  const exS = (e: ExitRecord): [string, BadgeVariant] =>
     exDoneCount(e) >= ecfItems.length
-      ? ['Cleared', 't-ok']
+      ? ['Cleared', 'success']
       : e.ago > SLA_X
-      ? ['Overdue', 't-b']
-      : ['In progress', 't-w'];
+      ? ['Overdue', 'error']
+      : ['In progress', 'warning'];
 
   const ag = (js: JoinerRecord[], es: ExitRecord[]) => {
     let tot = 0;
@@ -602,28 +248,30 @@ export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
     };
   };
 
-  const flag = (a: { n: number; pct: number }): [string, string, string] =>
+  const flag = (a: { n: number; pct: number }): [string, BadgeVariant, string] =>
     a.n < MIN
-      ? ['Low volume', 't-n', '']
+      ? ['Low volume', 'neutral', '']
       : a.pct >= 85
-      ? ['On track', 't-ok', '']
+      ? ['On track', 'success', '']
       : a.pct >= 65
-      ? ['Watch', 't-w', 'w']
-      : ['Needs action', 't-b', 'b'];
+      ? ['Watch', 'warning', 'w']
+      : ['Needs action', 'error', 'b'];
 
-  const renderBar = (f: number, c = '') => (
-    <div className={`bar ${c}`.trim()}>
-      <i style={{ width: `${Math.min(Math.max(f, 0), 100)}%` }} />
-    </div>
-  );
-
-  const handleToggleTheme = () => {
-    setTheme((prev) => {
-      const isDark = prev
-        ? prev === 'dark'
-        : typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      return isDark ? 'light' : 'dark';
-    });
+  const renderBar = (f: number, c = '') => {
+    const fillColor =
+      c === 'b'
+        ? 'bg-rose-500'
+        : c === 'w'
+        ? 'bg-amber-500'
+        : 'bg-indigo-600';
+    return (
+      <div className="h-2 bg-slate-100 rounded-full overflow-hidden flex-1 min-w-[64px]">
+        <div
+          className={`h-full rounded-full transition-all ${fillColor}`}
+          style={{ width: `${Math.min(Math.max(f, 0), 100)}%` }}
+        />
+      </div>
+    );
   };
 
   const handleDeleteTask = (idx: number) => {
@@ -775,628 +423,717 @@ export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
   const mx = Math.max(...oc, 1);
 
   return (
-    <div className="wt-root" data-theme={theme} id="workflow-tracker-view">
-      <style>{WORKFLOW_TRACKER_CSS}</style>
-      <div className="wrap">
-        <div className="top">
-          <div className="head">
-            <h1>Workflow Tracker</h1>
-            <p>Onboarding tasks, exits and HR performance — issued and owned by HR.</p>
-          </div>
-          <button type="button" className="btn" id="th" onClick={handleToggleTheme}>
-            Toggle theme
-          </button>
-        </div>
+    <div id="workflow-tracker-view" className="space-y-6 text-body text-slate-900">
+      <PageHeader
+        title="Workflow Tracker"
+        description="Onboarding tasks, exits and HR performance — issued and owned by HR."
+      />
 
-        <div>
-          <div
-            className="wseg"
-            id="wseg"
-            style={{ marginBottom: 20, width: 'fit-content', maxWidth: '100%' }}
-          >
-            {subTabs.map(([key, label]) => (
-              <button
-                key={key}
-                type="button"
-                className={key === activeSubTab ? 'on' : ''}
-                data-w={key}
-                onClick={() => setWview(key)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+      {/* Sub-tabs Navigation matching OrganizationStructureView */}
+      <div
+        id="wseg"
+        className="flex border-b border-slate-200 gap-6 text-caption font-semibold overflow-x-auto"
+      >
+        {subTabs.map(([key, label]) => {
+          const isActive = key === activeSubTab;
+          return (
+            <button
+              key={key}
+              type="button"
+              data-w={key}
+              onClick={() => setWview(key)}
+              className={`pb-3 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                isActive
+                  ? 'text-indigo-700 border-b-2 border-indigo-600 font-bold'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              {toTitleCase(label)}
+            </button>
+          );
+        })}
+      </div>
 
-          <div style={{ display: 'grid', gap: 20 }}>
-            {/* 1) JOINER TRACKER */}
-            {activeSubTab === 'j' && (
-              <>
-                <div className="card kpis">
-                  <div className="kpi">
-                    <div className="l">Joiners in view</div>
-                    <div className="v">{scopedPeople.length}</div>
-                    <div className="s">across scope</div>
-                  </div>
-                  <div className="kpi ok">
-                    <div className="l">Fully onboarded</div>
-                    <div className="v">{compCount}</div>
-                    <div className="s">
-                      {scopedPeople.length > 0
-                        ? Math.round((compCount / scopedPeople.length) * 100)
-                        : 0}
-                      % of joiners
-                    </div>
-                  </div>
-                  <div className="kpi bad">
-                    <div className="l">Overdue tasks</div>
-                    <div className="v">{A.ov}</div>
-                    <div className="s">past target day</div>
-                  </div>
-                  <div className="kpi">
-                    <div className="l">Tasks done on time</div>
-                    <div className="v">{A.pct.toFixed(0)}%</div>
-                    <div className="s">of all due tasks</div>
-                  </div>
+      <div className="space-y-6">
+        {/* 1) JOINER TRACKER */}
+        {activeSubTab === 'j' && (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <Card className="p-5">
+                <div className="text-table-header uppercase text-slate-500">Joiners In View</div>
+                <div className="text-kpi-number text-slate-900 font-mono tabular-nums mt-1">
+                  {scopedPeople.length}
                 </div>
+                <div className="text-caption text-slate-500 mt-0.5">across scope</div>
+              </Card>
 
-                <div className="card pad">
-                  <div className="ct">
-                    <h2>Overdue by task</h2>
-                  </div>
-                  <div className="ov">
-                    {tasks.map((t, k) => (
-                      <div key={`${t[0]}-${k}`}>
-                        <span>{t[0]}</span>
-                        {renderBar((oc[k] / mx) * 100, oc[k] ? 'b' : '')}
-                        <b>{oc[k]}</b>
-                      </div>
-                    ))}
-                  </div>
+              <Card className="p-5">
+                <div className="text-table-header uppercase text-slate-500">Fully Onboarded</div>
+                <div className="text-kpi-number text-emerald-600 font-mono tabular-nums mt-1">
+                  {compCount}
                 </div>
+                <div className="text-caption text-slate-500 mt-0.5">
+                  {scopedPeople.length > 0
+                    ? Math.round((compCount / scopedPeople.length) * 100)
+                    : 0}
+                  % of joiners
+                </div>
+              </Card>
 
-                <div className="card pad">
-                  <div className="ct">
-                    <h2>Joiners</h2>
-                    <button
-                      type="button"
-                      className="btn"
-                      id="export-joiners-excel-btn"
-                      onClick={handleExportJoiners}
-                    >
-                      Export to Excel
-                    </button>
+              <Card className="p-5">
+                <div className="text-table-header uppercase text-slate-500">Overdue Tasks</div>
+                <div className="text-kpi-number text-rose-600 font-mono tabular-nums mt-1">
+                  {A.ov}
+                </div>
+                <div className="text-caption text-slate-500 mt-0.5">past target day</div>
+              </Card>
+
+              <Card className="p-5">
+                <div className="text-table-header uppercase text-slate-500">Tasks Done On Time</div>
+                <div className="text-kpi-number text-slate-900 font-mono tabular-nums mt-1">
+                  {A.pct.toFixed(0)}%
+                </div>
+                <div className="text-caption text-slate-500 mt-0.5">of all due tasks</div>
+              </Card>
+            </div>
+
+            <Card title="Overdue By Task">
+              <div className="space-y-3">
+                {tasks.map((t, k) => (
+                  <div
+                    key={`${t[0]}-${k}`}
+                    className="grid grid-cols-[170px_1fr_auto] items-center gap-3 text-caption"
+                  >
+                    <span className="text-slate-700 font-medium truncate">{t[0]}</span>
+                    {renderBar((oc[k] / mx) * 100, oc[k] ? 'b' : '')}
+                    <b className="font-mono font-semibold text-slate-900 w-8 text-right">{oc[k]}</b>
                   </div>
-                  <div className="tb">
-                    <input
-                      id="q"
-                      placeholder="Search joiner, branch or HR"
-                      value={q}
-                      onChange={(e) => setQ(e.target.value)}
-                    />
-                    <select id="fs" value={fs} onChange={(e) => setFs(e.target.value)}>
-                      <option value="">All statuses</option>
-                      <option value="Has overdue">Has overdue</option>
-                      <option value="In progress">In progress</option>
-                      <option value="Complete">Complete</option>
-                    </select>
-                  </div>
-                  <div className="scroll">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Joiner</th>
-                          <th>Branch</th>
-                          <th>HR officer</th>
-                          <th>Joined</th>
+                ))}
+              </div>
+            </Card>
+
+            <Card
+              title="Joiners"
+              action={
+                <Button
+                  id="export-joiners-excel-btn"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleExportJoiners}
+                  leftIcon={<Download className="w-4 h-4" />}
+                >
+                  Export To Excel
+                </Button>
+              }
+            >
+              <div className="space-y-4">
+                <TableToolbar
+                  searchInputId="q"
+                  searchValue={q}
+                  onSearchChange={setQ}
+                  searchPlaceholder="Search joiner, branch or HR"
+                  filters={[
+                    {
+                      id: 'fs',
+                      label: 'Filter by Status',
+                      value: fs,
+                      onChange: setFs,
+                      options: [
+                        { value: '', label: 'All statuses' },
+                        { value: 'Has overdue', label: 'Has overdue' },
+                        { value: 'In progress', label: 'In progress' },
+                        { value: 'Complete', label: 'Complete' },
+                      ],
+                    },
+                  ]}
+                  hasActiveFilters={Boolean(q || fs)}
+                  onReset={() => {
+                    setQ('');
+                    setFs('');
+                  }}
+                />
+
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Joiner</TableHead>
+                      <TableHead>Branch</TableHead>
+                      <TableHead>Hr Officer</TableHead>
+                      <TableHead>Joined</TableHead>
+                      {tasks.map((t, k) => (
+                        <TableHead key={`${t[2]}-${k}`}>{toTitleCase(t[2])}</TableHead>
+                      ))}
+                      <TableHead>Progress</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody id="tb">
+                    {filteredJoiners.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={tasks.length + 5}
+                          className="text-center py-8 text-caption text-slate-500"
+                        >
+                          No joiners match.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredJoiners.map(([j, st], idx) => (
+                        <TableRow key={`${j.id || j.n}-${idx}`}>
+                          <TableCell mobileRole="primary">
+                            <div className="font-semibold text-slate-900">{toTitleCase(j.n)}</div>
+                            <div className="text-caption text-slate-500">{j.d}</div>
+                          </TableCell>
+                          <TableCell mobileRole="field" mobileLabel="Branch" className="text-slate-700">
+                            {j.b[0]}
+                          </TableCell>
+                          <TableCell mobileRole="field" mobileLabel="HR Officer" className="text-slate-700">
+                            {toTitleCase(j.hr)}
+                          </TableCell>
+                          <TableCell mobileRole="field" mobileLabel="Joined" className="font-mono text-slate-600">
+                            {j.ago}d ago
+                          </TableCell>
                           {tasks.map((t, k) => (
-                            <th key={`${t[2]}-${k}`}>{t[2]}</th>
+                            <TableCell key={k} mobileRole="field" mobileLabel={toTitleCase(t[2])}>
+                              {renderChip(j, k)}
+                            </TableCell>
                           ))}
-                          <th>Progress</th>
-                        </tr>
-                      </thead>
-                      <tbody id="tb">
-                        {filteredJoiners.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={tasks.length + 5}
-                              style={{ textAlign: 'center', color: 'var(--mut)', padding: 26 }}
+                          <TableCell mobileRole="status">
+                            <Badge
+                              variant={
+                                st.st === 'Complete' ? 'success' : st.ov ? 'error' : 'neutral'
+                              }
+                              className="font-mono"
                             >
-                              No joiners match.
-                            </td>
-                          </tr>
-                        ) : (
-                          filteredJoiners.map(([j, st], idx) => (
-                            <tr key={`${j.id || j.n}-${idx}`}>
-                              <td>
-                                <b>{j.n}</b>
-                                <small>{j.d}</small>
-                              </td>
-                              <td>{j.b[0]}</td>
-                              <td>{j.hr}</td>
-                              <td>{j.ago}d ago</td>
-                              {tasks.map((_, k) => (
-                                <td key={k}>{renderChip(j, k)}</td>
-                              ))}
-                              <td>
-                                <span
-                                  className={`tag ${
-                                    st.st === 'Complete' ? 't-ok' : st.ov ? 't-b' : 't-n'
-                                  }`}
-                                >
-                                  {st.dn}/{st.a}
-                                </span>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </>
-            )}
+                              {st.dn}/{st.a}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          </>
+        )}
 
-            {/* 2) EXITS & ECF */}
-            {activeSubTab === 'e' &&
-              (() => {
-                const totX = Math.max(ecfItems.length, 1);
-                const op = scopedExits.filter((e) => exDoneCount(e) < ecfItems.length);
-                const od = op.filter((e) => e.ago > SLA_X).length;
-                return (
-                  <>
-                    <div className="card kpis">
-                      <div className="kpi">
-                        <div className="l">Open ECFs</div>
-                        <div className="v">{op.length}</div>
-                        <div className="s">clearance not complete</div>
-                      </div>
-                      <div className="kpi bad">
-                        <div className="l">Overdue ECFs</div>
-                        <div className="v">{od}</div>
-                        <div className="s">open past {SLA_X} days</div>
-                      </div>
-                      <div className="kpi ok">
-                        <div className="l">Cleared</div>
-                        <div className="v">{scopedExits.length - op.length}</div>
-                        <div className="s">ECF fully complete</div>
-                      </div>
-                      <div className="kpi">
-                        <div className="l">Exits in view</div>
-                        <div className="v">{scopedExits.length}</div>
-                        <div className="s">all exit types</div>
-                      </div>
-                    </div>
-
-                    <div className="card pad">
-                      <div className="ct">
-                        <div>
-                          <h2>Employee clearance forms</h2>
-                          <small>
-                            Click any checklist item tag to mark Done/Pending. When all items are Done, status becomes Cleared and employee moves to Exited/Archive.
-                          </small>
-                        </div>
-                        <button
-                          type="button"
-                          className="btn"
-                          id="export-exits-excel-btn"
-                          onClick={handleExportExits}
-                        >
-                          Export to Excel
-                        </button>
-                      </div>
-                      <div className="tb">
-                        <input
-                          id="exit-q"
-                          placeholder="Search employee, branch or HR"
-                          value={exitQ}
-                          onChange={(e) => setExitQ(e.target.value)}
-                        />
-                        <select
-                          id="exit-fs"
-                          value={exitFs}
-                          onChange={(e) => setExitFs(e.target.value)}
-                        >
-                          <option value="">All statuses</option>
-                          <option value="In progress">In progress</option>
-                          <option value="Overdue">Overdue</option>
-                          <option value="Cleared">Cleared</option>
-                        </select>
-                      </div>
-                      <div className="scroll">
-                        <table>
-                          <thead>
-                            <tr>
-                              <th>Employee</th>
-                              <th>Branch</th>
-                              <th>HR officer</th>
-                              <th>Exit type</th>
-                              <th>Left</th>
-                              {ecfItems.map((x, idx) => (
-                                <th key={`${x}-${idx}`}>{x}</th>
-                              ))}
-                              <th>Progress</th>
-                              <th>Status</th>
-                              {role === 'super_admin' && <th></th>}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {filteredExits.map((e, idx) => {
-                              const st = exS(e);
-                              const dn = exDoneCount(e);
-                              const canUndo =
-                                role === 'super_admin' &&
-                                canSuperAdminUndoExit(e.initiatedAt, e.ago);
-                              return (
-                                <tr key={`${e.id || e.n}-${idx}`}>
-                                  <td>
-                                    <b>{e.n}</b>
-                                    <small>{e.d}</small>
-                                  </td>
-                                  <td>{e.b[0]}</td>
-                                  <td>{e.b[2]}</td>
-                                  <td>
-                                    <span
-                                      className={`tag ${
-                                        e.type === 'Absconding' ? 't-b' : 't-n'
-                                      }`}
-                                    >
-                                      {e.type}
-                                    </span>
-                                  </td>
-                                  <td>{e.ago}d ago</td>
-                                  {ecfItems.map((_, i) => {
-                                    const itemDone = isEcfItemDone(e, i);
-                                    return (
-                                      <td key={i}>
-                                        <button
-                                          type="button"
-                                          onClick={() => toggleExitChecklistItem(e.id, i, e.b[2])}
-                                          style={{
-                                            background: 'none',
-                                            border: 0,
-                                            padding: 0,
-                                            cursor: 'pointer',
-                                          }}
-                                          title="Click to toggle Done / Pending"
-                                        >
-                                          {itemDone ? (
-                                            <span className="tag t-ok">Done</span>
-                                          ) : (
-                                            <span
-                                              className={`tag ${e.ago > SLA_X ? 't-b' : 't-n'}`}
-                                            >
-                                              Pending
-                                            </span>
-                                          )}
-                                        </button>
-                                      </td>
-                                    );
-                                  })}
-                                  <td>
-                                    <div className="fr">
-                                      {renderBar(
-                                        (dn / totX) * 100,
-                                        e.ago > SLA_X && dn < ecfItems.length ? 'b' : ''
-                                      )}
-                                      <span>
-                                        {dn}/{ecfItems.length}
-                                      </span>
-                                    </div>
-                                  </td>
-                                  <td>
-                                    <span className={`tag ${st[1]}`}>{st[0]}</span>
-                                  </td>
-                                  {role === 'super_admin' && (
-                                    <td>
-                                      {canUndo && (
-                                        <button
-                                          type="button"
-                                          className="delb"
-                                          onClick={() =>
-                                            undoEmployeeExit({
-                                              exitId: e.id,
-                                              employeeId: e.employeeId,
-                                              actorName: 'Super Admin',
-                                            })
-                                          }
-                                        >
-                                          Undo exit
-                                        </button>
-                                      )}
-                                    </td>
-                                  )}
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
-
-            {/* 3) HR PERFORMANCE (Super Admin & Zonal HR only) */}
-            {activeSubTab === 's' &&
-              canViewHrPerformance &&
-              (() => {
-                const zs = [...new Set(scopedBranches.map((b) => b[1]))];
-                const G: [string, string, (b: BranchTuple) => boolean][] =
-                  lvl === 'Zone'
-                    ? zs.map((z) => [z, '', (x: BranchTuple) => x[1] === z])
-                    : lvl === 'Branch'
-                    ? scopedBranches.map((b) => [b[0], b[1], (x: BranchTuple) => x[0] === b[0]])
-                    : scopedBranches.map((b) => [b[2], b[0], (x: BranchTuple) => x[2] === b[2]]);
-
-                const rows = G.map(([nm, sub, f]) => {
-                  const a = ag(
-                    scopedPeople.filter((j) => f(j.b)),
-                    scopedExits.filter((e) => f(e.b))
-                  );
-                  return { n: nm, sub, a, fl: flag(a) };
-                }).sort(
-                  (x, y) => Number(x.a.n < MIN) - Number(y.a.n < MIN) || x.a.pct - y.a.pct
-                );
-
-                const handleExportHrPerformance = () => {
-                  const exportData = rows.map((r) => ({
-                    [lvl === 'HR' ? 'HR Officer' : lvl]: r.n,
-                    Scope: r.sub || 'All',
-                    Joiners: r.a.n,
-                    'On-time Rate (%)': `${r.a.pct.toFixed(0)}%`,
-                    'Avg Days': r.a.avg ? Number(r.a.avg.toFixed(1)) : '—',
-                    Overdue: r.a.ov,
-                    'Open ECFs': r.a.ecf,
-                    Flag: r.fl[0],
-                  }));
-                  exportRowsToExcel(
-                    `PostEx_HR_Performance_${lvl}_Export.xlsx`,
-                    'HR Performance',
-                    exportData
-                  );
-                };
-
-                return (
-                  <>
-                    <div className="card kpis">
-                      <div className={`kpi ${A.pct >= 85 ? 'ok' : ''}`.trim()}>
-                        <div className="l">On-time task rate</div>
-                        <div className="v">{A.pct.toFixed(0)}%</div>
-                        <div className="s">all HR officers</div>
-                      </div>
-                      <div className="kpi">
-                        <div className="l">Avg days to onboard</div>
-                        <div className="v">{A.avg.toFixed(1)}</div>
-                        <div className="s">fully onboarded joiners</div>
-                      </div>
-                      <div className="kpi bad">
-                        <div className="l">Overdue tasks</div>
-                        <div className="v">{A.ov}</div>
-                        <div className="s">across scope</div>
-                      </div>
-                      <div className="kpi">
-                        <div className="l">Open ECFs</div>
-                        <div className="v">{A.ecf}</div>
-                        <div className="s">awaiting clearance</div>
-                      </div>
-                    </div>
-
-                    <div className="card pad">
-                      <div className="ct">
-                        <h2>Scorecard by {lvl.toLowerCase()}</h2>
-                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                          <div className="wseg" id="lv">
-                            {(['Zone', 'Branch', 'HR officer'] as const).map((l) => {
-                              const dataKey = l === 'HR officer' ? 'HR' : l;
-                              const isOn = l === lvl || (lvl === 'HR' && l === 'HR officer');
-                              return (
-                                <button
-                                  key={l}
-                                  type="button"
-                                  className={isOn ? 'on' : ''}
-                                  data-l={dataKey}
-                                  onClick={() => setLvl(dataKey)}
-                                >
-                                  {l}
-                                </button>
-                              );
-                            })}
-                          </div>
-                          <button
-                            type="button"
-                            className="btn"
-                            id="export-hr-performance-excel-btn"
-                            onClick={handleExportHrPerformance}
-                          >
-                            Export to Excel
-                          </button>
-                        </div>
-                      </div>
-                      <p className="rule" style={{ marginBottom: 14 }}>
-                        Worst performers listed first. Fewer than {MIN} joiners is marked Low
-                        volume and not judged.
-                      </p>
-                      <div className="scroll">
-                        <table style={{ minWidth: 760 }}>
-                          <thead>
-                            <tr>
-                              <th>{lvl === 'HR' ? 'HR officer' : lvl}</th>
-                              <th>Joiners</th>
-                              <th>On-time rate</th>
-                              <th>Avg days</th>
-                              <th>Overdue</th>
-                              <th>Open ECFs</th>
-                              <th>Flag</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {rows.map((r) => (
-                              <tr key={r.n}>
-                                <td>
-                                  <b>{r.n}</b>
-                                  {r.sub ? <small>{r.sub}</small> : null}
-                                </td>
-                                <td>{r.a.n}</td>
-                                <td>
-                                  <div className="fr">
-                                    {renderBar(r.a.pct, r.fl[2])}
-                                    <span>{r.a.pct.toFixed(0)}%</span>
-                                  </div>
-                                </td>
-                                <td>{r.a.avg ? r.a.avg.toFixed(1) : '—'}</td>
-                                <td>{r.a.ov}</td>
-                                <td>{r.a.ecf}</td>
-                                <td>
-                                  <span className={`tag ${r.fl[1]}`}>{r.fl[0]}</span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
-
-            {/* 4) TASK SETTINGS */}
-            {activeSubTab === 't' && (
+        {/* 2) EXITS & ECF */}
+        {activeSubTab === 'e' &&
+          (() => {
+            const totX = Math.max(ecfItems.length, 1);
+            const op = scopedExits.filter((e) => exDoneCount(e) < ecfItems.length);
+            const od = op.filter((e) => e.ago > SLA_X).length;
+            return (
               <>
-                <div className="rule">
-                  Deleting a task only stops tracking it going forward — it does not touch any
-                  record already saved.
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <Card className="p-5">
+                    <div className="text-table-header uppercase text-slate-500">Open Ecfs</div>
+                    <div className="text-kpi-number text-slate-900 font-mono tabular-nums mt-1">
+                      {op.length}
+                    </div>
+                    <div className="text-caption text-slate-500 mt-0.5">clearance not complete</div>
+                  </Card>
+
+                  <Card className="p-5">
+                    <div className="text-table-header uppercase text-slate-500">Overdue Ecfs</div>
+                    <div className="text-kpi-number text-rose-600 font-mono tabular-nums mt-1">
+                      {od}
+                    </div>
+                    <div className="text-caption text-slate-500 mt-0.5">open past {SLA_X} days</div>
+                  </Card>
+
+                  <Card className="p-5">
+                    <div className="text-table-header uppercase text-slate-500">Cleared</div>
+                    <div className="text-kpi-number text-emerald-600 font-mono tabular-nums mt-1">
+                      {scopedExits.length - op.length}
+                    </div>
+                    <div className="text-caption text-slate-500 mt-0.5">ECF fully complete</div>
+                  </Card>
+
+                  <Card className="p-5">
+                    <div className="text-table-header uppercase text-slate-500">Exits In View</div>
+                    <div className="text-kpi-number text-slate-900 font-mono tabular-nums mt-1">
+                      {scopedExits.length}
+                    </div>
+                    <div className="text-caption text-slate-500 mt-0.5">all exit types</div>
+                  </Card>
                 </div>
-                <div className="g2">
-                  <div className="card pad">
-                    <div className="ct">
-                      <h2>Onboarding tasks</h2>
-                    </div>
-                    <div className="scroll" style={{ margin: 0 }}>
-                      <table style={{ minWidth: 0 }}>
-                        <thead>
-                          <tr>
-                            <th>Task</th>
-                            <th>Target day</th>
-                            <th>Label</th>
-                            <th></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {tasks.map((t, i) => (
-                            <tr key={`${t[0]}-${i}`}>
-                              <td>
-                                <b>{t[0]}</b>
-                              </td>
-                              <td>Day {t[1]}</td>
-                              <td>
-                                <span className="tag t-n">{t[2]}</span>
-                              </td>
-                              <td>
-                                <button
-                                  type="button"
-                                  className="delb"
-                                  data-kind="t"
-                                  data-i={i}
-                                  onClick={() => handleDeleteTask(i)}
-                                >
-                                  Delete
-                                </button>
-                              </td>
-                            </tr>
+
+                <Card
+                  title="Employee Clearance Forms"
+                  description="Click any checklist item tag to mark Done/Pending. When all items are Done, status becomes Cleared and employee moves to Exited/Archive."
+                  action={
+                    <Button
+                      id="export-exits-excel-btn"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleExportExits}
+                      leftIcon={<Download className="w-4 h-4" />}
+                    >
+                      Export To Excel
+                    </Button>
+                  }
+                >
+                  <div className="space-y-4">
+                    <TableToolbar
+                      searchInputId="exit-q"
+                      searchValue={exitQ}
+                      onSearchChange={setExitQ}
+                      searchPlaceholder="Search employee, branch or HR"
+                      filters={[
+                        {
+                          id: 'exit-fs',
+                          label: 'Filter by Status',
+                          value: exitFs,
+                          onChange: setExitFs,
+                          options: [
+                            { value: '', label: 'All statuses' },
+                            { value: 'In progress', label: 'In progress' },
+                            { value: 'Overdue', label: 'Overdue' },
+                            { value: 'Cleared', label: 'Cleared' },
+                          ],
+                        },
+                      ]}
+                      hasActiveFilters={Boolean(exitQ || exitFs)}
+                      onReset={() => {
+                        setExitQ('');
+                        setExitFs('');
+                      }}
+                    />
+
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Employee</TableHead>
+                          <TableHead>Branch</TableHead>
+                          <TableHead>Hr Officer</TableHead>
+                          <TableHead>Exit Type</TableHead>
+                          <TableHead>Left</TableHead>
+                          {ecfItems.map((x, idx) => (
+                            <TableHead key={`${x}-${idx}`}>{toTitleCase(x)}</TableHead>
                           ))}
-                        </tbody>
-                      </table>
+                          <TableHead>Progress</TableHead>
+                          <TableHead>Status</TableHead>
+                          {role === 'super_admin' && <TableHead></TableHead>}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredExits.map((e, idx) => {
+                          const st = exS(e);
+                          const dn = exDoneCount(e);
+                          const canUndo =
+                            role === 'super_admin' &&
+                            canSuperAdminUndoExit(e.initiatedAt, e.ago);
+                          return (
+                            <TableRow key={`${e.id || e.n}-${idx}`}>
+                              <TableCell mobileRole="primary">
+                                <div className="font-semibold text-slate-900">{toTitleCase(e.n)}</div>
+                                <div className="text-caption text-slate-500">{e.d}</div>
+                              </TableCell>
+                              <TableCell mobileRole="field" mobileLabel="Branch" className="text-slate-700">
+                                {e.b[0]}
+                              </TableCell>
+                              <TableCell mobileRole="field" mobileLabel="HR Officer" className="text-slate-700">
+                                {toTitleCase(e.b[2])}
+                              </TableCell>
+                              <TableCell mobileRole="field" mobileLabel="Exit Type">
+                                <Badge variant={e.type === 'Absconding' ? 'error' : 'neutral'}>
+                                  {e.type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell mobileRole="field" mobileLabel="Left" className="font-mono text-slate-600">
+                                {e.ago}d ago
+                              </TableCell>
+                              {ecfItems.map((itemLabel, i) => {
+                                const itemDone = isEcfItemDone(e, i);
+                                return (
+                                  <TableCell key={i} mobileRole="field" mobileLabel={toTitleCase(itemLabel)}>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleExitChecklistItem(e.id, i, e.b[2])}
+                                      className="cursor-pointer focus:outline-none"
+                                      title="Click to toggle Done / Pending"
+                                    >
+                                      {itemDone ? (
+                                        <Badge variant="success">Done</Badge>
+                                      ) : (
+                                        <Badge variant={e.ago > SLA_X ? 'error' : 'neutral'}>
+                                          Pending
+                                        </Badge>
+                                      )}
+                                    </button>
+                                  </TableCell>
+                                );
+                              })}
+                              <TableCell mobileRole="field" mobileLabel="Progress">
+                                <div className="flex items-center gap-2.5 min-w-[120px]">
+                                  {renderBar(
+                                    (dn / totX) * 100,
+                                    e.ago > SLA_X && dn < ecfItems.length ? 'b' : ''
+                                  )}
+                                  <span className="text-caption font-bold font-mono text-slate-700 w-9 text-right">
+                                    {dn}/{ecfItems.length}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell mobileRole="status">
+                                <Badge variant={st[1]}>{st[0]}</Badge>
+                              </TableCell>
+                              {role === 'super_admin' && (
+                                <TableCell mobileRole="actions">
+                                  {canUndo && (
+                                    <Button
+                                      type="button"
+                                      variant="danger"
+                                      size="sm"
+                                      onClick={() =>
+                                        undoEmployeeExit({
+                                          exitId: e.id,
+                                          employeeId: e.employeeId,
+                                          actorName: 'Super Admin',
+                                        })
+                                      }
+                                    >
+                                      Undo Exit
+                                    </Button>
+                                  )}
+                                </TableCell>
+                              )}
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </Card>
+              </>
+            );
+          })()}
+
+        {/* 3) HR PERFORMANCE (Super Admin & Zonal HR only) */}
+        {activeSubTab === 's' &&
+          canViewHrPerformance &&
+          (() => {
+            const zs = [...new Set(scopedBranches.map((b) => b[1]))];
+            const G: [string, string, (b: BranchTuple) => boolean][] =
+              lvl === 'Zone'
+                ? zs.map((z) => [z, '', (x: BranchTuple) => x[1] === z])
+                : lvl === 'Branch'
+                ? scopedBranches.map((b) => [b[0], b[1], (x: BranchTuple) => x[0] === b[0]])
+                : scopedBranches.map((b) => [b[2], b[0], (x: BranchTuple) => x[2] === b[2]]);
+
+            const rows = G.map(([nm, sub, f]) => {
+              const a = ag(
+                scopedPeople.filter((j) => f(j.b)),
+                scopedExits.filter((e) => f(e.b))
+              );
+              return { n: nm, sub, a, fl: flag(a) };
+            }).sort(
+              (x, y) => Number(x.a.n < MIN) - Number(y.a.n < MIN) || x.a.pct - y.a.pct
+            );
+
+            const handleExportHrPerformance = () => {
+              const exportData = rows.map((r) => ({
+                [lvl === 'HR' ? 'HR Officer' : lvl]: r.n,
+                Scope: r.sub || 'All',
+                Joiners: r.a.n,
+                'On-time Rate (%)': `${r.a.pct.toFixed(0)}%`,
+                'Avg Days': r.a.avg ? Number(r.a.avg.toFixed(1)) : '—',
+                Overdue: r.a.ov,
+                'Open ECFs': r.a.ecf,
+                Flag: r.fl[0],
+              }));
+              exportRowsToExcel(
+                `PostEx_HR_Performance_${lvl}_Export.xlsx`,
+                'HR Performance',
+                exportData
+              );
+            };
+
+            return (
+              <>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  <Card className="p-5">
+                    <div className="text-table-header uppercase text-slate-500">On-Time Task Rate</div>
+                    <div
+                      className={`text-kpi-number font-mono tabular-nums mt-1 ${
+                        A.pct >= 85 ? 'text-emerald-600' : 'text-slate-900'
+                      }`}
+                    >
+                      {A.pct.toFixed(0)}%
                     </div>
-                    <div className="addrow">
-                      <input
+                    <div className="text-caption text-slate-500 mt-0.5">all HR officers</div>
+                  </Card>
+
+                  <Card className="p-5">
+                    <div className="text-table-header uppercase text-slate-500">Avg Days To Onboard</div>
+                    <div className="text-kpi-number text-slate-900 font-mono tabular-nums mt-1">
+                      {A.avg.toFixed(1)}
+                    </div>
+                    <div className="text-caption text-slate-500 mt-0.5">fully onboarded joiners</div>
+                  </Card>
+
+                  <Card className="p-5">
+                    <div className="text-table-header uppercase text-slate-500">Overdue Tasks</div>
+                    <div className="text-kpi-number text-rose-600 font-mono tabular-nums mt-1">
+                      {A.ov}
+                    </div>
+                    <div className="text-caption text-slate-500 mt-0.5">across scope</div>
+                  </Card>
+
+                  <Card className="p-5">
+                    <div className="text-table-header uppercase text-slate-500">Open Ecfs</div>
+                    <div className="text-kpi-number text-slate-900 font-mono tabular-nums mt-1">
+                      {A.ecf}
+                    </div>
+                    <div className="text-caption text-slate-500 mt-0.5">awaiting clearance</div>
+                  </Card>
+                </div>
+
+                <Card
+                  title={toTitleCase(`Scorecard by ${lvl}`)}
+                  action={
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <div
+                        id="lv"
+                        className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-xl p-1 gap-1"
+                      >
+                        {(['Zone', 'Branch', 'HR officer'] as const).map((l) => {
+                          const dataKey = l === 'HR officer' ? 'HR' : l;
+                          const isOn = l === lvl || (lvl === 'HR' && l === 'HR officer');
+                          return (
+                            <button
+                              key={l}
+                              type="button"
+                              data-l={dataKey}
+                              onClick={() => setLvl(dataKey)}
+                              className={`px-3 py-1.5 rounded-lg text-caption font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                                isOn
+                                  ? 'bg-white text-indigo-700 shadow-xs'
+                                  : 'text-slate-600 hover:text-slate-900'
+                              }`}
+                            >
+                              {toTitleCase(l)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <Button
+                        id="export-hr-performance-excel-btn"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleExportHrPerformance}
+                        leftIcon={<Download className="w-4 h-4" />}
+                      >
+                        Export To Excel
+                      </Button>
+                    </div>
+                  }
+                >
+                  <div className="space-y-4">
+                    <div className="rounded-xl bg-indigo-50/80 border border-indigo-200/80 px-4 py-2.5 text-caption text-indigo-900">
+                      Worst performers listed first. Fewer than {MIN} joiners is marked Low
+                      volume and not judged.
+                    </div>
+
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{toTitleCase(lvl === 'HR' ? 'HR officer' : lvl)}</TableHead>
+                          <TableHead>Joiners</TableHead>
+                          <TableHead>On-Time Rate</TableHead>
+                          <TableHead>Avg Days</TableHead>
+                          <TableHead>Overdue</TableHead>
+                          <TableHead>Open Ecfs</TableHead>
+                          <TableHead>Flag</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rows.map((r) => (
+                          <TableRow key={r.n}>
+                            <TableCell mobileRole="primary">
+                              <div className="font-semibold text-slate-900">
+                                {lvl === 'HR' ? toTitleCase(r.n) : r.n}
+                              </div>
+                              {r.sub ? (
+                                <div className="text-caption text-slate-500">{r.sub}</div>
+                              ) : null}
+                            </TableCell>
+                            <TableCell mobileRole="field" mobileLabel="Joiners" className="font-mono text-slate-700">
+                              {r.a.n}
+                            </TableCell>
+                            <TableCell mobileRole="field" mobileLabel="On-Time Rate">
+                              <div className="flex items-center gap-2.5 min-w-[120px]">
+                                {renderBar(r.a.pct, r.fl[2])}
+                                <span className="text-caption font-bold font-mono text-slate-700 w-9 text-right">
+                                  {r.a.pct.toFixed(0)}%
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell mobileRole="field" mobileLabel="Avg Days" className="font-mono text-slate-700">
+                              {r.a.avg ? r.a.avg.toFixed(1) : '—'}
+                            </TableCell>
+                            <TableCell mobileRole="field" mobileLabel="Overdue" className="font-mono text-slate-700">
+                              {r.a.ov}
+                            </TableCell>
+                            <TableCell mobileRole="field" mobileLabel="Open ECFs" className="font-mono text-slate-700">
+                              {r.a.ecf}
+                            </TableCell>
+                            <TableCell mobileRole="status">
+                              <Badge variant={r.fl[1]}>{r.fl[0]}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </Card>
+              </>
+            );
+          })()}
+
+        {/* 4) TASK SETTINGS */}
+        {activeSubTab === 't' && (
+          <>
+            <div className="rounded-xl bg-indigo-50/80 border border-indigo-200/80 px-4 py-3 text-caption text-indigo-900">
+              Deleting a task only stops tracking it going forward — it does not touch any
+              record already saved.
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card title="Onboarding Tasks">
+                <div className="space-y-4">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Task</TableHead>
+                        <TableHead>Target Day</TableHead>
+                        <TableHead>Label</TableHead>
+                        <TableHead className="text-right"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tasks.map((t, i) => (
+                        <TableRow key={`${t[0]}-${i}`}>
+                          <TableCell mobileRole="primary" className="font-semibold text-slate-900">
+                            {t[0]}
+                          </TableCell>
+                          <TableCell mobileRole="field" mobileLabel="Target Day" className="font-mono text-slate-700">
+                            Day {t[1]}
+                          </TableCell>
+                          <TableCell mobileRole="field" mobileLabel="Label">
+                            <Badge variant="neutral">{t[2]}</Badge>
+                          </TableCell>
+                          <TableCell mobileRole="actions" className="text-right">
+                            <button
+                              type="button"
+                              data-kind="t"
+                              data-i={i}
+                              onClick={() => handleDeleteTask(i)}
+                              className="px-3 py-1 rounded-lg border border-slate-200 text-rose-600 hover:bg-rose-50 text-tag font-semibold transition-colors cursor-pointer"
+                            >
+                              Delete
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-dashed border-slate-200">
+                    <div className="flex-1 min-w-[160px]">
+                      <Input
                         id="tn"
                         placeholder="Task name"
                         value={newTaskName}
                         onChange={(e) => setNewTaskName(e.target.value)}
                       />
-                      <input
+                    </div>
+                    <div className="w-20">
+                      <Input
                         id="td"
                         placeholder="Day"
                         type="number"
-                        style={{ width: 70 }}
                         value={newTaskDay}
                         onChange={(e) => setNewTaskDay(e.target.value)}
                       />
-                      <input
+                    </div>
+                    <div className="w-28">
+                      <Input
                         id="tsl"
                         placeholder="Label"
-                        style={{ width: 100 }}
                         value={newTaskLabel}
                         onChange={(e) => setNewTaskLabel(e.target.value)}
                       />
-                      <button
-                        type="button"
-                        className="addb"
-                        data-kind="t"
-                        onClick={handleAddTask}
-                      >
-                        Add task
-                      </button>
                     </div>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      data-kind="t"
+                      onClick={handleAddTask}
+                    >
+                      Add Task
+                    </Button>
                   </div>
+                </div>
+              </Card>
 
-                  <div className="card pad">
-                    <div className="ct">
-                      <h2>ECF checklist items</h2>
-                    </div>
-                    <div className="scroll" style={{ margin: 0 }}>
-                      <table style={{ minWidth: 0 }}>
-                        <thead>
-                          <tr>
-                            <th>Item</th>
-                            <th></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {ecfItems.map((x, i) => (
-                            <tr key={`${x}-${i}`}>
-                              <td>
-                                <b>{x}</b>
-                              </td>
-                              <td>
-                                <button
-                                  type="button"
-                                  className="delb"
-                                  data-kind="x"
-                                  data-i={i}
-                                  onClick={() => handleDeleteEcfItem(i)}
-                                >
-                                  Delete
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <div className="addrow">
-                      <input
+              <Card title="Ecf Checklist Items">
+                <div className="space-y-4">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Item</TableHead>
+                        <TableHead className="text-right"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ecfItems.map((x, i) => (
+                        <TableRow key={`${x}-${i}`}>
+                          <TableCell mobileRole="primary" className="font-semibold text-slate-900">
+                            {x}
+                          </TableCell>
+                          <TableCell mobileRole="actions" className="text-right">
+                            <button
+                              type="button"
+                              data-kind="x"
+                              data-i={i}
+                              onClick={() => handleDeleteEcfItem(i)}
+                              className="px-3 py-1 rounded-lg border border-slate-200 text-rose-600 hover:bg-rose-50 text-tag font-semibold transition-colors cursor-pointer"
+                            >
+                              Delete
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-dashed border-slate-200">
+                    <div className="flex-1 min-w-[180px]">
+                      <Input
                         id="xn"
                         placeholder="Item name"
-                        style={{ flex: 1 }}
                         value={newEcfItem}
                         onChange={(e) => setNewEcfItem(e.target.value)}
                       />
-                      <button
-                        type="button"
-                        className="addb"
-                        data-kind="x"
-                        onClick={handleAddEcfItem}
-                      >
-                        Add item
-                      </button>
                     </div>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      data-kind="x"
+                      onClick={handleAddEcfItem}
+                    >
+                      Add Item
+                    </Button>
                   </div>
                 </div>
-              </>
-            )}
-          </div>
-        </div>
+              </Card>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

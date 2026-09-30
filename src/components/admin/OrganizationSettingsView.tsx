@@ -158,7 +158,7 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
                 <Sparkles className="w-5 h-5 text-indigo-600" />
-                <h3 className="text-base font-bold text-slate-900">Company Identity &amp; Portal Branding</h3>
+                <h3 className="text-card-heading text-slate-900">Company Identity &amp; Portal Branding</h3>
               </div>
               <Badge variant="indigo" size="sm">Super Admin Controlled</Badge>
             </div>
@@ -176,7 +176,7 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                   leftIcon={<Building className="w-4 h-4 text-slate-400" />}
                   placeholder="e.g. PostEx Logistics"
                 />
-                <span className="text-[11px] text-slate-500 block">
+                <span className="text-caption text-slate-500 block">
                   Displayed across header navigation, login portals, and official PDF dossiers.
                 </span>
               </div>
@@ -192,7 +192,7 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                   leftIcon={<Type className="w-4 h-4 text-slate-400" />}
                   placeholder="e.g. Sign in to manage your team"
                 />
-                <span className="text-[11px] text-slate-500 block">
+                <span className="text-caption text-slate-500 block">
                   Shown beneath the main heading on both Candidate and Staff login pages.
                 </span>
               </div>
@@ -204,14 +204,14 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                 <div>
                   <div className="flex items-center gap-2">
                     <ImageIcon className="w-4 h-4 text-indigo-600" />
-                    <span className="text-xs font-bold text-slate-900">Company Logo</span>
+                    <span className="text-caption font-bold text-slate-900">Company Logo</span>
                     {settings.logoUrl ? (
                       <Badge variant="emerald" size="sm">Custom Upload</Badge>
                     ) : (
                       <Badge variant="slate" size="sm">Default System Logo</Badge>
                     )}
                   </div>
-                  <span className="text-[11px] text-slate-500 block mt-0.5">
+                  <span className="text-caption text-slate-500 block mt-0.5">
                     Accepts PNG, SVG, JPG, or WebP (max 2MB). Displayed in the header nav, both login pages, and PDF dossiers.
                   </span>
                 </div>
@@ -260,7 +260,7 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                       className="max-h-full max-w-full object-contain"
                     />
                   ) : (
-                    <div className="flex items-center gap-1.5 text-slate-700 font-bold text-xs">
+                    <div className="flex items-center gap-1.5 text-slate-700 font-bold text-caption">
                       <div className="w-6 h-6 rounded bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-600">
                         <Building className="w-3.5 h-3.5" />
                       </div>
@@ -268,8 +268,8 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                     </div>
                   )}
                 </div>
-                <div className="text-[11px] text-slate-500 space-y-0.5">
-                  <span className="font-semibold text-slate-700 block">Preview in Portal Nav &amp; Login Cards</span>
+                <div className="text-caption text-slate-500 space-y-0.5">
+                  <span className="font-semibold text-slate-700 block">Preview In Portal Nav &amp; Login Cards</span>
                   <span>{settings.logoUrl ? 'Using custom uploaded logo file.' : 'Using default company brand mark.'}</span>
                 </div>
               </div>
@@ -281,14 +281,14 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                 <div>
                   <div className="flex items-center gap-2">
                     <ImageIcon className="w-4 h-4 text-indigo-600" />
-                    <span className="text-xs font-bold text-slate-900">Login Page Background Image</span>
+                    <span className="text-caption font-bold text-slate-900">Login Page Background Image</span>
                     {settings.loginBgUrl ? (
                       <Badge variant="emerald" size="sm">Custom Background</Badge>
                     ) : (
                       <Badge variant="slate" size="sm">Default Background</Badge>
                     )}
                   </div>
-                  <span className="text-[11px] text-slate-500 block mt-0.5">
+                  <span className="text-caption text-slate-500 block mt-0.5">
                     Used as the full-bleed background for <strong>both Staff and Candidate login pages</strong>. Accepts JPG, PNG, WebP up to 5MB (resolutions up to 2560×1440).
                   </span>
                 </div>
@@ -328,7 +328,7 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
               </div>
 
               {/* Automatic Compression Notice */}
-              <div className="flex items-start gap-2 p-2.5 bg-indigo-50/70 border border-indigo-200 rounded-lg text-xs text-indigo-900">
+              <div className="flex items-start gap-2 p-2.5 bg-indigo-50/70 border border-indigo-200 rounded-lg text-caption text-indigo-900">
                 <Info className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
                 <span>
                   <strong>High-Speed Auto-Optimization:</strong> Large uploads (up to 5MB) are automatically downscaled and compressed to high-performance responsive web resolution on upload so login pages load instantly on mobile, tablet, and desktop displays.
@@ -336,7 +336,7 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
               </div>
 
               {bgOptimizationNote && (
-                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-center gap-2 font-mono">
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-caption text-emerald-800 flex items-center gap-2 font-mono">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>{bgOptimizationNote}</span>
                 </div>
@@ -351,12 +351,12 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-slate-950/30 flex items-end p-2">
-                    <span className="text-[10px] font-bold text-white uppercase tracking-wider bg-slate-950/60 px-1.5 py-0.5 rounded">
+                    <span className="text-tag text-white uppercase bg-slate-950/60 px-1.5 py-0.5 rounded">
                       {settings.loginBgUrl ? 'Active Custom' : 'Default Neutral'}
                     </span>
                   </div>
                 </div>
-                <div className="text-[11px] text-slate-500 space-y-1">
+                <div className="text-caption text-slate-500 space-y-1">
                   <span className="font-semibold text-slate-700 block">Full-Bleed Glass Card Preview</span>
                   <span>Both Staff &amp; Candidate login cards sit centered on this background image with a soft translucent blur.</span>
                 </div>
@@ -367,8 +367,8 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
           {/* Card 2: Support Email & Data Retention Settings */}
           <Card className="p-6 space-y-5">
             <div className="pb-3 border-b border-slate-100">
-              <h3 className="text-base font-bold text-slate-900">Support &amp; Data Retention Policy</h3>
-              <p className="text-xs text-slate-500">Corporate communication and privacy compliance retention thresholds.</p>
+              <h3 className="text-card-heading text-slate-900">Support &amp; Data Retention Policy</h3>
+              <p className="text-caption text-slate-500">Corporate communication and privacy compliance retention thresholds.</p>
             </div>
 
             <Input
@@ -387,8 +387,8 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
               <div className="flex items-start gap-2.5">
                 <History className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                 <div>
-                  <span className="text-xs font-bold text-slate-900 block">Data Retention Policy</span>
-                  <span className="text-[11px] text-slate-500 block leading-relaxed mt-0.5">
+                  <span className="text-caption font-bold text-slate-900 block">Data Retention Policy</span>
+                  <span className="text-caption text-slate-500 block mt-0.5">
                     Specifies the number of days after an application is rejected before candidate dossier data is soft-archived in compliance with privacy regulations.
                   </span>
                 </div>
@@ -420,13 +420,13 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                 onChange={(e) => setSettings({ ...settings, autoArchiveEnabled: e.target.checked })}
                 className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
               />
-              <label htmlFor="autoArchive" className="text-xs text-slate-700 font-medium cursor-pointer">
+              <label htmlFor="autoArchive" className="text-caption text-slate-700 font-medium cursor-pointer">
                 Enable automated archival notifications
               </label>
             </div>
 
             <div className="pt-3 flex items-center justify-between border-t border-slate-100">
-              <span className="text-[11px] text-slate-400 font-mono">
+              <span className="text-caption text-slate-400 font-mono">
                 Last updated: {new Date(settings.lastUpdated).toLocaleDateString()}
               </span>
               <Button
@@ -449,11 +449,11 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
           <div>
             <div className="flex items-center gap-2">
               <Archive className="w-4 h-4 text-indigo-600" />
-              <h3 className="text-sm font-bold text-slate-900">
+              <h3 className="text-card-heading text-slate-900">
                 Automated Data Retention Policy Enforcement
               </h3>
             </div>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+            <p className="text-caption text-slate-500 mt-1">
               Enforces data retention compliance by soft-hiding rejected candidate applications older than the configured policy threshold ({settings?.dataRetentionDaysAfterRejection || 120} days). Records remain fully intact in compliance audit logs.
             </p>
           </div>
@@ -472,20 +472,20 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
         </div>
 
         {retentionResult && (
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-caption space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-slate-800 flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 Execution Result:
               </span>
-              <span className="text-[10px] font-mono text-slate-400">
+              <span className="text-caption font-mono text-slate-400">
                 Cutoff: {new Date(retentionResult.cutoffDate).toLocaleDateString()}
               </span>
             </div>
-            <p className="text-slate-600 text-xs leading-relaxed">
+            <p className="text-slate-600 text-caption">
               {retentionResult.message}
             </p>
-            <div className="flex items-center gap-4 text-xs text-slate-500 pt-1 font-mono">
+            <div className="flex items-center gap-4 text-caption text-slate-500 pt-1 font-mono">
               <span>
                 Archived: <strong className="text-indigo-600">{retentionResult.countArchived}</strong>
               </span>

@@ -173,32 +173,32 @@ const CandidateLoginFormInner: React.FC = () => {
               <Key className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 text-base">Enter Verification OTP</h3>
-              <p className="text-xs text-slate-500">6-digit SMS code sent for Joining ID {joiningId}</p>
+              <h3 className="text-card-heading text-slate-900">Enter Verification OTP</h3>
+              <p className="text-caption text-slate-500">6-digit SMS code sent for Joining ID {joiningId}</p>
             </div>
           </div>
           <LanguageSelector />
         </div>
 
         {errorMessage && (
-          <div className="mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-lg flex items-start gap-2">
+          <div className="mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 text-caption rounded-lg flex items-start gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {successMessage && (
-          <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex items-start gap-2">
+          <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-caption rounded-lg flex items-start gap-2">
             <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{successMessage}</span>
           </div>
         )}
 
         {testOtpNotice && (
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-lg flex items-center justify-between">
+          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 text-amber-900 text-caption rounded-lg flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="font-semibold">Test Mode (SMS Stub):</span>
-              <code className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-mono font-bold text-sm tracking-wider">
+              <code className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-mono font-bold text-body tracking-wider">
                 {testOtpNotice}
               </code>
             </div>
@@ -217,8 +217,8 @@ const CandidateLoginFormInner: React.FC = () => {
         <form onSubmit={handleVerifyOtp} className="mt-5 space-y-4">
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-semibold text-slate-700">6-Digit OTP</label>
-              <div className="flex items-center gap-1 text-xs font-mono text-slate-500">
+              <label className="block text-caption font-semibold text-slate-700">6-Digit OTP</label>
+              <div className="flex items-center gap-1 text-caption font-mono text-slate-500">
                 <Clock className="w-3.5 h-3.5" />
                 <span className={isExpired ? 'text-rose-600 font-bold' : ''}>
                   {minutes}:{seconds.toString().padStart(2, '0')}
@@ -233,15 +233,15 @@ const CandidateLoginFormInner: React.FC = () => {
               onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
               required
               placeholder="123456"
-              className="text-center tracking-[0.4em] font-mono text-lg font-bold"
+              className="text-center tracking-[0.4em] font-mono text-card-heading"
             />
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-500 py-1">
+          <div className="flex items-center justify-between text-caption text-slate-500 py-1">
             <span>
               Remaining attempts: <strong className="text-slate-800">{attemptsRemaining} / 5</strong>
             </span>
-            <span className="text-[11px] text-slate-400">Maximum 5 verification attempts allowed</span>
+            <span className="text-caption text-slate-400">Maximum 5 verification attempts allowed</span>
           </div>
 
           <Button
@@ -297,14 +297,14 @@ const CandidateLoginFormInner: React.FC = () => {
           )}
           <LanguageSelector />
         </div>
-        <h2 className="text-lg font-bold text-slate-900 tracking-tight">Candidate Portal Sign In</h2>
-        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+        <h2 className="text-card-heading text-slate-900 tracking-tight">Candidate Portal Sign In</h2>
+        <p className="text-caption text-slate-600 mt-1 leading-relaxed">
           {loginTagline || 'OTP-based workforce authentication for onboarding & dossier verification.'}
         </p>
       </div>
 
       {errorMessage && (
-        <div className="mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-lg flex items-start gap-2">
+        <div className="mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 text-caption rounded-lg flex items-start gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{errorMessage}</span>
         </div>

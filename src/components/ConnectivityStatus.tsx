@@ -81,16 +81,16 @@ export const ConnectivityStatus: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/70 text-slate-700 border border-slate-200">
-                  Step 1 • Setup & Connectivity
+                <span className="text-tag uppercase px-2 py-0.5 rounded-full bg-white/70 text-slate-700 border border-slate-200">
+                  Step 1 • Setup &amp; Connectivity
                 </span>
                 {diagnostic?.latencyMs !== undefined && (
-                  <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-white/70 text-slate-700 border border-slate-200">
+                  <span className="text-tag font-mono px-2 py-0.5 rounded-full bg-white/70 text-slate-700 border border-slate-200">
                     {diagnostic.latencyMs}ms latency
                   </span>
                 )}
               </div>
-              <h2 className="text-xl font-bold mt-1 tracking-tight">
+              <h2 className="text-page-title mt-1">
                 {isLoading
                   ? 'Verifying Supabase Connection...'
                   : diagnostic?.status === 'connected'
@@ -99,7 +99,7 @@ export const ConnectivityStatus: React.FC = () => {
                   ? 'Supabase Environment Keys Required'
                   : 'Connection Check Failed'}
               </h2>
-              <p className="text-sm mt-1 opacity-90 leading-relaxed max-w-2xl">
+              <p className="text-body mt-1 opacity-90 max-w-2xl">
                 {isLoading
                   ? 'Testing reachability across Supabase GoTrue Auth service and REST gateway...'
                   : diagnostic?.message}
@@ -126,7 +126,7 @@ export const ConnectivityStatus: React.FC = () => {
         {/* Project URL */}
         <div id="card-supabase-url" className="p-5 bg-white rounded-lg border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Project URL</span>
+            <span className="text-table-header text-slate-500 uppercase">Project URL</span>
             <Globe className="w-4 h-4 text-slate-400" />
           </div>
           <div className="mt-3">
@@ -136,11 +136,11 @@ export const ConnectivityStatus: React.FC = () => {
                   isSupabaseConfigured ? 'bg-emerald-500' : 'bg-amber-400'
                 }`}
               />
-              <span className="text-sm font-semibold text-slate-800">
-                {isSupabaseConfigured ? 'Provided' : 'Missing in Env'}
+              <span className="text-body font-semibold text-slate-800">
+                {isSupabaseConfigured ? 'Provided' : 'Missing In Env'}
               </span>
             </div>
-            <p className="text-xs font-mono text-slate-500 mt-2 truncate bg-slate-50 p-2 rounded border border-slate-100">
+            <p className="text-caption font-mono text-slate-500 mt-2 truncate bg-slate-50 p-2 rounded border border-slate-100">
               {diagnostic?.maskedUrl || (supabaseUrl ? 'Configured' : 'VITE_SUPABASE_URL')}
             </p>
           </div>
@@ -149,7 +149,7 @@ export const ConnectivityStatus: React.FC = () => {
         {/* Anon Public Key */}
         <div id="card-supabase-anon" className="p-5 bg-white rounded-lg border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Anon Public Key</span>
+            <span className="text-table-header text-slate-500 uppercase">Anon Public Key</span>
             <Key className="w-4 h-4 text-slate-400" />
           </div>
           <div className="mt-3">
@@ -159,11 +159,11 @@ export const ConnectivityStatus: React.FC = () => {
                   Boolean(supabaseAnonKey) ? 'bg-emerald-500' : 'bg-amber-400'
                 }`}
               />
-              <span className="text-sm font-semibold text-slate-800">
-                {Boolean(supabaseAnonKey) ? 'Client Key Loaded' : 'Missing in Env'}
+              <span className="text-body font-semibold text-slate-800">
+                {Boolean(supabaseAnonKey) ? 'Client Key Loaded' : 'Missing In Env'}
               </span>
             </div>
-            <p className="text-xs font-mono text-slate-500 mt-2 truncate bg-slate-50 p-2 rounded border border-slate-100">
+            <p className="text-caption font-mono text-slate-500 mt-2 truncate bg-slate-50 p-2 rounded border border-slate-100">
               {diagnostic?.maskedKey || (supabaseAnonKey ? 'Loaded' : 'VITE_SUPABASE_ANON_KEY')}
             </p>
           </div>
@@ -172,15 +172,15 @@ export const ConnectivityStatus: React.FC = () => {
         {/* Edge Functions Scaffold */}
         <div id="card-edge-functions" className="p-5 bg-white rounded-lg border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Edge Functions</span>
+            <span className="text-table-header text-slate-500 uppercase">Edge Functions</span>
             <Server className="w-4 h-4 text-slate-400" />
           </div>
           <div className="mt-3">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-sm font-semibold text-slate-800">Scaffolded</span>
+              <span className="text-body font-semibold text-slate-800">Scaffolded</span>
             </div>
-            <p className="text-xs font-mono text-slate-500 mt-2 truncate bg-slate-50 p-2 rounded border border-slate-100">
+            <p className="text-caption font-mono text-slate-500 mt-2 truncate bg-slate-50 p-2 rounded border border-slate-100">
               /supabase/functions
             </p>
           </div>
@@ -196,8 +196,8 @@ export const ConnectivityStatus: React.FC = () => {
           <div className="flex items-start gap-3">
             <Info className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm">How to connect your Supabase project:</h3>
-              <ol className="text-xs space-y-1.5 list-decimal list-inside text-indigo-800">
+              <h3 className="text-card-heading">How To Connect Your Supabase Project:</h3>
+              <ol className="text-caption space-y-1.5 list-decimal list-inside text-indigo-800">
                 <li>
                   Open your <strong className="font-medium">Supabase Dashboard</strong> &gt; Project Settings &gt; API.
                 </li>
@@ -218,11 +218,11 @@ export const ConnectivityStatus: React.FC = () => {
 
       {/* System Architecture Checklist */}
       <div id="scaffold-verification" className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+        <h3 className="text-card-heading text-slate-900 flex items-center gap-2">
           <Layers className="w-5 h-5 text-slate-600" />
           <span>Step 1 Architecture Checklist</span>
         </h3>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-caption text-slate-500 mt-1">
           Scaffolding completed in accordance with Ground Rules #1, #2, and #8.
         </p>
 
@@ -231,13 +231,13 @@ export const ConnectivityStatus: React.FC = () => {
             <div className="flex items-start gap-3">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm font-medium text-slate-800">Supabase Client Initialized</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-body font-medium text-slate-800">Supabase Client Initialized</p>
+                <p className="text-caption text-slate-500">
                   Imported <code className="font-mono text-slate-700 bg-slate-100 px-1 rounded">@supabase/supabase-js</code> with session persistence and automatic token refresh.
                 </p>
               </div>
             </div>
-            <span className="text-xs font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            <span className="text-tag font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               Ready
             </span>
           </div>
@@ -246,13 +246,13 @@ export const ConnectivityStatus: React.FC = () => {
             <div className="flex items-start gap-3">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm font-medium text-slate-800">Edge Functions Directory Scaffolded</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-body font-medium text-slate-800">Edge Functions Directory Scaffolded</p>
+                <p className="text-caption text-slate-500">
                   Created <code className="font-mono text-slate-700 bg-slate-100 px-1 rounded">/supabase/functions/</code> with shared CORS utilities and Deno deployment specifications.
                 </p>
               </div>
             </div>
-            <span className="text-xs font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            <span className="text-tag font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               Scaffolded
             </span>
           </div>
@@ -261,13 +261,13 @@ export const ConnectivityStatus: React.FC = () => {
             <div className="flex items-start gap-3">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm font-medium text-slate-800">Zero Custom Express Server Enforced</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-body font-medium text-slate-800">Zero Custom Express Server Enforced</p>
+                <p className="text-caption text-slate-500">
                   Strictly honoring Ground Rule #8: no Express backend or custom Node API routes created. All server logic routed through Supabase mechanisms.
                 </p>
               </div>
             </div>
-            <span className="text-xs font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            <span className="text-tag font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               Compliant
             </span>
           </div>
@@ -276,13 +276,13 @@ export const ConnectivityStatus: React.FC = () => {
             <div className="flex items-start gap-3">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm font-medium text-slate-800">System Architecture README Created</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-body font-medium text-slate-800">System Architecture README Created</p>
+                <p className="text-caption text-slate-500">
                   Root <code className="font-mono text-slate-700 bg-slate-100 px-1 rounded">README.md</code> documents component relationships between Frontend, Auth, DB with RLS, and Edge Functions.
                 </p>
               </div>
             </div>
-            <span className="text-xs font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            <span className="text-tag font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
               Documented
             </span>
           </div>

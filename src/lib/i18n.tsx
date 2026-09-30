@@ -447,7 +447,7 @@ export const LanguageSelector: React.FC<{ className?: string }> = ({ className =
   const { lang, setLang } = useI18n();
 
   return (
-    <div className={`inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-xs font-semibold ${className}`}>
+    <div className={`inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-tag ${className}`}>
       <button
         type="button"
         onClick={() => setLang('en')}

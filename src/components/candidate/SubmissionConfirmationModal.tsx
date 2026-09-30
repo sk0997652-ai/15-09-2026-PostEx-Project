@@ -11,6 +11,7 @@ import {
 import { useI18n } from '../../lib/i18n';
 import { VerificationStampSeal } from '../common/VerificationStampSeal';
 import { Button } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface SubmissionConfirmationModalProps {
   candidate: {
@@ -41,30 +42,30 @@ export const SubmissionConfirmationModal: React.FC<SubmissionConfirmationModalPr
           <div className="mb-4">
             <VerificationStampSeal
               stage="candidate_signature"
-              signerName={candidate.full_name}
+              signerName={toTitleCase(candidate.full_name)}
               code={candidate.joining_id}
               timestamp={submittedAt}
               size="md"
               showDetails={false}
             />
           </div>
-          <span className="inline-block px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-bold mb-2">
+          <span className="inline-block px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800 text-tag mb-2">
             Application Dossier Locked &amp; Submitted
           </span>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-            Congratulations, {candidate.full_name}!
+          <h2 className="text-page-title text-slate-900">
+            Congratulations, {toTitleCase(candidate.full_name)}!
           </h2>
-          <p className="text-xs text-slate-600 mt-1 max-w-sm mx-auto">
+          <p className="text-caption text-slate-600 mt-1 max-w-sm mx-auto">
             Your onboarding application has been successfully attested and routed for official branch verification.
           </p>
         </div>
 
         {/* Dossier Routing Summary Card */}
         <div className="p-6 space-y-4">
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-caption">
             <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
               <span className="text-slate-500 font-medium">Joining Reference ID</span>
-              <span className="font-mono font-bold text-indigo-700 text-sm">{candidate.joining_id}</span>
+              <span className="font-mono font-bold text-indigo-700 text-body">{candidate.joining_id}</span>
             </div>
 
             <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
@@ -93,19 +94,19 @@ export const SubmissionConfirmationModal: React.FC<SubmissionConfirmationModalPr
                 <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
                 <span>Current Status</span>
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+              <span className="px-2.5 py-0.5 rounded-full text-tag bg-indigo-100 text-indigo-800 border border-indigo-200">
                 Branch Manager Verification
               </span>
             </div>
           </div>
 
           {/* Instructions */}
-          <div className="p-4 rounded-xl bg-indigo-50/60 border border-indigo-100 text-xs text-indigo-900 space-y-2">
+          <div className="p-4 rounded-xl bg-indigo-50/60 border border-indigo-100 text-caption text-indigo-900 space-y-2">
             <p className="font-bold flex items-center gap-1.5">
               <FileCheck className="w-4 h-4 text-indigo-600" />
               <span>Next Verification Milestone:</span>
             </p>
-            <p className="text-[11px] text-slate-600 leading-relaxed">
+            <p className="text-caption text-slate-600">
               Your assigned Branch Manager will review your digital application and physically verify your original CNIC and academic credentials at the hub.
             </p>
           </div>

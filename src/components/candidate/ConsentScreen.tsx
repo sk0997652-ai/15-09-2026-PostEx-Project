@@ -4,6 +4,7 @@ import { useI18n, LanguageSelector } from '../../lib/i18n';
 import { useBranding } from '../../lib/branding';
 import { logCandidateConsent } from '../../lib/candidateApi';
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge, PageHeader, Checkbox } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface ConsentScreenProps {
   candidate: {
@@ -59,7 +60,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({ candidate, onConse
       />
 
       {errorMessage && (
-        <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2.5">
+        <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-caption flex items-start gap-2.5">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{errorMessage}</span>
         </div>
@@ -70,17 +71,17 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({ candidate, onConse
         <div className="bg-slate-900 text-white px-6 py-4 flex items-center gap-3">
           <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
           <div>
-            <h3 className="text-sm font-bold">{t('consent.legalNotice')}</h3>
-            <p className="text-[11px] text-slate-400">{branding.companyName} HR Corporate Policy &bull; Legal Compliance</p>
+            <h3 className="text-card-heading">{toTitleCase(t('consent.legalNotice'))}</h3>
+            <p className="text-caption text-slate-400">{branding.companyName} HR Corporate Policy &bull; Legal Compliance</p>
           </div>
         </div>
 
-        <CardContent className="p-6 space-y-5 text-xs text-slate-700 leading-relaxed">
+        <CardContent className="p-6 space-y-5 text-body text-slate-700">
           {/* Term 1 */}
           <div className="border-b border-slate-100 pb-4">
             <div className="flex items-center gap-2 font-bold text-slate-900 mb-1">
               <FileText className="w-4 h-4 text-indigo-600 shrink-0" />
-              <span>1. {t('consent.term1Title')}</span>
+              <span>1. {toTitleCase(t('consent.term1Title'))}</span>
             </div>
             <p className="text-slate-600 ps-6">{t('consent.term1Desc')}</p>
           </div>
@@ -89,7 +90,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({ candidate, onConse
           <div className="border-b border-slate-100 pb-4">
             <div className="flex items-center gap-2 font-bold text-slate-900 mb-1">
               <Check className="w-4 h-4 text-indigo-600 shrink-0" />
-              <span>2. {t('consent.term2Title')}</span>
+              <span>2. {toTitleCase(t('consent.term2Title'))}</span>
             </div>
             <p className="text-slate-600 ps-6">{t('consent.term2Desc')}</p>
           </div>
@@ -98,7 +99,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({ candidate, onConse
           <div className="border-b border-slate-100 pb-4">
             <div className="flex items-center gap-2 font-bold text-rose-700 mb-1">
               <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-              <span>3. {t('consent.term3Title')}</span>
+              <span>3. {toTitleCase(t('consent.term3Title'))}</span>
             </div>
             <p className="text-slate-600 ps-6">{t('consent.term3Desc')}</p>
           </div>
@@ -107,7 +108,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({ candidate, onConse
           <div>
             <div className="flex items-center gap-2 font-bold text-slate-900 mb-1">
               <Lock className="w-4 h-4 text-indigo-600 shrink-0" />
-              <span>4. {t('consent.term4Title')}</span>
+              <span>4. {toTitleCase(t('consent.term4Title'))}</span>
             </div>
             <p className="text-slate-600 ps-6">{t('consent.term4Desc')}</p>
           </div>
@@ -117,7 +118,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({ candidate, onConse
       {/* Checkbox Agreements */}
       <form onSubmit={handleSubmit}>
         <Card className="p-6 space-y-4">
-          <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500">
+          <h4 className="text-card-heading text-slate-700">
             Declaration &amp; Electronic Signature
           </h4>
 
@@ -143,8 +144,8 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({ candidate, onConse
           />
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-[11px] text-slate-500">
-              Candidate: <strong className="text-slate-800">{candidate.full_name}</strong>
+            <span className="text-caption text-slate-500">
+              Candidate: <strong className="text-slate-800">{toTitleCase(candidate.full_name)}</strong>
             </span>
             <Button
               type="submit"

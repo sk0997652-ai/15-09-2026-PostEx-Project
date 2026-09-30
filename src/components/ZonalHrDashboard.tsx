@@ -52,6 +52,7 @@ import {
   OverrideDecisionModal,
 } from './zonal';
 import { Button } from './ui';
+import { toTitleCase } from '../lib/formatText';
 
 interface ZonalHrDashboardProps {
   currentUser: {
@@ -536,8 +537,8 @@ export function ZonalHrDashboard({
                 <MapPin className="w-4 h-4" />
               </div>
               <div className="min-w-0 sm:hidden lg:block">
-                <div className="text-xs font-semibold text-indigo-400">Zonal Operations</div>
-                <div className="text-sm font-bold text-white truncate">{zoneDisplayName}</div>
+                <div className="text-caption font-semibold text-indigo-400">Zonal Operations</div>
+                <div className="text-card-heading text-white truncate">{zoneDisplayName}</div>
               </div>
             </div>
             <button
@@ -549,7 +550,7 @@ export function ZonalHrDashboard({
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="mt-3 text-[11px] text-slate-400 sm:hidden lg:flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60 flex">
+          <div className="mt-3 text-caption text-slate-400 sm:hidden lg:flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60 flex">
             <Shield className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
             <span>Zone-Scoped Access</span>
           </div>
@@ -561,7 +562,7 @@ export function ZonalHrDashboard({
             id="zonal-tab-overview"
             title="Zone Overview"
             onClick={() => handleSelectTab('overview')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'overview'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -575,7 +576,7 @@ export function ZonalHrDashboard({
             id="zonal-tab-headcount"
             title="Headcount Management"
             onClick={() => handleSelectTab('headcount')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'headcount'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -589,7 +590,7 @@ export function ZonalHrDashboard({
             id="zonal-tab-workflow-tracker"
             title="Workflow Tracker"
             onClick={() => handleSelectTab('workflow_tracker')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'workflow_tracker'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -603,7 +604,7 @@ export function ZonalHrDashboard({
             id="zonal-tab-data-import"
             title="Data Import"
             onClick={() => handleSelectTab('data_import')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'data_import'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -617,7 +618,7 @@ export function ZonalHrDashboard({
             id="zonal-tab-enrolled-roster"
             title="Enrolled Employees"
             onClick={() => handleSelectTab('enrolled_roster')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'enrolled_roster'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -631,7 +632,7 @@ export function ZonalHrDashboard({
             id="zonal-tab-staff"
             title="Zone Staff Management"
             onClick={() => handleSelectTab('staff')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'staff'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -640,7 +641,7 @@ export function ZonalHrDashboard({
             <Users className="w-4 h-4 shrink-0" />
             <span className="flex-1 text-left sm:hidden lg:inline truncate">Zone Staff Management</span>
             {staffList.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-indigo-300 font-mono sm:hidden lg:inline">
+              <span className="px-1.5 py-0.5 rounded-full text-tag bg-slate-800 text-indigo-300 font-mono sm:hidden lg:inline">
                 {staffList.length}
               </span>
             )}
@@ -650,7 +651,7 @@ export function ZonalHrDashboard({
             id="zonal-tab-applications"
             title="Applications Pipeline"
             onClick={() => handleSelectTab('applications')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'applications'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -659,7 +660,7 @@ export function ZonalHrDashboard({
             <FileText className="w-4 h-4 shrink-0" />
             <span className="flex-1 text-left sm:hidden lg:inline truncate">Applications Pipeline</span>
             {metrics?.pendingApplications !== undefined && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono sm:hidden lg:inline">
+              <span className="px-1.5 py-0.5 rounded-full text-tag bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono sm:hidden lg:inline">
                 {metrics.pendingApplications}
               </span>
             )}
@@ -669,7 +670,7 @@ export function ZonalHrDashboard({
             id="zonal-tab-reports"
             title="Zone Analytics & SLA"
             onClick={() => handleSelectTab('reports')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
               activeTab === 'reports'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -684,10 +685,10 @@ export function ZonalHrDashboard({
         <div className="p-2.5 sm:p-2 lg:p-3 border-t border-slate-800 bg-slate-900/90">
           <div className="flex items-center justify-between mb-2 sm:hidden lg:flex">
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold text-slate-200 truncate">{currentUser.name || 'Zonal HR Manager'}</span>
-              <span className="text-[10px] text-slate-400 truncate">{currentUser.email}</span>
+              <span className="text-caption font-bold text-slate-200 truncate">{toTitleCase(currentUser.name || 'Zonal HR Manager')}</span>
+              <span className="text-caption text-slate-400 truncate">{currentUser.email}</span>
             </div>
-            <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase rounded bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 shrink-0">
+            <span className="px-1.5 py-0.5 text-tag uppercase rounded bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 shrink-0">
               Zonal HR
             </span>
           </div>
@@ -695,7 +696,7 @@ export function ZonalHrDashboard({
             id="zonal-signout-btn"
             title="Sign Out"
             onClick={onSignOut}
-            className="w-full flex items-center justify-center gap-2 px-3 sm:px-0 lg:px-3 py-2 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-700/50 text-xs font-semibold transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 sm:px-0 lg:px-3 py-2 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-700/50 text-caption font-semibold transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5 shrink-0" />
             <span className="sm:hidden lg:inline">Sign Out</span>
@@ -707,7 +708,7 @@ export function ZonalHrDashboard({
       <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
         {/* Banner Alert for Messages */}
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
+          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-caption flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
               <span>{error}</span>
@@ -722,7 +723,7 @@ export function ZonalHrDashboard({
         )}
 
         {successMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
+          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-caption flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
               <span>{successMessage}</span>

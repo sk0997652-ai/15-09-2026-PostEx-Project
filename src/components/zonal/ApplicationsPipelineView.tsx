@@ -20,6 +20,7 @@ import {
   TablePagination,
   TableToolbar,
 } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface ApplicationsPipelineViewProps {
   applications: ZonalApplication[];
@@ -199,9 +200,9 @@ export function ApplicationsPipelineView({
                 <TableRow key={app.id}>
                   <TableCell mobileRole="primary">
                     <div className="font-bold text-slate-900">
-                      {app.candidate?.full_name || 'Candidate'}
+                      {toTitleCase(app.candidate?.full_name || 'Candidate')}
                     </div>
-                    <div className="text-[11px] text-slate-500 font-mono">
+                    <div className="text-caption text-slate-500 font-mono">
                       {app.candidate?.joining_id}
                     </div>
                   </TableCell>
@@ -223,7 +224,7 @@ export function ApplicationsPipelineView({
                   <TableCell mobileRole="field" mobileLabel="Assigned Central HR">
                     <div className="flex items-center gap-1.5 font-medium text-slate-800">
                       <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                      <span>{app.assigned_central_hr_name}</span>
+                      <span>{toTitleCase(app.assigned_central_hr_name)}</span>
                     </div>
                   </TableCell>
                   <TableCell mobileRole="status">

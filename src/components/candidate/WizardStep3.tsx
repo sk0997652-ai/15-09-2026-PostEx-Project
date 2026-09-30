@@ -3,6 +3,7 @@ import { Users, UserCheck, ShieldCheck } from 'lucide-react';
 import { useI18n } from '../../lib/i18n';
 import { Step3Data } from '../../lib/candidateApi';
 import { Input, Select } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface WizardStep3Props {
   data: Step3Data;
@@ -16,15 +17,15 @@ export const WizardStep3: React.FC<WizardStep3Props> = ({ data, onChange, disabl
   return (
     <div id="candidate-wizard-step-3" className="space-y-6">
       <div>
-        <h2 className="text-lg font-bold text-slate-900">{t('step3.heading')}</h2>
-        <p className="text-xs text-slate-500 mt-0.5">{t('step3.subheading')}</p>
+        <h2 className="text-card-heading text-slate-900">{toTitleCase(t('step3.heading'))}</h2>
+        <p className="text-caption text-slate-500 mt-0.5">{t('step3.subheading')}</p>
       </div>
 
       {/* Next of Kin Card */}
       <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-indigo-600" />
-          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Next of Kin Details</h3>
+          <h3 className="text-card-heading text-slate-900">Next Of Kin Details</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -90,8 +91,8 @@ export const WizardStep3: React.FC<WizardStep3Props> = ({ data, onChange, disabl
       <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
         <div className="flex items-center gap-2">
           <UserCheck className="w-5 h-5 text-indigo-600" />
-          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-            {t('step3.ref1Heading')}
+          <h3 className="text-card-heading text-slate-900">
+            {toTitleCase(t('step3.ref1Heading'))}
           </h3>
         </div>
 
@@ -156,8 +157,8 @@ export const WizardStep3: React.FC<WizardStep3Props> = ({ data, onChange, disabl
       <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-4">
         <div className="flex items-center gap-2">
           <UserCheck className="w-5 h-5 text-indigo-600" />
-          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-            {t('step3.ref2Heading')}
+          <h3 className="text-card-heading text-slate-900">
+            {toTitleCase(t('step3.ref2Heading'))}
           </h3>
         </div>
 
@@ -219,11 +220,11 @@ export const WizardStep3: React.FC<WizardStep3Props> = ({ data, onChange, disabl
       </div>
 
       {/* Submission Final Declaration Card */}
-      <div className="p-4 rounded-xl bg-indigo-50/70 border border-indigo-200 text-indigo-950 text-xs flex items-start gap-3">
+      <div className="p-4 rounded-xl bg-indigo-50/70 border border-indigo-200 text-indigo-950 text-caption flex items-start gap-3">
         <ShieldCheck className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
         <div className="space-y-1">
           <p className="font-bold">Final Review &amp; Physical Verification Notice</p>
-          <p className="text-indigo-800 leading-relaxed">{t('step3.submitNotice')}</p>
+          <p className="text-indigo-800">{t('step3.submitNotice')}</p>
         </div>
       </div>
     </div>

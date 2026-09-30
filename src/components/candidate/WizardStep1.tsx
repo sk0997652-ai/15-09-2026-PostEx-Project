@@ -3,6 +3,7 @@ import { User, Phone, Mail, Home, MapPin, Heart } from 'lucide-react';
 import { useI18n } from '../../lib/i18n';
 import { Step1Data } from '../../lib/candidateApi';
 import { Input, Select } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface WizardStep1Props {
   data: Step1Data;
@@ -16,8 +17,8 @@ export const WizardStep1: React.FC<WizardStep1Props> = ({ data, onChange, disabl
   return (
     <div id="candidate-wizard-step-1" className="space-y-6">
       <div>
-        <h2 className="text-lg font-bold text-slate-900">{t('step1.heading')}</h2>
-        <p className="text-xs text-slate-500 mt-0.5">{t('step1.subheading')}</p>
+        <h2 className="text-card-heading text-slate-900">{toTitleCase(t('step1.heading'))}</h2>
+        <p className="text-caption text-slate-500 mt-0.5">{t('step1.subheading')}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -154,7 +155,7 @@ export const WizardStep1: React.FC<WizardStep1Props> = ({ data, onChange, disabl
       <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4">
         <div className="flex items-center gap-2">
           <Heart className="w-4 h-4 text-rose-500" />
-          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Emergency Contact</h3>
+          <h3 className="text-card-heading text-slate-900">Emergency Contact</h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

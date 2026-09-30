@@ -74,7 +74,7 @@ export const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
   ({ className = '', hideOnTablet = false, children, ...props }, ref) => (
     <th
       ref={ref}
-      className={`px-4 py-2.5 text-[11px] font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap select-none ${
+      className={`px-4 py-2.5 text-table-header text-slate-500 whitespace-nowrap select-none ${
         hideOnTablet ? 'hidden lg:table-cell' : ''
       } ${className}`}
       {...props}
@@ -146,12 +146,12 @@ export const TableCell = React.forwardRef<HTMLTableCellElement, TableCellProps>(
       <td
         ref={ref}
         colSpan={colSpan}
-        className={`md:px-4 md:py-2.5 text-[13px] font-normal text-slate-800 align-middle ${responsiveClasses} ${className}`}
+        className={`md:px-4 md:py-2.5 text-body text-slate-800 align-middle ${responsiveClasses} ${className}`}
         {...props}
       >
         {mobileLabel ? (
           <div className="max-md:space-y-0.5">
-            <span className="block md:hidden text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            <span className="block md:hidden text-table-header text-slate-400">
               {mobileLabel}
             </span>
             <div>{children}</div>
@@ -197,7 +197,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
 
   return (
     <div
-      className={`px-4 py-2.5 bg-slate-50 border border-slate-200/90 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs sm:text-[13px] text-slate-500 select-none ${className}`}
+      className={`px-4 py-2.5 bg-slate-50 border border-slate-200/90 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-caption text-slate-500 select-none ${className}`}
     >
       <div className="flex flex-wrap items-center gap-4">
         <span>
@@ -212,7 +212,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
         </span>
 
         {pageSize && onPageSizeChange && (
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-caption">
             <span>Per page:</span>
             <select
               value={pageSize}
@@ -239,7 +239,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
         >
           Previous
         </Button>
-        <span className="text-xs font-medium text-slate-600 px-2">
+        <span className="text-caption font-medium text-slate-600 px-2">
           {safePage} / {safeTotalPages}
         </span>
         <Button

@@ -6,6 +6,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Button } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface PdfDossierModalProps {
   isOpen: boolean;
@@ -34,8 +35,8 @@ export function PdfDossierModal({
               PX
             </div>
             <div>
-              <h2 className="text-base font-bold tracking-tight">PostEx Logistics (Pvt) Ltd.</h2>
-              <p className="text-[11px] text-slate-500 font-semibold">
+              <h2 className="text-card-heading">PostEx Logistics (Pvt) Ltd.</h2>
+              <p className="text-caption text-slate-500 font-semibold">
                 Official Employee Onboarding Dossier Certificate
               </p>
             </div>
@@ -45,7 +46,7 @@ export function PdfDossierModal({
               href={`/api/central/dossiers/${employeeId}/pdf`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-tag hover:bg-emerald-700 transition-colors cursor-pointer"
               download
             >
               <Download className="w-3.5 h-3.5" />
@@ -72,19 +73,19 @@ export function PdfDossierModal({
         </div>
 
         {/* Certificate Body */}
-        <div className="p-6 bg-slate-50/70 rounded-2xl border border-slate-200 space-y-5 text-xs">
+        <div className="p-6 bg-slate-50/70 rounded-2xl border border-slate-200 space-y-5 text-body">
           <div className="flex items-center justify-between bg-white p-4 rounded-lg border border-slate-200">
             <div>
-              <span className="text-[10px] font-bold text-slate-400">Assigned Corporate ID</span>
-              <div className="text-xl font-black font-mono text-emerald-700">
+              <span className="text-table-header uppercase text-slate-400">Assigned Corporate ID</span>
+              <div className="text-kpi-number font-mono text-emerald-700">
                 {pdfDossierData.employee_id ||
                   pdfDossierData.application?.employee?.employee_id ||
                   'EMP-ENROLLED'}
               </div>
             </div>
             <div className="text-right">
-              <span className="text-[10px] font-bold text-slate-400">Joining Reference</span>
-              <div className="text-sm font-bold font-mono text-indigo-700">
+              <span className="text-table-header uppercase text-slate-400">Joining Reference</span>
+              <div className="text-body font-bold font-mono text-indigo-700">
                 {pdfDossierData.candidate?.joining_id || 'N/A'}
               </div>
             </div>
@@ -92,21 +93,23 @@ export function PdfDossierModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <span className="text-[10px] text-slate-400 font-bold">Employee Full Name</span>
-              <p className="text-sm font-bold text-slate-900">{pdfDossierData.candidate?.full_name}</p>
+              <span className="text-table-header uppercase text-slate-400">Employee Full Name</span>
+              <p className="text-body font-bold text-slate-900">
+                {toTitleCase(pdfDossierData.candidate?.full_name || '')}
+              </p>
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 font-bold">Pakistani CNIC</span>
-              <p className="font-mono text-sm font-bold text-slate-900">
+              <span className="text-table-header uppercase text-slate-400">Pakistani CNIC</span>
+              <p className="font-mono text-body font-bold text-slate-900">
                 {pdfDossierData.candidate?.masked_cnic || pdfDossierData.candidate?.cnic}
               </p>
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 font-bold">Assigned Branch / Hub</span>
+              <span className="text-table-header uppercase text-slate-400">Assigned Branch / Hub</span>
               <p className="font-semibold text-slate-800">{pdfDossierData.candidate?.branch_name || 'Zone Hub'}</p>
             </div>
             <div>
-              <span className="text-[10px] text-slate-400 font-bold">Verification Status</span>
+              <span className="text-table-header uppercase text-slate-400">Verification Status</span>
               <div className="inline-flex items-center gap-1 text-emerald-700 font-bold">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Verified &amp; Approved</span>
@@ -114,7 +117,7 @@ export function PdfDossierModal({
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
+          <div className="pt-4 border-t border-slate-200 text-caption text-slate-500 flex items-center justify-between">
             <span>Dossier Generation Timestamp: {new Date().toLocaleString()}</span>
             <span>Authorized Signatory: Central HR Department</span>
           </div>

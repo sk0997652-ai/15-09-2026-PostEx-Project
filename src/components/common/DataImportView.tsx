@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
+import { Download, Upload, FileSpreadsheet } from 'lucide-react';
 import {
   useHrPortalStore,
   parseExcelDateToYMD,
@@ -15,6 +16,20 @@ import {
   PortalEmployee,
 } from '../../lib/hrPortalStore';
 import { superAdminApi } from '../../lib/superAdminApi';
+import {
+  Badge,
+  Button,
+  Card,
+  PageHeader,
+  Select,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 export type ImportCardType = 'departments' | 'designations' | 'branches' | 'employees';
 
@@ -150,258 +165,6 @@ const TEMPLATE_SPECS: Record<
   },
 };
 
-const DATA_IMPORT_CSS = `
-.di-root {
-  --bg: #f4f6f5;
-  --sf: #fff;
-  --sf2: #f8faf9;
-  --ink: #13201e;
-  --mut: #63716d;
-  --line: #e3e8e6;
-  --acc: #0e8f83;
-  --accs: #dcf2ef;
-  --ok: #178a56;
-  --warn: #b26f0a;
-  --bad: #c73a3a;
-  font: 14px/1.5 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  color: var(--ink);
-  background: var(--bg);
-  font-variant-numeric: tabular-nums;
-  min-height: 100%;
-  border-radius: 14px;
-}
-@media (prefers-color-scheme: dark) {
-  .di-root:not([data-theme="light"]) {
-    --bg: #091311;
-    --sf: #101c1a;
-    --sf2: #0d1816;
-    --ink: #e7efed;
-    --mut: #8b9d98;
-    --line: #213230;
-    --acc: #3ec7b8;
-    --accs: #123632;
-    --ok: #3fc487;
-    --warn: #e5a444;
-    --bad: #ef6b6b;
-  }
-}
-.di-root[data-theme="dark"] {
-  --bg: #091311;
-  --sf: #101c1a;
-  --sf2: #0d1816;
-  --ink: #e7efed;
-  --mut: #8b9d98;
-  --line: #213230;
-  --acc: #3ec7b8;
-  --accs: #123632;
-  --ok: #3fc487;
-  --warn: #e5a444;
-  --bad: #ef6b6b;
-}
-.di-root * {
-  box-sizing: border-box;
-}
-.di-root button,
-.di-root input,
-.di-root select {
-  font: inherit;
-  color: inherit;
-}
-.di-root .wrap {
-  padding: 26px;
-  display: grid;
-  gap: 20px;
-  max-width: 1440px;
-  margin: 0 auto;
-}
-.di-root .top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.di-root .head h1 {
-  font-size: 23px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  margin: 0;
-}
-.di-root .head p {
-  color: var(--mut);
-  margin: 4px 0 0;
-  max-width: 75ch;
-  font-size: 13.5px;
-}
-.di-root .card {
-  background: var(--sf);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-}
-.di-root .pad {
-  padding: 20px;
-}
-.di-root .ct {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-.di-root .ct h2 {
-  font-size: 15.5px;
-  font-weight: 700;
-  margin: 0;
-}
-.di-root .ct small {
-  color: var(--mut);
-  font-size: 12.5px;
-}
-.di-root .tag {
-  border-radius: 7px;
-  padding: 3px 9px;
-  font-size: 11.5px;
-  font-weight: 700;
-  white-space: nowrap;
-  display: inline-block;
-}
-.di-root .t-ok {
-  color: var(--ok);
-  background: color-mix(in srgb, var(--ok) 13%, transparent);
-}
-.di-root .t-w {
-  color: var(--warn);
-  background: color-mix(in srgb, var(--warn) 15%, transparent);
-}
-.di-root .t-b {
-  color: var(--bad);
-  background: color-mix(in srgb, var(--bad) 13%, transparent);
-}
-.di-root .t-n {
-  color: var(--mut);
-  background: var(--sf2);
-  border: 1px solid var(--line);
-}
-.di-root .rule {
-  background: var(--accs);
-  border-radius: 12px;
-  padding: 11px 15px;
-  font-size: 12.5px;
-  margin: 0;
-}
-.di-root .cards4 {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
-.di-root .dropzone {
-  border: 1.5px dashed var(--line);
-  background: var(--sf2);
-  border-radius: 12px;
-  padding: 22px 16px;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  margin: 12px 0;
-}
-.di-root .dropzone:hover,
-.di-root .dropzone.drag {
-  border-color: var(--acc);
-  background: var(--accs);
-}
-.di-root .dropzone.disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-.di-root .btn {
-  border: 1px solid var(--line);
-  background: var(--sf2);
-  border-radius: 10px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 12.5px;
-}
-.di-root .btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.di-root .addb {
-  background: var(--acc);
-  color: #fff;
-  border: 0;
-  border-radius: 10px;
-  padding: 8px 15px;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  font-size: 13px;
-}
-.di-root .addb:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.di-root .delb {
-  background: none;
-  border: 1px solid var(--line);
-  color: var(--bad);
-  border-radius: 8px;
-  padding: 5px 12px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 12px;
-}
-.di-root .scroll {
-  overflow-x: auto;
-  margin: 0 -20px;
-  padding: 0 20px;
-}
-.di-root table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 760px;
-}
-.di-root th {
-  font-size: 12px;
-  color: var(--mut);
-  font-weight: 600;
-  text-align: left;
-  padding: 9px 10px;
-  border-bottom: 1px solid var(--line);
-  white-space: nowrap;
-  background: var(--sf);
-}
-.di-root td {
-  padding: 11px 10px;
-  border-bottom: 1px solid var(--line);
-  white-space: nowrap;
-  font-size: 13.5px;
-}
-.di-root tr:last-child td {
-  border: 0;
-}
-.di-root tr:hover td {
-  background: var(--sf2);
-}
-.di-root select {
-  background: var(--sf2);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 8px 12px;
-}
-@media (max-width: 1180px) {
-  .di-root .cards4 {
-    grid-template-columns: 1fr;
-  }
-}
-@media (max-width: 860px) {
-  .di-root .wrap {
-    padding: 14px;
-  }
-}
-`;
-
 function normalizeHeaderKey(h: string): string {
   return h
     .replace(/\*/g, '')
@@ -413,7 +176,6 @@ export const DataImportView: React.FC<{
   onDataImported?: () => void;
 }> = ({ onDataImported }) => {
   const [store, updateStore] = useHrPortalStore();
-  const [theme, setTheme] = useState<'light' | 'dark' | undefined>(undefined);
   const [duplicateMode, setDuplicateMode] = useState<'skip' | 'update'>('skip');
   const [preview, setPreview] = useState<ActivePreviewState | null>(null);
   const [dragOverCard, setDragOverCard] = useState<ImportCardType | null>(null);
@@ -454,15 +216,6 @@ export const DataImportView: React.FC<{
       return `Disabled until ${missing.join(', ')} have data. Import order: Departments → Designations → Branches → Employees.`;
     }
     return null;
-  };
-
-  const handleToggleTheme = () => {
-    setTheme((prev) => {
-      const isDark = prev
-        ? prev === 'dark'
-        : typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      return isDark ? 'light' : 'dark';
-    });
   };
 
   // Download Excel Template with Text format ('@') for CNIC* and Contact Number*
@@ -542,7 +295,7 @@ export const DataImportView: React.FC<{
         return;
       }
 
-      // Fix 4: Read the first sheet only
+      // Read the first sheet only
       const firstSheetName = wb.SheetNames[0];
       const ws = wb.Sheets[firstSheetName];
       const matrix = XLSX.utils.sheet_to_json<any[]>(ws, {
@@ -859,7 +612,6 @@ export const DataImportView: React.FC<{
             errors.push(`Branch "${branchName}" does not exist`);
           }
 
-          // Fix 3: Status column: allow "Active" or "Exited" on import
           const normStatus =
             rawStatus.toLowerCase() === 'active'
               ? 'Active'
@@ -1062,10 +814,7 @@ export const DataImportView: React.FC<{
         };
       }
 
-      // Employees import:
-      // Fix 3: Allow "Active" or "Exited" on import.
-      // Imported existing employees get status "Active" (or "Exited" -> directly into Exited/Archive)
-      // and must NOT appear in Joiner Tracker (isNewJoiner: false, no ECF created).
+      // Employees import
       const nextEmployees = [...prev.employees];
       rowsToImport.forEach((r) => {
         const n = r.normalized;
@@ -1180,272 +929,279 @@ export const DataImportView: React.FC<{
     validCount + (duplicateMode === 'update' ? duplicateCount : 0);
 
   return (
-    <div className="di-root" data-theme={theme} id="data-import-view">
-      <style>{DATA_IMPORT_CSS}</style>
-      <div className="wrap">
-        <div className="top">
-          <div className="head">
-            <h1>Data Import</h1>
-            <p>
-              Bulk import and export Departments, Designations, Branches, and Employees (.xlsx and .csv).
-            </p>
-          </div>
-          <button type="button" className="btn" onClick={handleToggleTheme}>
-            Toggle theme
-          </button>
-        </div>
+    <div id="data-import-view" className="space-y-6 text-body text-slate-900">
+      <PageHeader
+        title="Data Import"
+        description="Bulk import and export Departments, Designations, Branches, and Employees (.xlsx and .csv)."
+      />
 
-        {/* Required Note #6 */}
-        <div className="rule" id="data-import-browser-note">
-          Data is saved in this browser only until the database is connected.
-        </div>
+      {/* Browser persistence info note */}
+      <div
+        id="data-import-browser-note"
+        className="rounded-xl bg-indigo-50/80 border border-indigo-200/80 px-4 py-3 text-caption text-indigo-900"
+      >
+        Data is saved in this browser only until the database is connected.
+      </div>
 
-        {bannerMsg && (
-          <div
-            className="card pad"
-            style={{
-              borderColor: bannerMsg.type === 'ok' ? 'var(--ok)' : 'var(--bad)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 12,
-            }}
+      {bannerMsg && (
+        <Card
+          className={`p-4 flex items-center justify-between gap-3 ${
+            bannerMsg.type === 'ok' ? 'border-emerald-200 bg-emerald-50/40' : 'border-rose-200 bg-rose-50/40'
+          }`}
+        >
+          <Badge variant={bannerMsg.type === 'ok' ? 'success' : 'error'}>
+            {bannerMsg.text}
+          </Badge>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => setBannerMsg(null)}
           >
-            <span className={`tag ${bannerMsg.type === 'ok' ? 't-ok' : 't-b'}`}>
-              {bannerMsg.text}
-            </span>
-            <button type="button" className="btn" onClick={() => setBannerMsg(null)}>
-              Dismiss
-            </button>
-          </div>
-        )}
+            Dismiss
+          </Button>
+        </Card>
+      )}
 
-        {/* 4 Import Cards */}
-        <div className="cards4">
-          {(['departments', 'designations', 'branches', 'employees'] as const).map((cardKey) => {
-            const spec = TEMPLATE_SPECS[cardKey];
-            const unlocked = isCardUnlocked(cardKey);
-            const lockHint = getLockHint(cardKey);
-            const currentCount =
-              cardKey === 'departments'
-                ? store.departments.length
-                : cardKey === 'designations'
-                ? store.designations.length
-                : cardKey === 'branches'
-                ? store.branches.length
-                : store.employees.length;
+      {/* 4 Import Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {(['departments', 'designations', 'branches', 'employees'] as const).map((cardKey) => {
+          const spec = TEMPLATE_SPECS[cardKey];
+          const unlocked = isCardUnlocked(cardKey);
+          const lockHint = getLockHint(cardKey);
+          const currentCount =
+            cardKey === 'departments'
+              ? store.departments.length
+              : cardKey === 'designations'
+              ? store.designations.length
+              : cardKey === 'branches'
+              ? store.branches.length
+              : store.employees.length;
 
-            return (
+          return (
+            <Card
+              key={cardKey}
+              id={`import-card-${cardKey}`}
+              title={`${spec.step}. ${toTitleCase(spec.title)}`}
+              description={`Columns: ${spec.columns.join(', ')}`}
+              action={
+                <Badge variant={currentCount > 0 ? 'success' : 'neutral'}>
+                  {currentCount} records
+                </Badge>
+              }
+              className={!unlocked ? 'opacity-75' : ''}
+            >
+              {lockHint && (
+                <div
+                  className="rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-2.5 text-caption text-amber-800 mb-3"
+                  data-testid={`lock-hint-${cardKey}`}
+                >
+                  {lockHint}
+                </div>
+              )}
+
+              <input
+                ref={fileInputRefs[cardKey]}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                className="hidden"
+                disabled={!unlocked}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f && unlocked) {
+                    processUploadedFile(cardKey, f);
+                  }
+                  e.target.value = '';
+                }}
+              />
+
               <div
-                key={cardKey}
-                className="card pad"
-                id={`import-card-${cardKey}`}
-                style={{ opacity: unlocked ? 1 : 0.72 }}
+                onClick={() => {
+                  if (unlocked) fileInputRefs[cardKey].current?.click();
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (unlocked) setDragOverCard(cardKey);
+                }}
+                onDragLeave={() => setDragOverCard(null)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOverCard(null);
+                  if (!unlocked) return;
+                  const f = e.dataTransfer.files?.[0];
+                  if (f) processUploadedFile(cardKey, f);
+                }}
+                className={`rounded-xl border-2 border-dashed p-6 text-center transition-colors my-3 ${
+                  !unlocked
+                    ? 'border-slate-200 bg-slate-100 opacity-60 cursor-not-allowed'
+                    : dragOverCard === cardKey
+                    ? 'border-indigo-500 bg-indigo-50/60 cursor-pointer'
+                    : 'border-slate-200 bg-slate-50/70 hover:border-indigo-400 hover:bg-indigo-50/30 cursor-pointer'
+                }`}
               >
-                <div className="ct">
-                  <div>
-                    <h2>
-                      {spec.step}. {spec.title}
-                    </h2>
-                    <small>Columns: {spec.columns.join(', ')}</small>
-                  </div>
-                  <span className={`tag ${currentCount > 0 ? 't-ok' : 't-n'}`}>
-                    {currentCount} records
-                  </span>
+                <div className="flex justify-center mb-2">
+                  <Upload className="w-5 h-5 text-indigo-600" />
                 </div>
+                <div className="text-body font-bold text-slate-900">
+                  {unlocked
+                    ? `Drop ${spec.title} .xlsx or .csv file here, or click to browse`
+                    : 'Locked — Complete previous steps first'}
+                </div>
+                <div className="text-caption text-slate-500 mt-1">
+                  First sheet only • Validates required fields, dates & duplicates before saving
+                </div>
+              </div>
 
-                {lockHint && (
-                  <div
-                    className="rule"
-                    style={{ marginBottom: 12, color: 'var(--warn)' }}
-                    data-testid={`lock-hint-${cardKey}`}
-                  >
-                    {lockHint}
-                  </div>
-                )}
-
-                <input
-                  ref={fileInputRefs[cardKey]}
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  style={{ display: 'none' }}
-                  disabled={!unlocked}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f && unlocked) {
-                      processUploadedFile(cardKey, f);
-                    }
-                    e.target.value = '';
-                  }}
-                />
-
-                <div
-                  className={`dropzone ${dragOverCard === cardKey ? 'drag' : ''} ${
-                    !unlocked ? 'disabled' : ''
-                  }`}
-                  onClick={() => {
-                    if (unlocked) fileInputRefs[cardKey].current?.click();
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    if (unlocked) setDragOverCard(cardKey);
-                  }}
-                  onDragLeave={() => setDragOverCard(null)}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setDragOverCard(null);
-                    if (!unlocked) return;
-                    const f = e.dataTransfer.files?.[0];
-                    if (f) processUploadedFile(cardKey, f);
-                  }}
+              <div className="flex flex-wrap items-center gap-2.5 mt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  id={`download-template-${cardKey}`}
+                  onClick={() => handleDownloadTemplate(cardKey)}
+                  leftIcon={<FileSpreadsheet className="w-4 h-4" />}
                 >
-                  <div style={{ fontWeight: 700, fontSize: 13.5 }}>
-                    {unlocked
-                      ? `Drop ${spec.title} .xlsx or .csv file here, or click to browse`
-                      : `Locked — Complete previous steps first`}
-                  </div>
-                  <div style={{ color: 'var(--mut)', fontSize: 12, marginTop: 4 }}>
-                    First sheet only • Validates required fields, dates & duplicates before saving
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
-                  <button
-                    type="button"
-                    className="btn"
-                    id={`download-template-${cardKey}`}
-                    onClick={() => handleDownloadTemplate(cardKey)}
-                  >
-                    Download Excel Template
-                  </button>
-                  <button
-                    type="button"
-                    className="btn"
-                    id={`export-current-${cardKey}`}
-                    onClick={() => handleExportCurrentData(cardKey)}
-                  >
-                    Export current data
-                  </button>
-                </div>
+                  Download Excel Template
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  id={`export-current-${cardKey}`}
+                  onClick={() => handleExportCurrentData(cardKey)}
+                  leftIcon={<Download className="w-4 h-4" />}
+                >
+                  Export Current Data
+                </Button>
               </div>
-            );
-          })}
-        </div>
+            </Card>
+          );
+        })}
+      </div>
 
-        {/* Upload Preview & Validation Card */}
-        {preview && (
-          <div className="card pad" id="import-preview-card">
-            <div className="ct">
-              <div>
-                <h2>
-                  Preview: {TEMPLATE_SPECS[preview.cardType].title} ({preview.fileName})
-                </h2>
-                <small>Review validation status for every row before importing.</small>
-              </div>
-              <button type="button" className="btn" onClick={() => setPreview(null)}>
-                Close preview
-              </button>
+      {/* Upload Preview & Validation Card */}
+      {preview && (
+        <Card
+          id="import-preview-card"
+          title={`Preview: ${toTitleCase(TEMPLATE_SPECS[preview.cardType].title)} (${preview.fileName})`}
+          description="Review validation status for every row before importing."
+          action={
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setPreview(null)}
+            >
+              Close Preview
+            </Button>
+          }
+        >
+          {preview.fileError ? (
+            <div className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-caption font-semibold text-rose-700">
+              Error: {preview.fileError}
             </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="success">{validCount} valid</Badge>
+                  <Badge variant="error">{errorCount} errors</Badge>
+                  <Badge variant="warning">{duplicateCount} duplicates</Badge>
+                </div>
 
-            {preview.fileError ? (
-              <div className="rule" style={{ color: 'var(--bad)', fontWeight: 600 }}>
-                Error: {preview.fileError}
-              </div>
-            ) : (
-              <>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: 12,
-                    flexWrap: 'wrap',
-                    marginBottom: 14,
-                  }}
-                >
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span className="tag t-ok">{validCount} valid</span>
-                    <span className="tag t-b">{errorCount} errors</span>
-                    <span className="tag t-w">{duplicateCount} duplicates</span>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <label style={{ fontSize: 12.5, color: 'var(--mut)', fontWeight: 600 }}>
-                      Duplicates:
-                      <select
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="flex items-center gap-2 text-caption font-semibold text-slate-600">
+                    <span>Duplicates:</span>
+                    <div className="w-44">
+                      <Select
                         value={duplicateMode}
                         onChange={(e) => setDuplicateMode(e.target.value as 'skip' | 'update')}
-                        style={{ marginLeft: 8 }}
-                      >
-                        <option value="skip">Skip duplicates</option>
-                        <option value="update">Update existing</option>
-                      </select>
-                    </label>
-
-                    {(errorCount > 0 || (duplicateCount > 0 && duplicateMode === 'skip')) && (
-                      <button
-                        type="button"
-                        className="delb"
-                        id="download-error-report-btn"
-                        onClick={handleDownloadErrorReport}
-                      >
-                        Download error report
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      className="addb"
-                      id="import-valid-rows-btn"
-                      disabled={importableCount === 0}
-                      onClick={handleImportValidRows}
-                    >
-                      Import valid rows ({importableCount})
-                    </button>
+                        options={[
+                          { value: 'skip', label: 'Skip duplicates' },
+                          { value: 'update', label: 'Update existing' },
+                        ]}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Row</th>
-                        {preview.columns.map((col) => (
-                          <th key={col}>{col}</th>
-                        ))}
-                        <th>Validation Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {preview.rows.map((r) => (
-                        <tr key={r.rowIndex}>
-                          <td>{r.rowIndex}</td>
-                          {preview.columns.map((col) => (
-                            <td key={col}>{r.raw[col] || '—'}</td>
-                          ))}
-                          <td>
-                            {r.status === 'valid' && <span className="tag t-ok">Valid</span>}
-                            {r.status === 'duplicate' && (
-                              <span className={`tag ${duplicateMode === 'update' ? 't-w' : 't-b'}`}>
-                                {duplicateMode === 'update'
-                                  ? `Duplicate (Will update): ${r.reason}`
-                                  : `Error: ${r.reason}`}
-                              </span>
-                            )}
-                            {r.status === 'error' && (
-                              <span className="tag t-b">Error: {r.reason}</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  {(errorCount > 0 || (duplicateCount > 0 && duplicateMode === 'skip')) && (
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      id="download-error-report-btn"
+                      onClick={handleDownloadErrorReport}
+                    >
+                      Download Error Report
+                    </Button>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    id="import-valid-rows-btn"
+                    disabled={importableCount === 0}
+                    onClick={handleImportValidRows}
+                  >
+                    Import Valid Rows ({importableCount})
+                  </Button>
                 </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
+              </div>
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Row</TableHead>
+                    {preview.columns.map((col) => (
+                      <TableHead key={col}>{toTitleCase(col)}</TableHead>
+                    ))}
+                    <TableHead>Validation Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {preview.rows.map((r) => (
+                    <TableRow key={r.rowIndex}>
+                      <TableCell mobileRole="primary" className="font-mono text-slate-700">
+                        {r.rowIndex}
+                      </TableCell>
+                      {preview.columns.map((col) => (
+                        <TableCell
+                          key={col}
+                          mobileRole="field"
+                          mobileLabel={toTitleCase(col)}
+                          className={
+                            col === 'Employee Code*' || col === 'CNIC*' || col === 'Code'
+                              ? 'font-mono text-slate-700'
+                              : 'text-slate-800'
+                          }
+                        >
+                          {col === 'Full Name*' || col === 'Branch Manager'
+                            ? toTitleCase(r.raw[col]) || '—'
+                            : r.raw[col] || '—'}
+                        </TableCell>
+                      ))}
+                      <TableCell mobileRole="status">
+                        {r.status === 'valid' && <Badge variant="success">Valid</Badge>}
+                        {r.status === 'duplicate' && (
+                          <Badge variant={duplicateMode === 'update' ? 'warning' : 'error'}>
+                            {duplicateMode === 'update'
+                              ? `Duplicate (Will update): ${r.reason}`
+                              : `Error: ${r.reason}`}
+                          </Badge>
+                        )}
+                        {r.status === 'error' && (
+                          <Badge variant="error">Error: {r.reason}</Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </Card>
+      )}
     </div>
   );
 };

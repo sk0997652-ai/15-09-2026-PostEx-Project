@@ -98,74 +98,74 @@ export const ComponentLibraryShowcase: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
           {/* Primary Tokens */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Primary Tokens</span>
-            <div className="space-y-1.5 text-xs">
+            <span className="text-table-header text-slate-500">Primary Tokens</span>
+            <div className="space-y-1.5 text-caption">
               <div className="flex items-center justify-between p-2 rounded-lg bg-indigo-600 text-white font-medium">
                 <span>Indigo 600 (#4f46e5)</span>
-                <span className="opacity-80 text-[10px]">primary</span>
+                <span className="opacity-80 text-tag">primary</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg bg-indigo-700 text-white font-medium">
                 <span>Indigo 700 (#4338ca)</span>
-                <span className="opacity-80 text-[10px]">hover</span>
+                <span className="opacity-80 text-tag">hover</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 font-medium">
                 <span>Indigo 50 (#eef2ff)</span>
-                <span className="opacity-80 text-[10px]">subtle</span>
+                <span className="opacity-80 text-tag">subtle</span>
               </div>
             </div>
           </div>
 
           {/* Neutral Tokens */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Neutral Tokens</span>
-            <div className="space-y-1.5 text-xs">
+            <span className="text-table-header text-slate-500">Neutral Tokens</span>
+            <div className="space-y-1.5 text-caption">
               <div className="flex items-center justify-between p-2 rounded-lg bg-white text-slate-900 border border-slate-200 font-medium">
                 <span>White (#ffffff)</span>
-                <span className="text-slate-500 text-[10px]">surface</span>
+                <span className="text-slate-500 text-tag">surface</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50 text-slate-900 border border-slate-200 font-medium">
                 <span>Slate 50 (#f8fafc)</span>
-                <span className="text-slate-500 text-[10px]">bg</span>
+                <span className="text-slate-500 text-tag">bg</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg bg-slate-200 text-slate-900 font-medium">
                 <span>Slate 200 (#e2e8f0)</span>
-                <span className="text-slate-500 text-[10px]">border</span>
+                <span className="text-slate-500 text-tag">border</span>
               </div>
             </div>
           </div>
 
           {/* Text Tokens */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Typography Scale</span>
-            <div className="space-y-1 text-xs">
-              <p className="text-2xl font-bold text-slate-900 leading-none">Title (2xl font-bold)</p>
-              <p className="text-lg font-semibold text-slate-900">Heading (lg font-semibold)</p>
-              <p className="text-base font-semibold text-slate-900">Card Title (base font-semibold)</p>
-              <p className="text-sm font-normal text-slate-900">Body (sm font-normal)</p>
-              <p className="text-sm font-medium text-slate-900">Label (sm font-medium)</p>
-              <p className="text-xs font-medium text-slate-500">Caption/Badge (xs font-medium)</p>
+            <span className="text-table-header text-slate-500">Typography Scale</span>
+            <div className="space-y-1 text-caption">
+              <p className="text-page-title text-slate-900 leading-none">Title (24px / 700)</p>
+              <p className="text-card-heading text-slate-900">Card Heading (16px / 700)</p>
+              <p className="text-body text-slate-900">Body (14px / 400)</p>
+              <p className="text-body font-medium text-slate-900">Label (14px / 500)</p>
+              <p className="text-caption text-slate-500">Caption (13px / 400)</p>
+              <p className="text-tag text-slate-500">Tag / Badge (12px / 700)</p>
             </div>
           </div>
 
           {/* Semantic Status Tokens */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Semantic Colors</span>
-            <div className="space-y-1.5 text-xs">
+            <span className="text-table-header text-slate-500">Semantic Colors</span>
+            <div className="space-y-1.5 text-caption">
               <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
                 <span>Emerald 600</span>
-                <span className="text-[10px]">success</span>
+                <span className="text-tag">success</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 font-medium">
                 <span>Amber 600</span>
-                <span className="text-[10px]">warning</span>
+                <span className="text-tag">warning</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 font-medium">
                 <span>Rose 600</span>
-                <span className="text-[10px]">error</span>
+                <span className="text-tag">error</span>
               </div>
               <div className="flex items-center justify-between p-2 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 font-medium">
                 <span>Slate 400</span>
-                <span className="text-[10px]">info</span>
+                <span className="text-tag">info</span>
               </div>
             </div>
           </div>
@@ -180,7 +180,7 @@ export const ComponentLibraryShowcase: React.FC = () => {
         <div className="space-y-6 pt-2">
           {/* Default Size */}
           <div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-3">
+            <span className="text-table-header text-slate-500 block mb-3">
               Default Size (h-10, px-4 py-2.5)
             </span>
             <div className="flex flex-wrap items-center gap-3">
@@ -211,7 +211,7 @@ export const ComponentLibraryShowcase: React.FC = () => {
 
           {/* Small Size */}
           <div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-3">
+            <span className="text-table-header text-slate-500 block mb-3">
               Small Size (h-8, px-3 py-1.5)
             </span>
             <div className="flex flex-wrap items-center gap-3">
@@ -240,7 +240,7 @@ export const ComponentLibraryShowcase: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
           {/* Input Variants */}
           <div className="space-y-4">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+            <span className="text-table-header text-slate-500 block">
               Input Component
             </span>
             <Input
@@ -269,7 +269,7 @@ export const ComponentLibraryShowcase: React.FC = () => {
 
           {/* Select Component */}
           <div className="space-y-4">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+            <span className="text-table-header text-slate-500 block">
               Select Component
             </span>
             <Select
@@ -301,7 +301,7 @@ export const ComponentLibraryShowcase: React.FC = () => {
 
           {/* Textarea Component */}
           <div className="space-y-4">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+            <span className="text-table-header text-slate-500 block">
               Textarea Component
             </span>
             <Textarea
@@ -328,7 +328,7 @@ export const ComponentLibraryShowcase: React.FC = () => {
         <div className="space-y-6 pt-2">
           {/* Base Badges */}
           <div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-3">
+            <span className="text-table-header text-slate-500 block mb-3">
               Base Badge Variants (with & without status dot)
             </span>
             <div className="flex flex-wrap items-center gap-3">
@@ -347,7 +347,7 @@ export const ComponentLibraryShowcase: React.FC = () => {
 
           {/* Single Source of Truth StatusBadge */}
           <div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-3">
+            <span className="text-table-header text-slate-500 block mb-3">
               Application StatusBadge (Single Source of Truth)
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -367,7 +367,7 @@ export const ComponentLibraryShowcase: React.FC = () => {
                   className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col items-center gap-2 text-center"
                 >
                   <StatusBadge status={statusKey} />
-                  <span className="text-[11px] font-mono text-slate-400 font-medium">{statusKey}</span>
+                  <span className="text-tag font-mono text-slate-400 font-medium">{statusKey}</span>
                 </div>
               ))}
             </div>
@@ -381,7 +381,7 @@ export const ComponentLibraryShowcase: React.FC = () => {
         description="Standardized table layout with header, body, row, cell, and integrated pagination footer."
         action={
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500">Live Pagination Demo:</span>
+            <span className="text-caption text-slate-500">Live Pagination Demo:</span>
             <Badge variant="primary">Page {currentPage} of {totalPages}</Badge>
           </div>
         }
@@ -403,17 +403,17 @@ export const ComponentLibraryShowcase: React.FC = () => {
                 <TableRow key={cand.id}>
                   <TableCell>
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs">
+                      <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-tag">
                         {cand.name.charAt(0)}
                       </div>
                       <div>
                         <div className="font-medium text-slate-900">{cand.name}</div>
-                        <div className="text-xs text-slate-500 font-mono">{cand.id}</div>
+                        <div className="text-caption text-slate-500 font-mono">{cand.id}</div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="font-mono text-xs text-slate-700">{cand.cnic}</span>
+                    <span className="font-mono text-caption text-slate-700">{cand.cnic}</span>
                   </TableCell>
                   <TableCell>{cand.role}</TableCell>
                   <TableCell>{cand.branch}</TableCell>
@@ -461,7 +461,7 @@ export const ComponentLibraryShowcase: React.FC = () => {
         }
       >
         <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-sm text-slate-600">
+          <div className="text-body text-slate-600">
             Click the button to test the base Modal dialog with header, body slots, and standardized action footer.
           </div>
           <div className="flex items-center gap-2">
@@ -524,13 +524,13 @@ export const ComponentLibraryShowcase: React.FC = () => {
           </>
         }
       >
-        <div className="space-y-4 text-sm text-slate-600">
+        <div className="space-y-4 text-body text-slate-600">
           <p>
             This base modal is ready to serve as the foundation for future specialized modals
             (such as refactoring DeleteConfirmationModal, Applicant Dossier modals, etc.).
           </p>
-          <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-900 text-xs">
-            <span className="font-bold">Design Token Check:</span> All header titles follow section heading scale (text-lg font-semibold), card body is padded to p-6, and footer buttons use the standardized Button component.
+          <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-900 text-caption">
+            <span className="font-bold">Design Token Check:</span> All header titles follow section heading scale (text-card-heading), card body is padded to p-6, and footer buttons use the standardized Button component.
           </div>
           <Input
             label="Sample Modal Field"

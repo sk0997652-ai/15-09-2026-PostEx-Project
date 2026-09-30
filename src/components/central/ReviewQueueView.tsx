@@ -20,6 +20,7 @@ import {
   TablePagination,
   TableToolbar,
 } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface ReviewQueueViewProps {
   applications: any[];
@@ -167,7 +168,7 @@ export function ReviewQueueView({
                 <TableCell colSpan={7} className="py-12 text-center text-slate-500">
                   <ClipboardList className="w-8 h-8 mx-auto text-slate-300 mb-2" />
                   <p className="font-bold text-slate-700">No applications found</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
+                  <p className="text-caption text-slate-400 mt-0.5">
                     Try adjusting your search query or status filter.
                   </p>
                 </TableCell>
@@ -184,8 +185,8 @@ export function ReviewQueueView({
                     {app.candidate?.joining_id || 'N/A'}
                   </TableCell>
                   <TableCell mobileRole="primary">
-                    <div className="font-bold text-slate-900">{app.candidate?.full_name}</div>
-                    <div className="text-[11px] text-slate-500 font-mono">{app.candidate?.mobile}</div>
+                    <div className="font-bold text-slate-900">{toTitleCase(app.candidate?.full_name || '')}</div>
+                    <div className="text-caption text-slate-500 font-mono">{app.candidate?.mobile}</div>
                   </TableCell>
                   <TableCell
                     mobileRole="field"
@@ -205,7 +206,7 @@ export function ReviewQueueView({
                     <div>
                       <StatusBadge status={app.status} />
                       {app.employee_id && (
-                        <div className="text-[10px] font-mono text-emerald-700 font-bold mt-0.5">
+                        <div className="text-tag font-mono text-emerald-700 mt-0.5">
                           {app.employee_id}
                         </div>
                       )}
@@ -215,7 +216,7 @@ export function ReviewQueueView({
                     mobileRole="field"
                     mobileLabel="Submitted"
                     hideOnTablet
-                    className="text-slate-500 text-[11px]"
+                    className="text-slate-500 text-caption"
                   >
                     {app.submitted_at ? new Date(app.submitted_at).toLocaleDateString() : 'Draft'}
                   </TableCell>

@@ -22,6 +22,7 @@ import {
 import { validateStaffPassword } from '../lib/passwordPolicy';
 import { useBranding } from '../lib/branding';
 import { Badge, Button, Input } from './ui';
+import { toTitleCase } from '../lib/formatText';
 
 interface StaffLoginFormProps {
   onLoginSuccess?: () => void;
@@ -167,20 +168,20 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
             <KeyRound className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-slate-900 text-base">Set Permanent Password</h3>
-            <p className="text-xs text-amber-700">For your security, please set a permanent password before continuing.</p>
+            <h3 className="text-card-heading text-slate-900">Set Permanent Password</h3>
+            <p className="text-caption text-amber-700">For your security, please set a permanent password before continuing.</p>
           </div>
         </div>
 
         {errorMessage && (
-          <div className="mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-lg flex items-start gap-2">
+          <div className="mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 text-caption rounded-lg flex items-start gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {successMessage && (
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-lg flex items-start gap-2">
+          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 text-caption rounded-lg flex items-start gap-2">
             <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{successMessage}</span>
           </div>
@@ -225,7 +226,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
           />
 
           {/* Password Policy Live Requirements */}
-          <div className="p-3 bg-slate-50/80 rounded-lg border border-slate-200 text-xs space-y-1.5">
+          <div className="p-3 bg-slate-50/80 rounded-lg border border-slate-200 text-caption space-y-1.5">
             <span className="font-semibold text-slate-700 block mb-1">Password Policy Requirements:</span>
             <div className={`flex items-center gap-1.5 ${policyCheck.rules.minLength ? 'text-emerald-700' : 'text-slate-500'}`}>
               <CheckCircle className={`w-3.5 h-3.5 ${policyCheck.rules.minLength ? 'text-emerald-600' : 'text-slate-300'}`} />
@@ -269,8 +270,8 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
               <UserCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 text-base">Staff Authenticated</h3>
-              <span className="text-xs text-slate-500 font-mono">Active Corporate Session</span>
+              <h3 className="text-card-heading text-slate-900">Staff Authenticated</h3>
+              <span className="text-caption text-slate-500 font-mono">Active Corporate Session</span>
             </div>
           </div>
           <Button
@@ -285,10 +286,10 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
           </Button>
         </div>
 
-        <div className="mt-4 space-y-2.5 text-xs">
+        <div className="mt-4 space-y-2.5 text-caption">
           <div className="flex justify-between py-1.5 border-b border-slate-100">
             <span className="text-slate-500 font-medium">Name</span>
-            <span className="text-slate-900 font-semibold">{sessionUser.name}</span>
+            <span className="text-slate-900 font-semibold">{toTitleCase(sessionUser.name)}</span>
           </div>
           <div className="flex justify-between py-1.5 border-b border-slate-100">
             <span className="text-slate-500 font-medium">Email</span>
@@ -323,7 +324,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
           </div>
         )}
 
-        <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-xs">
+        <div className="mt-4 p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 text-caption">
           <p className="font-medium flex items-center gap-1.5 text-slate-900">
             <CheckCircle className="w-4 h-4 text-emerald-600" />
             <span>Corporate account verified</span>
@@ -355,21 +356,21 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
             <Shield className="w-6 h-6" />
           </div>
         )}
-        <h2 className="text-lg font-bold text-slate-900 tracking-tight">Staff &amp; Admin Sign In</h2>
-        <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+        <h2 className="text-card-heading text-slate-900 tracking-tight">Staff &amp; Admin Sign In</h2>
+        <p className="text-caption text-slate-600 mt-1 leading-relaxed">
           {loginTagline || 'Sign in with your corporate credentials to manage your team and operations.'}
         </p>
       </div>
 
       {errorMessage && (
-        <div className="mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-lg flex items-start gap-2">
+        <div className="mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 text-caption rounded-lg flex items-start gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{errorMessage}</span>
         </div>
       )}
 
       {successMessage && (
-        <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg flex items-start gap-2">
+        <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-caption rounded-lg flex items-start gap-2">
           <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{successMessage}</span>
         </div>

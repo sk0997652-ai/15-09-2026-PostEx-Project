@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { PenTool, Eraser, RotateCcw, Type, Check, ShieldCheck } from 'lucide-react';
 import { Button, Input } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 export interface SignaturePadInputProps {
   id?: string;
@@ -257,7 +258,7 @@ export const SignaturePadInput: React.FC<SignaturePadInputProps> = ({
               type="button"
               id={`${id}-tab-draw`}
               onClick={() => setMode('draw')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-tag transition-all cursor-pointer ${
                 mode === 'draw'
                   ? 'bg-white text-indigo-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -270,7 +271,7 @@ export const SignaturePadInput: React.FC<SignaturePadInputProps> = ({
               type="button"
               id={`${id}-tab-type`}
               onClick={() => setMode('type')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-tag transition-all cursor-pointer ${
                 mode === 'type'
                   ? 'bg-white text-indigo-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -282,7 +283,7 @@ export const SignaturePadInput: React.FC<SignaturePadInputProps> = ({
           </div>
 
           {signingId && (
-            <span className="text-[11px] font-mono text-slate-400">
+            <span className="text-caption font-mono text-slate-400">
               ID: {signingId}
             </span>
           )}
@@ -310,7 +311,7 @@ export const SignaturePadInput: React.FC<SignaturePadInputProps> = ({
           {!hasDrawn && !disabled && (
             <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-slate-400">
               <PenTool className="w-6 h-6 mb-1 opacity-40" />
-              <span className="text-xs font-medium">Draw your signature with mouse, stylus, or finger</span>
+              <span className="text-caption font-medium">Draw your signature with mouse, stylus, or finger</span>
             </div>
           )}
 
@@ -336,7 +337,7 @@ export const SignaturePadInput: React.FC<SignaturePadInputProps> = ({
                 id={`${id}-clear-btn`}
                 onClick={clear}
                 disabled={!hasDrawn}
-                className="flex items-center gap-1 px-2.5 py-1 h-auto text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-30"
+                className="flex items-center gap-1 px-2.5 py-1 h-auto text-tag text-rose-600 hover:bg-rose-50 disabled:opacity-30"
               >
                 <Eraser className="w-3.5 h-3.5" />
                 <span>Clear</span>
@@ -355,14 +356,14 @@ export const SignaturePadInput: React.FC<SignaturePadInputProps> = ({
               value={typedName}
               onChange={(e) => handleTypedChange(e.target.value)}
               placeholder="Type your full legal name"
-              className="text-xl font-serif italic text-slate-900"
+              className="text-card-heading font-serif italic text-slate-900"
             />
             {typedName && (
               <div className="mt-3 p-3 bg-white rounded-lg border border-indigo-100 flex items-center justify-between">
-                <span className="text-2xl font-serif italic font-bold text-indigo-900 select-none">
-                  {typedName}
+                <span className="text-page-title font-serif italic text-indigo-900 select-none">
+                  {toTitleCase(typedName)}
                 </span>
-                <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                <span className="flex items-center gap-1 text-tag text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
                   <Check className="w-3 h-3" />
                   E-Signed
                 </span>
@@ -372,7 +373,7 @@ export const SignaturePadInput: React.FC<SignaturePadInputProps> = ({
         </div>
       )}
 
-      <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
+      <p className="text-caption text-slate-500 flex items-center gap-1.5">
         <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
         <span>Continuous high-fidelity digital stroke capture &bull; Legally binding under Pakistani ETO (2002).</span>
       </p>

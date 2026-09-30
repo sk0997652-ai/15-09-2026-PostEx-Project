@@ -32,10 +32,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     // Sizing tokens
     const sizeClasses =
       variant === 'link'
-        ? 'text-xs font-semibold p-0 h-auto'
+        ? 'text-caption font-semibold p-0 h-auto'
         : isSmall
-        ? 'h-8 px-3 py-1.5 text-xs font-medium rounded-lg'
-        : 'h-10 px-4 py-2.5 text-sm font-medium rounded-lg';
+        ? 'h-8 px-3 py-1.5 text-caption font-medium rounded-lg'
+        : 'h-10 px-4 py-2.5 text-body font-medium rounded-lg';
 
     // Color tokens
     let variantClasses = '';

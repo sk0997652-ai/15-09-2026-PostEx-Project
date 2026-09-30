@@ -24,6 +24,7 @@ import {
   Badge,
 } from '../ui';
 import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
+import { toTitleCase } from '../../lib/formatText';
 
 export interface OrganizationStructureViewProps {
   org: OrgStructure | null;
@@ -356,7 +357,7 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
       />
 
       {/* Sub-tabs Navigation */}
-      <div className="flex border-b border-slate-200 gap-6 text-xs font-semibold overflow-x-auto">
+      <div className="flex border-b border-slate-200 gap-6 text-caption font-semibold overflow-x-auto">
         {(['zones', 'branches', 'departments', 'designations'] as const).map((tab) => {
           const count = (mergedOrg as any)[tab]?.length || 0;
           return (
@@ -369,13 +370,13 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
                 setOrgStatusFilter('');
                 setOrgParentFilter('');
               }}
-              className={`pb-3 capitalize transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+              className={`pb-3 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                 orgSubTab === tab
                   ? 'text-indigo-700 border-b-2 border-indigo-600 font-bold'
                   : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              <span>{tab}</span>
+              <span>{toTitleCase(tab)}</span>
               <Badge variant={orgSubTab === tab ? 'primary' : 'neutral'} size="sm">
                 {count}
               </Badge>
@@ -522,7 +523,7 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
                         <TableCell
                           mobileRole="field"
                           mobileLabel="Zone Code"
-                          className="font-mono text-xs text-indigo-700 font-semibold"
+                          className="font-mono text-caption text-indigo-700 font-semibold"
                         >
                           {item.zone_code || '—'}
                         </TableCell>
@@ -540,7 +541,7 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
                         <TableCell
                           mobileRole="field"
                           mobileLabel="Branch Code"
-                          className="font-mono text-xs text-indigo-700 font-semibold"
+                          className="font-mono text-caption text-indigo-700 font-semibold"
                         >
                           {item.branch_code || '—'}
                         </TableCell>
@@ -568,7 +569,7 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
                           mobileRole="field"
                           mobileLabel="Contact"
                           hideOnTablet
-                          className="text-slate-500 font-mono text-xs"
+                          className="text-slate-500 font-mono text-caption"
                         >
                           {item.contact_number || '—'}
                         </TableCell>
@@ -579,7 +580,7 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
                         <TableCell
                           mobileRole="field"
                           mobileLabel="Dept Code"
-                          className="font-mono text-xs text-indigo-700 font-semibold"
+                          className="font-mono text-caption text-indigo-700 font-semibold"
                         >
                           {item.department_code || '—'}
                         </TableCell>
@@ -620,7 +621,7 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
                       mobileRole="field"
                       mobileLabel="Created At"
                       hideOnTablet
-                      className="text-slate-400 font-mono text-xs"
+                      className="text-slate-400 font-mono text-caption"
                     >
                       {item.created_at ? new Date(item.created_at).toLocaleDateString() : '—'}
                     </TableCell>
@@ -673,11 +674,11 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
         description={`Provide organizational unit details for ${orgSubTab}.`}
         size="small"
       >
-        <form onSubmit={handleSaveOrgEntity} className="space-y-4 text-xs">
+        <form onSubmit={handleSaveOrgEntity} className="space-y-4 text-body">
           {modalError && (
             <div
               id="org-modal-error-banner"
-              className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 flex items-start gap-2 text-xs font-medium"
+              className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 flex items-start gap-2 text-caption font-medium"
             >
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
               <span>{modalError}</span>
@@ -886,8 +887,8 @@ export const OrganizationStructureView: React.FC<OrganizationStructureViewProps>
           {/* STATUS TOGGLE (Shared across all 4 entities, default Active) */}
           <div className="flex items-center justify-between pt-2 pb-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200">
             <div>
-              <span className="font-semibold text-slate-800 block text-xs">Status</span>
-              <span className="text-[11px] text-slate-500">
+              <span className="font-semibold text-slate-800 block text-body">Status</span>
+              <span className="text-caption text-slate-500">
                 {(typeof orgForm.is_active === 'boolean' ? orgForm.is_active : true)
                   ? 'Active — available for assignment across the portal'
                   : 'Inactive — hidden from new assignments'}

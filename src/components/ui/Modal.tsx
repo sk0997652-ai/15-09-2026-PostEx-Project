@@ -68,13 +68,13 @@ export const Modal: React.FC<ModalProps> = ({
             <div>
               {title &&
                 (typeof title === 'string' ? (
-                  <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+                  <h2 className="text-card-heading text-slate-900">{title}</h2>
                 ) : (
                   title
                 ))}
               {description &&
                 (typeof description === 'string' ? (
-                  <p className="text-xs sm:text-sm font-normal text-slate-500 mt-0.5">
+                  <p className="text-caption text-slate-500 mt-0.5">
                     {description}
                   </p>
                 ) : (

@@ -25,12 +25,12 @@ export function ReturnToCandidateModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Return Application to Candidate"
+      title="Return Application To Candidate"
       description="Unlocks candidate portal to allow re-upload of flagged credentials."
       size="md"
     >
       <div className="space-y-4">
-        <div className="flex items-center gap-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs">
+        <div className="flex items-center gap-3 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-caption">
           <RotateCcw className="w-5 h-5 text-rose-600 shrink-0" />
           <span>
             Candidate will be notified to review the flagged items and re-upload correct credentials.

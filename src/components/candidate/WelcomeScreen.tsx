@@ -20,6 +20,7 @@ import {
 import { useI18n, LanguageSelector } from '../../lib/i18n';
 import { useBranding } from '../../lib/branding';
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge, PageHeader } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface WelcomeScreenProps {
   candidate: {
@@ -69,7 +70,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         <div className="absolute -left-16 -bottom-16 w-56 h-56 rounded-full bg-indigo-600/5 blur-3xl pointer-events-none" />
 
         <PageHeader
-          title={isRTL ? `خوش آمدید، ${candidate.full_name}!` : `Welcome aboard, ${candidate.full_name}!`}
+          title={isRTL ? `خوش آمدید، ${candidate.full_name}!` : `Welcome Aboard, ${toTitleCase(candidate.full_name)}!`}
           description={
             t('welcome.subtitle') ||
             `Congratulations on joining the team! We are thrilled to welcome you. Please take a few moments to review your offer profile snapshot and complete your digital joining dossier.`
@@ -81,15 +82,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
         {/* Profile Snapshot Grid */}
         <div className="mt-6 pt-6 border-t border-slate-100">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+          <h2 className="text-table-header uppercase text-slate-400 mb-3 flex items-center gap-1.5">
             <Shield className="w-3.5 h-3.5 text-indigo-600" />
             <span>Profile Snapshot (Central HR Verified)</span>
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 text-caption">
             <div className="p-2">
               <span className="text-slate-500 font-medium block">{t('welcome.joiningId')}</span>
-              <p className="font-mono font-bold text-indigo-700 text-sm mt-0.5">{candidate.joining_id}</p>
+              <p className="font-mono font-bold text-indigo-700 text-body mt-0.5">{candidate.joining_id}</p>
             </div>
 
             <div className="p-2">
@@ -97,7 +98,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <Briefcase className="w-3.5 h-3.5 text-slate-400" />
                 <span>Assigned Role</span>
               </span>
-              <p className="font-bold text-slate-800 text-sm mt-0.5 truncate" title={roleTitle}>
+              <p className="font-bold text-slate-800 text-body mt-0.5 truncate" title={roleTitle}>
                 {roleTitle}
               </p>
             </div>
@@ -123,7 +124,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <Building2 className="w-3.5 h-3.5 text-slate-400" />
                 <span>Assigned Hub</span>
               </span>
-              <p className="font-bold text-slate-800 text-sm mt-0.5 truncate" title={candidate.branches?.name}>
+              <p className="font-bold text-slate-800 text-body mt-0.5 truncate" title={candidate.branches?.name}>
                 {candidate.branches?.name || 'Assigned Branch Hub'}
               </p>
             </div>
@@ -133,7 +134,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <MapPin className="w-3.5 h-3.5 text-slate-400" />
                 <span>Region / Zone</span>
               </span>
-              <p className="font-bold text-slate-800 text-sm mt-0.5 truncate" title={candidate.zones?.name}>
+              <p className="font-bold text-slate-800 text-body mt-0.5 truncate" title={candidate.zones?.name}>
                 {candidate.zones?.name || 'Assigned Zone'}
               </p>
             </div>
@@ -151,8 +152,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <UploadCloud className="w-4 h-4" />
               </span>
               <div>
-                <h3 className="text-base font-bold text-slate-900">Required Documents Checklist</h3>
-                <p className="text-xs text-slate-500">Prepare these files before you proceed with the wizard</p>
+                <h3 className="text-card-heading text-slate-900">Required Documents Checklist</h3>
+                <p className="text-caption text-slate-500">Prepare these files before you proceed with the wizard</p>
               </div>
             </div>
             <Badge variant="outline" size="sm" className="font-semibold text-slate-500">
@@ -166,8 +167,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <IdCard className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs font-bold text-slate-800 block">1. CNIC (Front &amp; Back)</span>
-                <span className="text-[11px] text-slate-500 mt-0.5 block">NADRA computerized National Identity Card</span>
+                <span className="text-body font-bold text-slate-800 block">1. CNIC (Front &amp; Back)</span>
+                <span className="text-caption text-slate-500 mt-0.5 block">NADRA computerized National Identity Card</span>
               </div>
             </div>
 
@@ -176,8 +177,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <Camera className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs font-bold text-slate-800 block">2. Recent Photograph</span>
-                <span className="text-[11px] text-slate-500 mt-0.5 block">Passport-size formal photo (camera supported)</span>
+                <span className="text-body font-bold text-slate-800 block">2. Recent Photograph</span>
+                <span className="text-caption text-slate-500 mt-0.5 block">Passport-size formal photo (camera supported)</span>
               </div>
             </div>
 
@@ -186,8 +187,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <GraduationCap className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs font-bold text-slate-800 block">3. Educational Certificates</span>
-                <span className="text-[11px] text-slate-500 mt-0.5 block">Highest degree, diploma, or matric transcript</span>
+                <span className="text-body font-bold text-slate-800 block">3. Educational Certificates</span>
+                <span className="text-caption text-slate-500 mt-0.5 block">Highest degree, diploma, or matric transcript</span>
               </div>
             </div>
 
@@ -196,8 +197,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <FileText className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-xs font-bold text-slate-800 block">4. Work Experience / Other Docs</span>
-                <span className="text-[11px] text-slate-500 mt-0.5 block">Previous employer letters or resume</span>
+                <span className="text-body font-bold text-slate-800 block">4. Work Experience / Other Docs</span>
+                <span className="text-caption text-slate-500 mt-0.5 block">Previous employer letters or resume</span>
               </div>
             </div>
           </div>
@@ -210,15 +211,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
                 <Clock className="w-4 h-4" />
               </span>
-              <h3 className="text-base font-bold text-slate-900">Estimated Time</h3>
+              <h3 className="text-card-heading text-slate-900">Estimated Time</h3>
             </div>
 
             <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 mb-4">
-              <span className="text-2xl font-black text-indigo-900 block">10 &ndash; 15 mins</span>
-              <span className="text-xs text-indigo-700 font-medium">To complete all form sections and upload documents</span>
+              <span className="text-kpi-number text-indigo-900 block">10 &ndash; 15 mins</span>
+              <span className="text-caption text-indigo-700 font-medium">To complete all form sections and upload documents</span>
             </div>
 
-            <div className="space-y-2.5 text-xs text-slate-600">
+            <div className="space-y-2.5 text-caption text-slate-600">
               <div className="flex items-start gap-2">
                 <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <span>Continuous autosave protects your progress at each step</span>
@@ -234,7 +235,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-slate-100 text-[11px] text-slate-400 flex items-center gap-1.5">
+          <div className="mt-6 pt-4 border-t border-slate-100 text-caption text-slate-400 flex items-center gap-1.5">
             <Shield className="w-3.5 h-3.5 text-indigo-600" />
             <span>Encrypted under NADRA &amp; ETO 2002 guidelines</span>
           </div>
@@ -250,8 +251,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 <FileCheck className="w-5 h-5" />
               </span>
               <div>
-                <p className="text-sm font-bold text-slate-900">Application Submitted</p>
-                <p className="text-xs text-slate-500">Your joining dossier is currently in review.</p>
+                <p className="text-card-heading text-slate-900">Application Submitted</p>
+                <p className="text-caption text-slate-500">Your joining dossier is currently in review.</p>
               </div>
             </div>
 
@@ -280,7 +281,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
         ) : (
           <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
-              <p className="text-xs text-slate-500">
+              <p className="text-caption text-slate-500">
                 {hasStarted
                   ? `You have already begun Step ${application?.current_step || 1}. Pick up right where you left off.`
                   : `Ready to get started? Fill in your bio, contact info, and upload your documents.`}
@@ -295,7 +296,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                   size="small"
                   onClick={onViewStatusTracker}
                   id="candidate-check-status-btn"
-                  className="text-xs font-bold text-indigo-700 hover:text-indigo-900 p-0 h-auto"
+                  className="text-tag text-indigo-700 hover:text-indigo-900 p-0 h-auto"
                 >
                   View Status
                 </Button>

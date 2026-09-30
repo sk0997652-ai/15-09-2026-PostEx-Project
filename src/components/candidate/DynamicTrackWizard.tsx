@@ -30,6 +30,7 @@ import { SignatureStep } from './SignatureStep';
 import { SignaturePadInput } from './SignaturePadInput';
 import { SubmissionConfirmationModal } from './SubmissionConfirmationModal';
 import { Button, Card, Badge, Input, Textarea, Select, PageHeader } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface DynamicTrackWizardProps {
   candidate: {
@@ -360,8 +361,8 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
         <div className="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <h3 className="text-sm font-bold text-slate-900">Loading Joining Dossier...</h3>
-        <p className="text-xs text-slate-500 mt-1">
+        <h3 className="text-card-heading text-slate-900">Loading Joining Dossier...</h3>
+        <p className="text-caption text-slate-500 mt-1">
           Configuring {track === 'executive' ? 'Executive' : 'Non-Executive'} form fields &amp; validations...
         </p>
       </div>
@@ -386,16 +387,16 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-amber-950">Action Required: Correction Requested</h3>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-200 text-amber-900">
+                <h3 className="text-card-heading text-amber-950">Action Required: Correction Requested</h3>
+                <span className="px-2 py-0.5 rounded text-tag bg-amber-200 text-amber-900">
                   Resubmission Needed
                 </span>
               </div>
-              <p className="text-xs text-amber-900 mt-1">
+              <p className="text-caption text-amber-900 mt-1">
                 Your application has been flagged for revisions. Please review the reviewer&apos;s remarks below, make the necessary corrections, and resubmit.
               </p>
               {initialApplication.decision_reason && (
-                <div className="mt-2.5 p-3 rounded-xl bg-white/90 border border-amber-200 text-xs font-medium text-slate-800">
+                <div className="mt-2.5 p-3 rounded-xl bg-white/90 border border-amber-200 text-caption font-medium text-slate-800">
                   <span className="font-bold text-amber-900 block mb-0.5">Reviewer Remarks:</span>
                   <p>{initialApplication.decision_reason}</p>
                 </div>
@@ -425,10 +426,10 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
               </Badge>
             )}
           </div>
-          <h1 className="text-xl font-black text-slate-900">
-            {candidate.full_name} &bull; Joining Dossier
+          <h1 className="text-page-title text-slate-900">
+            {toTitleCase(candidate.full_name)} &bull; Joining Dossier
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-caption text-slate-500 mt-0.5">
             {branding.companyName} Official Joining &bull; {candidate.branches?.name || 'Assigned Branch'}
           </p>
         </div>
@@ -446,7 +447,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
           </Button>
 
           {!isLocked && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-medium border bg-slate-50 border-slate-200">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-mono font-medium border bg-slate-50 border-slate-200">
               {saveStatus === 'saving' && (
                 <>
                   <Clock className="w-3.5 h-3.5 text-indigo-600 animate-spin" />
@@ -481,7 +482,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
 
       {/* Progress Bar & Step Navigation */}
       <Card className="p-5 space-y-4">
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+        <div className="flex items-center justify-between text-caption font-semibold text-slate-700">
           <span>
             Step {currentSectionIndex + 1} of {totalWizardSteps}:{' '}
             <strong className="text-indigo-700 font-bold">
@@ -489,7 +490,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                 ? 'Upload Documents'
                 : isCurrentSignStep
                 ? 'Review & Sign'
-                : currentSection?.title}
+                : currentSection ? toTitleCase(currentSection.title) : ''}
             </strong>
           </span>
           <span className="text-indigo-600 font-mono font-bold">{progressPercent}% Completed</span>
@@ -516,7 +517,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                     setCurrentSectionIndex(idx);
                   }
                 }}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-caption font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
                   isCurrent
                     ? 'bg-indigo-600 text-white shadow-xs'
                     : isCompleted
@@ -525,7 +526,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                 }`}
               >
                 <span
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-tag ${
                     isCurrent
                       ? 'bg-white text-indigo-700'
                       : isCompleted
@@ -535,7 +536,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                 >
                   {isCompleted ? '✓' : idx + 1}
                 </span>
-                <span>{sec.title}</span>
+                <span>{toTitleCase(sec.title)}</span>
               </button>
             );
           })}
@@ -543,7 +544,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
           {/* Document Upload Tab */}
           <button
             onClick={() => setCurrentSectionIndex(docsStepIndex)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-caption font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
               isCurrentDocsStep
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : currentSectionIndex > docsStepIndex
@@ -558,7 +559,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
           {/* Sign & Submit Tab */}
           <button
             onClick={() => setCurrentSectionIndex(signStepIndex)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-caption font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
               isCurrentSignStep
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
@@ -572,7 +573,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
 
       {/* Validation or Submission Errors */}
       {submitError && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5">
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-caption flex items-center gap-2.5">
           <AlertCircle className="w-5 h-5 shrink-0" />
           <span className="font-medium">{submitError}</span>
         </div>
@@ -641,7 +642,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
               onClick={handlePrevSection}
               leftIcon={<ChevronLeft className="w-4 h-4" />}
             >
-              Back to Documents
+              Back To Documents
             </Button>
           </Card>
         </div>
@@ -655,7 +656,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
         >
           {/* Section Header */}
           <PageHeader
-            title={currentSection.title}
+            title={toTitleCase(currentSection.title)}
             description={currentSection.description}
             roleContext={
               currentSection.urdu_title
@@ -671,7 +672,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
             currentSection.title.toLowerCase().includes('declaration')) && (
             <div
               id="declaration-signing-notice"
-              className="mb-5 p-4 rounded-xl bg-indigo-50/80 border border-indigo-200 text-xs text-indigo-950 flex items-start gap-3"
+              className="mb-5 p-4 rounded-xl bg-indigo-50/80 border border-indigo-200 text-caption text-indigo-950 flex items-start gap-3"
             >
               <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
               <div>
@@ -701,19 +702,19 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                   className={`space-y-1.5 ${isFullWidth ? 'md:col-span-2' : ''}`}
                 >
                   <div className="flex items-baseline justify-between mb-1">
-                    <label className="text-sm font-bold text-slate-800 flex items-center gap-1">
+                    <label className="text-body font-bold text-slate-800 flex items-center gap-1">
                       <span>{field.label}</span>
                       {field.is_required && <span className="text-rose-500 font-bold">*</span>}
                     </label>
                     {field.urdu_label && (
-                      <span className="text-xs text-slate-400 font-urdu" dir="rtl">
+                      <span className="text-caption text-slate-400 font-urdu" dir="rtl">
                         {field.urdu_label}
                       </span>
                     )}
                   </div>
 
                   {field.help_text && (
-                    <p className="text-xs text-slate-500 flex items-center gap-1 mb-1.5">
+                    <p className="text-caption text-slate-500 flex items-center gap-1 mb-1.5">
                       <HelpCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>{field.help_text}</span>
                     </p>
@@ -772,7 +773,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3 max-w-sm">
                         <label
-                          className={`flex items-center justify-center gap-2 h-11 sm:h-12 px-4 rounded-lg border text-sm font-bold cursor-pointer transition-all shadow-xs ${
+                          className={`flex items-center justify-center gap-2 h-11 sm:h-12 px-4 rounded-lg border text-body font-bold cursor-pointer transition-all shadow-xs ${
                             fieldValue === 'yes' || (typeof fieldValue === 'object' && fieldValue.answer === 'yes')
                               ? 'bg-indigo-50 border-indigo-600 text-indigo-900 ring-2 ring-indigo-500/20'
                               : 'bg-slate-50 border-slate-300 text-slate-700 hover:bg-slate-100'
@@ -801,7 +802,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                         </label>
 
                         <label
-                          className={`flex items-center justify-center gap-2 h-11 sm:h-12 px-4 rounded-lg border text-sm font-bold cursor-pointer transition-all shadow-xs ${
+                          className={`flex items-center justify-center gap-2 h-11 sm:h-12 px-4 rounded-lg border text-body font-bold cursor-pointer transition-all shadow-xs ${
                             fieldValue === 'no' || (typeof fieldValue === 'object' && fieldValue.answer === 'no')
                               ? 'bg-indigo-50 border-indigo-600 text-indigo-900 ring-2 ring-indigo-500/20'
                               : 'bg-slate-50 border-slate-300 text-slate-700 hover:bg-slate-100'
@@ -832,7 +833,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                       {(fieldValue === 'yes' ||
                         (typeof fieldValue === 'object' && fieldValue.answer === 'yes')) && (
                         <div className="pt-2 animate-in fade-in-50 duration-200">
-                          <label className="text-xs font-semibold text-slate-600 block mb-1">
+                          <label className="text-caption font-semibold text-slate-600 block mb-1">
                             Please specify full particulars / details:
                           </label>
                           <Textarea
@@ -867,8 +868,8 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                   {field.field_type === 'table' && (
                     <div className="space-y-3 pt-2">
                       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                        <table className="w-full text-left text-sm border-collapse min-w-[500px]">
-                          <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wider">
+                        <table className="w-full text-left text-body border-collapse min-w-[500px]">
+                          <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 text-table-header">
                             <tr>
                               <th className="p-3 w-10 text-center">#</th>
                               {field.table_columns?.map((col) => (
@@ -883,7 +884,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                             {Array.isArray(fieldValue) && fieldValue.length > 0 ? (
                               fieldValue.map((row: any, rIdx: number) => (
                                 <tr key={rIdx} className="hover:bg-slate-50/50">
-                                  <td className="p-3 text-center text-slate-400 font-mono text-xs">
+                                  <td className="p-3 text-center text-slate-400 font-mono text-caption">
                                     {rIdx + 1}
                                   </td>
                                   {field.table_columns?.map((col) => (
@@ -901,7 +902,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                                             e.target.value
                                           )
                                         }
-                                        className="h-10 text-sm"
+                                        className="h-10 text-body"
                                       />
                                     </td>
                                   ))}
@@ -925,7 +926,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                               <tr>
                                 <td
                                   colSpan={(field.table_columns?.length || 1) + 2}
-                                  className="p-4 text-center text-slate-400 italic text-xs"
+                                  className="p-4 text-center text-slate-400 italic text-caption"
                                 >
                                   No records added yet. Click &quot;Add Record&quot; below to enter details.
                                 </td>
@@ -961,7 +962,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                           onChange={(e) => handleFieldChange(currentSection, field.field_key, e.target.checked)}
                           className="mt-1 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                         />
-                        <span className="text-sm text-slate-800 leading-relaxed font-medium">
+                        <span className="text-body text-slate-800 leading-relaxed font-medium">
                           {field.help_text || field.label}
                         </span>
                       </label>
@@ -984,7 +985,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
 
                   {/* Field Level Error Message */}
                   {fieldError && (
-                    <p className="text-xs text-rose-600 font-semibold flex items-center gap-1 mt-1">
+                    <p className="text-caption text-rose-600 font-semibold flex items-center gap-1 mt-1">
                       <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                       <span>{fieldError}</span>
                     </p>

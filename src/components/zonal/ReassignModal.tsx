@@ -1,6 +1,7 @@
 import React from 'react';
 import { ZonalApplication, CentralHrStaffMember } from '../../lib/zonalHrApi';
 import { Modal, Button, Select, Textarea } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface ReassignModalProps {
   isOpen: boolean;
@@ -39,12 +40,12 @@ export function ReassignModal({
     >
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-          <div className="text-xs font-bold text-slate-900">
-            {application?.candidate?.full_name}
+          <div className="text-body font-bold text-slate-900">
+            {toTitleCase(application?.candidate?.full_name || '')}
           </div>
-          <div className="text-[11px] text-slate-500 font-mono">
+          <div className="text-caption text-slate-500 font-mono">
             ID: {application?.candidate?.joining_id} &bull; Current:{' '}
-            {application?.assigned_central_hr_name}
+            {toTitleCase(application?.assigned_central_hr_name || '')}
           </div>
         </div>
 
@@ -57,7 +58,7 @@ export function ReassignModal({
             required
             options={centralHrList.map((hr) => ({
               value: hr.id,
-              label: `${hr.name} (${hr.email})`,
+              label: `${toTitleCase(hr.name)} (${hr.email})`,
             }))}
           />
         </div>

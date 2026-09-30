@@ -33,6 +33,7 @@ import {
   Select,
   Badge,
 } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 export interface StaffManagementViewProps {
   staff: StaffUserItem[];
@@ -537,10 +538,10 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                   <TableRow key={s.id}>
                     <TableCell mobileRole="primary">
                       <div>
-                        <span className="font-bold text-slate-900 block">{s.name}</span>
-                        <span className="text-xs text-slate-600 font-mono block">{s.email}</span>
+                        <span className="font-bold text-slate-900 block">{toTitleCase(s.name)}</span>
+                        <span className="text-caption text-slate-600 font-mono block">{s.email}</span>
                         {(s.personal_email || s.phone_number) && (
-                          <span className="text-[11px] text-slate-400 block mt-0.5">
+                          <span className="text-caption text-slate-400 block mt-0.5">
                             {[s.personal_email, s.phone_number].filter(Boolean).join(' · ')}
                           </span>
                         )}
@@ -548,13 +549,13 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                     </TableCell>
                     <TableCell mobileRole="field" mobileLabel="Employment Identity" hideOnTablet>
                       <div className="space-y-0.5">
-                        <span className="font-mono text-xs font-bold text-indigo-950 block">
+                        <span className="font-mono text-caption font-bold text-indigo-950 block">
                           {s.staff_employee_id || '—'}
                         </span>
-                        <span className="text-xs text-slate-700 block">
+                        <span className="text-caption text-slate-700 block">
                           {s.designations?.name || 'No Designation'}
                         </span>
-                        <span className="text-[11px] text-slate-400 block">
+                        <span className="text-caption text-slate-400 block">
                           {s.departments?.name || 'No Department'}
                         </span>
                       </div>
@@ -570,17 +571,17 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                       hideOnTablet
                       className="text-slate-600"
                     >
-                      <span className="font-medium text-slate-800 block text-xs">
+                      <span className="font-medium text-slate-800 block text-caption">
                         {s.zones?.name || 'All Zones (HQ)'}
                       </span>
                       {taggedList.length > 0 ? (
-                        <span className="text-[11px] text-slate-500 block mt-0.5">
+                        <span className="text-caption text-slate-500 block mt-0.5">
                           {taggedList.length === 1
                             ? taggedList[0].name
                             : `${taggedList.length} branches: ${taggedList.map((b) => b.name).join(', ')}`}
                         </span>
                       ) : (
-                        <span className="text-[11px] text-slate-400 block">Zone-Wide / All Branches</span>
+                        <span className="text-caption text-slate-400 block">Zone-Wide / All Branches</span>
                       )}
                     </TableCell>
                     <TableCell mobileRole="status">
@@ -702,7 +703,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
           >
             <div className="flex items-center gap-2 pb-2 border-b border-slate-200/80">
               <User className="w-4 h-4 text-indigo-600 shrink-0" />
-              <span className="font-bold text-slate-900 uppercase tracking-wider text-xs">
+              <span className="font-bold text-slate-900 uppercase text-table-header">
                 Section A — Personal
               </span>
             </div>
@@ -752,11 +753,11 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/80">
               <div className="flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span className="font-bold text-slate-900 uppercase tracking-wider text-xs">
+                <span className="font-bold text-slate-900 uppercase text-table-header">
                   Section B — Employment Identity
                 </span>
               </div>
-              <span className="text-xs text-slate-500">
+              <span className="text-caption text-slate-500">
                 Staff ID sequence (separate from EMP-branch candidate IDs)
               </span>
             </div>
@@ -845,11 +846,11 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/80">
               <div className="flex items-center gap-2">
                 <Lock className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span className="font-bold text-slate-900 uppercase tracking-wider text-xs">
+                <span className="font-bold text-slate-900 uppercase text-table-header">
                   Section C — System Access
                 </span>
               </div>
-              <span className="text-xs text-slate-500">
+              <span className="text-caption text-slate-500">
                 One-time temporary password generated on creation
               </span>
             </div>
@@ -865,7 +866,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                 placeholder="e.g. asad.khan@postex.pk"
               />
 
-              <div className="p-3.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-600 leading-relaxed md:mt-6">
+              <div className="p-3.5 rounded-lg bg-white border border-slate-200 text-caption text-slate-600 md:mt-6">
                 Login uses this official work email. A random 14-character temporary password will be shown once upon creation and forced to change on first sign-in.
               </div>
             </div>
@@ -879,11 +880,11 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/80">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span className="font-bold text-slate-900 uppercase tracking-wider text-xs">
+                <span className="font-bold text-slate-900 uppercase text-table-header">
                   Section D — Role &amp; Scope Assignment
                 </span>
               </div>
-              <span className="text-xs text-slate-500">
+              <span className="text-caption text-slate-500">
                 Candidate intake is handled via Central HR separate flow
               </span>
             </div>
@@ -951,12 +952,12 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <span className="font-bold text-slate-800 block text-xs">
+                    <span className="font-bold text-slate-800 block text-caption">
                       Branch Tagging Checklist
                     </span>
                     <span
                       id="branch-tag-counter"
-                      className="text-xs font-semibold text-indigo-700"
+                      className="text-caption font-semibold text-indigo-700"
                     >
                       {newStaffForm.branch_ids.length} of {createZoneBranches.length} branches selected
                     </span>
@@ -964,7 +965,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
 
                   <div className="flex items-center gap-3">
                     {isCreateBranchManager && (
-                      <label className="inline-flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+                      <label className="inline-flex items-center gap-1.5 text-caption text-slate-600 cursor-pointer">
                         <input
                           id="bm-single-branch-toggle"
                           type="checkbox"
@@ -992,7 +993,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                         variant="secondary"
                         size="sm"
                         onClick={handleSelectAllCreateBranches}
-                        className="py-1.5 px-3 text-xs"
+                        className="py-1.5 px-3 text-tag"
                       >
                         {createZoneBranches.every((b) => newStaffForm.branch_ids.includes(b.id))
                           ? 'Clear All'
@@ -1003,7 +1004,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                 </div>
 
                 {createZoneBranches.length === 0 ? (
-                  <div className="py-4 text-center text-slate-400 text-xs">
+                  <div className="py-4 text-center text-slate-400 text-caption">
                     No active branches found in the selected zone.
                   </div>
                 ) : (
@@ -1014,7 +1015,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                         <label
                           key={b.id}
                           htmlFor={`branch-tag-checkbox-${b.id}`}
-                          className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition-colors ${
+                          className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-caption cursor-pointer transition-colors ${
                             isChecked
                               ? 'bg-indigo-50/70 border-indigo-300 text-indigo-950 font-semibold'
                               : 'bg-slate-50/50 border-slate-200 text-slate-700 hover:bg-slate-100/70'
@@ -1030,7 +1031,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                           <div className="min-w-0 flex-1">
                             <span className="block truncate">{b.name}</span>
                             {b.branch_code && (
-                              <span className="text-[11px] text-slate-500 font-mono">
+                              <span className="text-caption text-slate-500 font-mono">
                                 {b.branch_code} {b.branch_type ? `· ${b.branch_type}` : ''}
                               </span>
                             )}
@@ -1042,7 +1043,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                 )}
               </div>
             ) : (
-              <div className="text-xs text-slate-500 italic pt-1">
+              <div className="text-caption text-slate-500 italic pt-1">
                 Select a Zone above to view and tag branches in that zone.
               </div>
             )}
@@ -1219,7 +1220,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
             {editingStaff.zone_id && (
               <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-800 text-xs">
+                  <span className="font-bold text-slate-800 text-caption">
                     Branch Tagging ({editingStaff.branch_ids_edit.length} of {editZoneBranches.length} branches selected)
                   </span>
                   {editZoneBranches.length > 0 && (
@@ -1237,7 +1238,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                           branch_ids_edit: allSelected ? [] : allIds,
                         });
                       }}
-                      className="py-1 px-2.5 text-xs"
+                      className="py-1 px-2.5 text-tag"
                     >
                       {editZoneBranches.every((b) => editingStaff.branch_ids_edit.includes(b.id))
                         ? 'Clear All'
@@ -1252,7 +1253,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                     return (
                       <label
                         key={b.id}
-                        className="flex items-center gap-2 p-2 rounded border border-slate-200 bg-white cursor-pointer text-xs"
+                        className="flex items-center gap-2 p-2 rounded border border-slate-200 bg-white cursor-pointer text-caption"
                       >
                         <input
                           type="checkbox"
@@ -1290,11 +1291,11 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
         description="Provide these credentials to the staff user. The temporary password will not be shown again."
         size="small"
       >
-        <div className="space-y-4 text-xs">
+        <div className="space-y-4 text-caption">
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-            <span className="text-slate-500 block text-[11px]">Recipient</span>
-            <span className="font-bold text-slate-900 block">{oneTimePasswordModal.staffName}</span>
-            <span className="font-mono text-slate-600 block text-[11px]">{oneTimePasswordModal.email}</span>
+            <span className="text-slate-500 block text-caption">Recipient</span>
+            <span className="font-bold text-slate-900 block">{toTitleCase(oneTimePasswordModal.staffName)}</span>
+            <span className="font-mono text-slate-600 block text-caption">{oneTimePasswordModal.email}</span>
           </div>
 
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
@@ -1313,7 +1314,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                     setTimeout(() => setCopiedPassword(false), 2500);
                   }
                 }}
-                className="py-1 px-2.5 text-[11px]"
+                className="py-1 px-2.5 text-tag"
               >
                 {copiedPassword ? (
                   <>
@@ -1328,10 +1329,10 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                 )}
               </Button>
             </div>
-            <div className="p-2.5 bg-white border border-amber-300 rounded font-mono font-bold text-sm tracking-wide text-amber-950 select-all text-center">
+            <div className="p-2.5 bg-white border border-amber-300 rounded font-mono font-bold text-body text-amber-950 select-all text-center">
               {oneTimePasswordModal.tempPassword || '—'}
             </div>
-            <span className="text-[10px] text-amber-700 block leading-tight">
+            <span className="text-caption text-amber-700 block">
               Staff will be prompted to choose a permanent password upon first login.
             </span>
           </div>

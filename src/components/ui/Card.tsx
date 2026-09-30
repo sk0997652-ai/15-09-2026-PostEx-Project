@@ -28,14 +28,14 @@ export const Card: React.FC<CardProps> = ({
           <div className="min-w-0">
             {title && (
               typeof title === 'string' ? (
-                <h3 className="text-[15px] font-bold tracking-tight text-slate-900">{title}</h3>
+                <h3 className="text-card-heading text-slate-900">{title}</h3>
               ) : (
                 title
               )
             )}
             {description && (
               typeof description === 'string' ? (
-                <p className="text-xs font-normal text-slate-500 mt-1 leading-relaxed max-w-3xl">{description}</p>
+                <p className="text-caption text-slate-500 mt-1 max-w-3xl">{description}</p>
               ) : (
                 description
               )
@@ -69,7 +69,7 @@ export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
   children,
   ...props
 }) => (
-  <h3 className={`text-base font-semibold text-slate-900 ${className}`} {...props}>
+  <h3 className={`text-card-heading text-slate-900 ${className}`} {...props}>
     {children}
   </h3>
 );
@@ -79,7 +79,7 @@ export const CardDescription: React.FC<React.HTMLAttributes<HTMLParagraphElement
   children,
   ...props
 }) => (
-  <p className={`text-sm font-normal text-slate-500 mt-1 ${className}`} {...props}>
+  <p className={`text-body text-slate-500 mt-1 ${className}`} {...props}>
     {children}
   </p>
 );

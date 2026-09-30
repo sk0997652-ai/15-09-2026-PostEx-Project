@@ -22,6 +22,7 @@ import { VerificationStampSeal } from '../common/VerificationStampSeal';
 import { FormSectionItem } from '../../types/formTemplates';
 import { DocumentRecord } from './DocumentUploadStep';
 import { Button, Card, Badge, Input, PageHeader } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface SignatureStepProps {
   candidate: {
@@ -403,11 +404,11 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
                   className="p-3.5 bg-slate-50 hover:bg-slate-100/80 flex items-center justify-between cursor-pointer transition-colors"
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center shadow-xs">
+                    <span className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold text-tag flex items-center justify-center shadow-xs">
                       {secIdx + 1}
                     </span>
-                    <h3 className="text-xs font-bold text-slate-900">{sec.title}</h3>
-                    <span className="text-[10px] text-slate-500">({fieldKeys.length} fields completed)</span>
+                    <h3 className="text-caption font-bold text-slate-900">{toTitleCase(sec.title)}</h3>
+                    <span className="text-caption text-slate-500">({fieldKeys.length} fields completed)</span>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -419,7 +420,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
                         e.stopPropagation();
                         onEditSection(secIdx);
                       }}
-                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline underline-offset-2 p-0 h-auto"
+                      className="text-caption font-semibold text-indigo-600 hover:text-indigo-800 underline underline-offset-2 p-0 h-auto"
                     >
                       Edit Section
                     </Button>
@@ -430,15 +431,15 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
                 {isExpanded && (
                   <div className="p-4 bg-white divide-y divide-slate-100">
                     {fieldKeys.length === 0 ? (
-                      <p className="text-xs text-slate-400 italic">No entries filled in this section.</p>
+                      <p className="text-caption text-slate-400 italic">No entries filled in this section.</p>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-caption">
                         {sec.fields.map((field) => {
                           const val = secData[field.field_key];
                           if (val === undefined || val === null || val === '') return null;
                           return (
                             <div key={field.id} className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-                              <span className="text-[10px] font-medium text-slate-500 block truncate">{field.label}</span>
+                              <span className="text-table-header text-slate-500 block truncate">{toTitleCase(field.label)}</span>
                               <p className="font-semibold text-slate-800 mt-0.5 break-words">
                                 {typeof val === 'object' ? JSON.stringify(val) : String(val)}
                               </p>
@@ -460,11 +461,11 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
               className="p-3.5 bg-slate-50 hover:bg-slate-100/80 flex items-center justify-between cursor-pointer transition-colors"
             >
               <div className="flex items-center gap-2.5">
-                <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center">
+                <span className="w-6 h-6 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-tag flex items-center justify-center">
                   <CheckCircle2 className="w-4 h-4" />
                 </span>
-                <h3 className="text-xs font-bold text-slate-900">Uploaded Documents ({documents.length})</h3>
-                <span className="text-[10px] text-emerald-700 font-semibold">Mandatory Documents Attached</span>
+                <h3 className="text-caption font-bold text-slate-900">Uploaded Documents ({documents.length})</h3>
+                <span className="text-tag text-emerald-700">Mandatory Documents Attached</span>
               </div>
 
               <div className="flex items-center gap-3">
@@ -476,7 +477,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
                     e.stopPropagation();
                     onEditDocuments();
                   }}
-                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline underline-offset-2 p-0 h-auto"
+                  className="text-caption font-semibold text-indigo-600 hover:text-indigo-800 underline underline-offset-2 p-0 h-auto"
                 >
                   Manage Documents
                 </Button>
@@ -489,7 +490,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
             </div>
 
             {expandedSections['uploaded_documents'] !== false && (
-              <div className="p-4 bg-white grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 text-xs">
+              <div className="p-4 bg-white grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 text-caption">
                 {documents.map((doc) => (
                   <div
                     key={doc.id}
@@ -497,8 +498,8 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
                   >
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <div className="min-w-0">
-                      <p className="font-bold text-slate-800 text-[11px] truncate uppercase">{doc.type.replace(/_/g, ' ')}</p>
-                      <p className="text-[10px] text-slate-500 truncate">{new Date(doc.uploaded_at).toLocaleDateString()}</p>
+                      <p className="font-bold text-slate-800 text-tag truncate uppercase">{doc.type.replace(/_/g, ' ')}</p>
+                      <p className="text-caption text-slate-500 truncate">{new Date(doc.uploaded_at).toLocaleDateString()}</p>
                     </div>
                   </div>
                 ))}
@@ -513,16 +514,16 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
       {/* ------------------------------------------------------------------ */}
       <Card className="p-6">
         {/* Declaration Endorsement Bar */}
-        <div className="mb-5 p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="mb-5 p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-caption">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span className="text-slate-600 font-medium">Place of Signing:</span>
+              <span className="text-slate-600 font-medium">Place Of Signing:</span>
               <strong className="text-slate-900 font-bold">{placeOfSigning}</strong>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-              <span className="text-slate-600 font-medium">Date of Signing:</span>
+              <span className="text-slate-600 font-medium">Date Of Signing:</span>
               <strong className="text-slate-900 font-mono font-bold">{signingDate}</strong>
             </div>
           </div>
@@ -535,7 +536,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
                 const idx = sections.findIndex((s) => s.id === declarationSection.id);
                 if (idx >= 0) onEditSection(idx);
               }}
-              className="text-indigo-600 hover:text-indigo-800 underline font-semibold text-[11px] p-0 h-auto self-start sm:self-auto"
+              className="text-indigo-600 hover:text-indigo-800 underline font-semibold text-caption p-0 h-auto self-start sm:self-auto"
             >
               Edit Place/Date
             </Button>
@@ -552,7 +553,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
                 type="button"
                 id="sig-tab-draw"
                 onClick={() => setSignatureMode('canvas')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-tag transition-all cursor-pointer ${
                   signatureMode === 'canvas'
                     ? 'bg-white text-indigo-700 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -564,7 +565,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
                 type="button"
                 id="sig-tab-typed"
                 onClick={() => setSignatureMode('typed')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-tag transition-all cursor-pointer ${
                   signatureMode === 'typed'
                     ? 'bg-white text-indigo-700 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -596,7 +597,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
               {!hasDrawnSignature && (
                 <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-slate-400">
                   <PenTool className="w-6 h-6 mb-1 opacity-50" />
-                  <span className="text-xs font-medium">Draw your signature here with finger, stylus, or mouse</span>
+                  <span className="text-caption font-medium">Draw your signature here with finger, stylus, or mouse</span>
                 </div>
               )}
 
@@ -628,7 +629,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
               </div>
             </div>
 
-            <p className="text-[11px] text-slate-500 mt-2 flex items-center gap-1.5">
+            <p className="text-caption text-slate-500 mt-2 flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               <span>Signature is timestamped ({new Date().toLocaleDateString()}) and bound to your Joining ID {candidate.joining_id}.</span>
             </p>
@@ -643,9 +644,9 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
                 value={typedName}
                 onChange={(e) => setTypedName(e.target.value)}
                 placeholder="Type your full legal name"
-                className="text-lg font-serif italic text-slate-900"
+                className="text-card-heading font-serif italic text-slate-900"
               />
-              <p className="text-[11px] text-slate-500 mt-2">
+              <p className="text-caption text-slate-500 mt-2">
                 Typing your full legal name produces a legally binding cryptographic SHA-256 signature hash under Pakistani Electronic Transactions Ordinance (ETO 2002).
               </p>
             </div>
@@ -666,7 +667,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
               <button
                 type="button"
                 onClick={() => setThumbMode('upload')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-tag transition-all cursor-pointer ${
                   thumbMode === 'upload'
                     ? 'bg-white text-indigo-700 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -677,7 +678,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
               <button
                 type="button"
                 onClick={() => setThumbMode('stamp')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-tag transition-all cursor-pointer ${
                   thumbMode === 'stamp'
                     ? 'bg-white text-indigo-700 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
@@ -727,8 +728,8 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs font-bold text-slate-800">Right Thumbprint Verification</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-caption font-bold text-slate-800">Right Thumbprint Verification</p>
+              <p className="text-caption text-slate-500">
                 You can ink your thumb on paper, take a crisp photo using your phone camera, and upload it here.
               </p>
               <div className="flex items-center gap-2 pt-1 flex-wrap">
@@ -780,8 +781,8 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs font-bold text-slate-800">Authenticated Electronic Thumbprint Stamp</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-caption font-bold text-slate-800">Authenticated Electronic Thumbprint Stamp</p>
+              <p className="text-caption text-slate-500">
                 Click below to generate a cryptographically bound PostEx biometric digital impression.
               </p>
               <Button
@@ -802,7 +803,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
       {/* 4. Solemn Affirmation & Final Submit                               */}
       {/* ------------------------------------------------------------------ */}
       <Card className="p-6 space-y-4">
-        <label className="flex items-start gap-3 text-sm text-slate-800 cursor-pointer select-none">
+        <label className="flex items-start gap-3 text-body text-slate-800 cursor-pointer select-none">
           <input
             type="checkbox"
             id="candidate-attestation-checkbox"
@@ -810,7 +811,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
             onChange={(e) => setAttestationConfirmed(e.target.checked)}
             className="mt-1 w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
           />
-          <span className="leading-relaxed">
+          <span>
             <strong>Solemn Affirmation &amp; Legal Declaration:</strong> I hereby solemnly declare and affirm that all the statements made in this employment application dossier, as well as the attached documents, are true, complete, and authentic to the best of my knowledge and belief. I understand that any false statement or misrepresentation will disqualify me from employment or result in immediate termination without notice.
           </span>
         </label>
@@ -820,16 +821,16 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
           <div className="p-4 rounded-xl bg-linear-to-r from-indigo-50/70 to-slate-50 border border-indigo-200 flex flex-col sm:flex-row items-center gap-4">
             <VerificationStampSeal
               stage="candidate_signature"
-              signerName={candidate.full_name}
+              signerName={toTitleCase(candidate.full_name)}
               code={candidate.joining_id}
               size="sm"
               showDetails={false}
             />
             <div className="text-center sm:text-left space-y-0.5">
-              <span className="text-xs font-bold text-indigo-900 block">
+              <span className="text-caption font-bold text-indigo-900 block">
                 Official Digital Submission Seal Ready
               </span>
-              <p className="text-[11px] text-slate-600">
+              <p className="text-caption text-slate-600">
                 Your signature and electronic attestation are bound to Joining ID <strong className="font-mono text-indigo-700">{candidate.joining_id}</strong> and will be cryptographically locked upon submission.
               </p>
             </div>
@@ -837,14 +838,14 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
         )}
 
         {(clientError || submitError) && (
-          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-2">
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-body flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{clientError || submitError}</span>
           </div>
         )}
 
         <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <span className="text-xs text-slate-500 flex items-center gap-1.5">
+          <span className="text-caption text-slate-500 flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
             <span>Application will be locked upon final submission and routed to your Branch Manager.</span>
           </span>

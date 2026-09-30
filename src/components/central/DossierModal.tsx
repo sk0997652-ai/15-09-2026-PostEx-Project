@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button, StatusBadge } from '../ui';
 import { VerificationStampSeal } from '../common/VerificationStampSeal';
+import { toTitleCase } from '../../lib/formatText';
 
 interface DossierModalProps {
   isOpen: boolean;
@@ -43,16 +44,16 @@ export function DossierModal({
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <h3 className="text-card-heading text-white flex items-center gap-2">
                 <span>Candidate Onboarding Dossier</span>
                 {dossierData?.candidate?.joining_id && (
-                  <span className="font-mono text-xs bg-slate-800 text-indigo-300 px-2 py-0.5 rounded border border-slate-700">
+                  <span className="font-mono text-tag bg-slate-800 text-indigo-300 px-2 py-0.5 rounded border border-slate-700">
                     {dossierData.candidate.joining_id}
                   </span>
                 )}
               </h3>
-              <p className="text-xs text-slate-400">
-                {dossierData?.candidate?.full_name} &bull; {dossierData?.candidate?.zone_name} &bull; {dossierData?.candidate?.branch_name}
+              <p className="text-caption text-slate-400">
+                {dossierData?.candidate?.full_name ? toTitleCase(dossierData.candidate.full_name) : ''} &bull; {dossierData?.candidate?.zone_name} &bull; {dossierData?.candidate?.branch_name}
               </p>
             </div>
           </div>
@@ -81,7 +82,7 @@ export function DossierModal({
         </div>
 
         {/* Content Area */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+        <div className="p-6 overflow-y-auto space-y-6 flex-1 text-caption">
           {dossierLoading ? (
             <div className="py-16 text-center text-slate-500">
               <RefreshCw className="w-8 h-8 animate-spin mx-auto text-indigo-600 mb-3" />
@@ -106,19 +107,19 @@ export function DossierModal({
                 <div className="flex items-center gap-2.5">
                   <Shield className="w-5 h-5 flex-shrink-0" />
                   <div>
-                    <span className="font-bold uppercase tracking-wider text-[11px] flex items-center gap-2">
+                    <span className="font-bold uppercase text-table-header flex items-center gap-2">
                       Application Status:
                       <StatusBadge status={dossierData.application.status} />
                     </span>
                     {dossierData.application.decision_reason && (
-                      <p className="text-xs mt-0.5">{dossierData.application.decision_reason}</p>
+                      <p className="text-caption mt-0.5">{dossierData.application.decision_reason}</p>
                     )}
                   </div>
                 </div>
                 {dossierData.application.employee?.employee_id && (
                   <div className="text-right">
-                    <span className="text-[10px] uppercase font-bold text-emerald-700">Employee ID</span>
-                    <div className="text-sm font-mono font-bold text-emerald-900">
+                    <span className="text-table-header uppercase text-emerald-700">Employee ID</span>
+                    <div className="text-body font-mono font-bold text-emerald-900">
                       {dossierData.application.employee.employee_id}
                     </div>
                   </div>
@@ -132,7 +133,7 @@ export function DossierModal({
                     <div className="shrink-0">
                       <VerificationStampSeal
                         stage="central_approval"
-                        signerName={currentUserName || 'Central HR Executive'}
+                        signerName={toTitleCase(currentUserName || 'Central HR Executive')}
                         code={dossierData.application.employee?.employee_id || `AUTH-${dossierData.application.id.slice(0, 8)}`}
                         timestamp={dossierData.application.updated_at || new Date().toISOString()}
                         size="md"
@@ -140,13 +141,13 @@ export function DossierModal({
                       />
                     </div>
                     <div className="space-y-1">
-                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full text-tag uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
                         Corporate Certified
                       </span>
-                      <h4 className="text-sm font-black text-slate-900">
+                      <h4 className="text-body font-bold text-slate-900">
                         Formal Employment Enrolment Approved
                       </h4>
-                      <p className="text-xs text-slate-500 max-w-md">
+                      <p className="text-caption text-slate-500 max-w-md">
                         Official Central HR digital seal attached. Candidate dossier locked and enrolled in central HR database.
                       </p>
                     </div>
@@ -164,40 +165,40 @@ export function DossierModal({
 
               {/* 1. Candidate Personal & Organizational Summary */}
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                <h4 className="text-xs font-bold text-slate-700 mb-3">
+                <h4 className="text-caption font-bold text-slate-700 mb-3">
                   1. Candidate Profile &amp; Contact Info
                 </h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-semibold">Full Name</span>
-                    <p className="font-bold text-slate-900">{dossierData.candidate.full_name}</p>
+                    <span className="text-table-header text-slate-400">Full Name</span>
+                    <p className="font-bold text-slate-900">{toTitleCase(dossierData.candidate.full_name || '')}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-semibold">CNIC</span>
+                    <span className="text-table-header text-slate-400">CNIC</span>
                     <p className="font-mono font-bold text-slate-900">{dossierData.candidate.masked_cnic}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-semibold">Mobile</span>
+                    <span className="text-table-header text-slate-400">Mobile</span>
                     <p className="font-mono text-slate-800">{dossierData.candidate.mobile}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-semibold">Email</span>
+                    <span className="text-table-header text-slate-400">Email</span>
                     <p className="text-slate-800 truncate">{dossierData.candidate.email || 'None'}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-semibold">Joining ID</span>
+                    <span className="text-table-header text-slate-400">Joining ID</span>
                     <p className="font-mono font-bold text-indigo-700">{dossierData.candidate.joining_id}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-semibold">Zone</span>
+                    <span className="text-table-header text-slate-400">Zone</span>
                     <p className="font-medium text-slate-800">{dossierData.candidate.zone_name}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-semibold">Branch</span>
+                    <span className="text-table-header text-slate-400">Branch</span>
                     <p className="font-medium text-slate-800">{dossierData.candidate.branch_name}</p>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-400 font-semibold">Registered At</span>
+                    <span className="text-table-header text-slate-400">Registered At</span>
                     <p className="text-slate-600">{new Date(dossierData.candidate.created_at).toLocaleDateString()}</p>
                   </div>
                 </div>
@@ -206,10 +207,10 @@ export function DossierModal({
               {/* 2. Uploaded Documents & Branch Manager Verification Remarks */}
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-700">
+                  <h4 className="text-caption font-bold text-slate-700">
                     2. Uploaded Documents &amp; Verification Checks
                   </h4>
-                  <span className="text-[11px] text-slate-500 font-semibold">
+                  <span className="text-caption text-slate-500 font-semibold">
                     {dossierData.documents?.length || 0} Documents Uploaded
                   </span>
                 </div>
@@ -219,14 +220,14 @@ export function DossierModal({
                     {dossierData.documents.map((doc: any) => (
                       <div key={doc.id} className="bg-white p-3 rounded-xl border border-slate-200 flex items-start justify-between">
                         <div className="space-y-1">
-                          <span className="font-bold text-slate-800 text-[11px]">
-                            {doc.type.replace(/_/g, ' ')}
+                          <span className="font-bold text-slate-800 text-tag">
+                            {toTitleCase(doc.type.replace(/_/g, ' '))}
                           </span>
-                          <p className="text-[10px] text-slate-400 font-mono truncate max-w-[180px]">
+                          <p className="text-caption text-slate-400 font-mono truncate max-w-[180px]">
                             {doc.storage_path}
                           </p>
                           {doc.remark && (
-                            <p className="text-[11px] text-slate-600 bg-slate-50 p-1 rounded mt-1 italic">
+                            <p className="text-caption text-slate-600 bg-slate-50 p-1 rounded mt-1 italic">
                               "{doc.remark}"
                             </p>
                           )}
@@ -244,16 +245,16 @@ export function DossierModal({
 
               {/* 3. Branch Manager Remarks */}
               <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2">
-                <h4 className="text-xs font-bold text-slate-700">
+                <h4 className="text-caption font-bold text-slate-700">
                   3. Branch Verification History
                 </h4>
                 {dossierData.verification_remarks && dossierData.verification_remarks.length > 0 ? (
                   <div className="space-y-2">
                     {dossierData.verification_remarks.map((r: any) => (
-                      <div key={r.id} className="bg-white p-3 rounded-lg border border-slate-200 text-xs">
-                        <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1">
+                      <div key={r.id} className="bg-white p-3 rounded-lg border border-slate-200 text-caption">
+                        <div className="flex items-center justify-between text-caption text-slate-500 mb-1">
                           <span className="font-semibold text-slate-800">
-                            {r.staff_profiles?.name || 'Reviewer'} ({r.staff_profiles?.roles?.name || 'Staff'})
+                            {toTitleCase(r.staff_profiles?.name || 'Reviewer')} ({r.staff_profiles?.roles?.name || 'Staff'})
                           </span>
                           <span>{new Date(r.created_at).toLocaleString()}</span>
                         </div>
@@ -269,13 +270,13 @@ export function DossierModal({
               {/* 4. HR Decision History */}
               {dossierData.decisions && dossierData.decisions.length > 0 && (
                 <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2">
-                  <h4 className="text-xs font-bold text-slate-700">
+                  <h4 className="text-caption font-bold text-slate-700">
                     4. Central HR Historical Decisions
                   </h4>
                   <div className="space-y-2">
                     {dossierData.decisions.map((dec: any) => (
                       <div key={dec.id} className="bg-white p-3 rounded-lg border border-slate-200">
-                        <div className="flex items-center justify-between text-[11px] mb-1">
+                        <div className="flex items-center justify-between text-caption mb-1">
                           <span
                             className={`font-bold uppercase ${
                               dec.decision === 'approved' ? 'text-emerald-700' : 'text-rose-700'
@@ -298,9 +299,9 @@ export function DossierModal({
         {/* Footer / Decision Action Bar (Only if not decided yet or needs_correction) */}
         {dossierData && (
           <div className="p-5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
-            <div className="text-slate-500 text-xs">
+            <div className="text-slate-500 text-caption">
               <span>Take formal action for </span>
-              <strong className="text-slate-900">{dossierData.candidate.full_name}</strong>:
+              <strong className="text-slate-900">{toTitleCase(dossierData.candidate.full_name || '')}</strong>:
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -311,7 +312,7 @@ export function DossierModal({
                 onClick={() => onOpenDecisionDialog('return_correction')}
                 leftIcon={<RotateCcw className="w-3.5 h-3.5 text-amber-600" />}
               >
-                Return for Correction
+                Return For Correction
               </Button>
 
               <Button

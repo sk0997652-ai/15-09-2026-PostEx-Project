@@ -29,6 +29,7 @@ import {
   undoEmployeeExit,
 } from '../../lib/hrPortalStore';
 import { MarkExitModal } from '../common/MarkExitModal';
+import { toTitleCase } from '../../lib/formatText';
 
 interface EnrolledRosterViewProps {
   enrolledEmployees: any[];
@@ -180,7 +181,7 @@ export function EnrolledRosterView({
       />
 
       {statusNotice && (
-        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center justify-between">
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-caption font-medium flex items-center justify-between">
           <span>{statusNotice}</span>
           <button
             type="button"
@@ -278,7 +279,7 @@ export function EnrolledRosterView({
                 <TableCell colSpan={8} className="py-12 text-center text-slate-500">
                   <UserCheck className="w-8 h-8 mx-auto text-slate-300 mb-2" />
                   <p className="font-bold text-slate-700">No employees found in this view</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
+                  <p className="text-caption text-slate-400 mt-0.5">
                     Try switching status tabs (Active / Exit In Progress / Exited Archive) or adjusting filters.
                   </p>
                 </TableCell>
@@ -300,7 +301,7 @@ export function EnrolledRosterView({
                       {portalEmp.employeeCode}
                     </TableCell>
                     <TableCell mobileRole="primary" className="font-bold text-slate-900">
-                      {portalEmp.fullName}
+                      {toTitleCase(portalEmp.fullName)}
                     </TableCell>
                     <TableCell
                       mobileRole="field"
@@ -312,10 +313,10 @@ export function EnrolledRosterView({
                     <TableCell
                       mobileRole="field"
                       mobileLabel="CNIC / Contact"
-                      className="font-mono text-slate-600 text-xs"
+                      className="font-mono text-slate-600 text-body"
                     >
                       <div>{portalEmp.cnic}</div>
-                      <div className="text-[11px] text-slate-400">{portalEmp.contactNumber}</div>
+                      <div className="text-caption text-slate-400">{portalEmp.contactNumber}</div>
                     </TableCell>
                     <TableCell
                       mobileRole="field"
@@ -323,13 +324,13 @@ export function EnrolledRosterView({
                       className="text-slate-700"
                     >
                       <div>{portalEmp.branch}</div>
-                      <div className="text-[11px] text-slate-400">{portalEmp.zone}</div>
+                      <div className="text-caption text-slate-400">{portalEmp.zone}</div>
                     </TableCell>
                     <TableCell
                       mobileRole="field"
                       mobileLabel="Joining Date"
                       hideOnTablet
-                      className="text-slate-500 text-[11px] font-mono"
+                      className="text-slate-500 text-caption font-mono"
                     >
                       {portalEmp.joiningDate}
                     </TableCell>
@@ -385,13 +386,13 @@ export function EnrolledRosterView({
                               });
                               if (res.success) {
                                 setStatusNotice(
-                                  `Restored ${portalEmp.fullName} (${portalEmp.employeeCode}) back to Active status and headcount.`
+                                  `Restored ${toTitleCase(portalEmp.fullName)} (${portalEmp.employeeCode}) back to Active status and headcount.`
                                 );
                               }
                             }}
                             leftIcon={<RotateCcw className="w-3.5 h-3.5 text-indigo-600" />}
                           >
-                            Undo exit
+                            Undo Exit
                           </Button>
                         )}
                       </div>

@@ -222,7 +222,7 @@ export function CentralOverviewView({
           <TableBody>
             {designationRows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-xs text-slate-500">
+                <TableCell colSpan={8} className="text-center py-8 text-caption text-slate-500">
                   No designation headcount entries configured in your scope yet.
                 </TableCell>
               </TableRow>
@@ -234,23 +234,23 @@ export function CentralOverviewView({
                   onClick={() => setSelectedEntity({ type: 'designation', data: d })}
                   className="cursor-pointer hover:bg-indigo-50/40"
                 >
-                  <TableCell mobileRole="primary" className="font-semibold text-xs text-slate-900">
+                  <TableCell mobileRole="primary" className="font-semibold text-body text-slate-900">
                     {d.designation_name}
                   </TableCell>
-                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Department" className="text-xs text-slate-600">
+                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Department" className="text-body text-slate-600">
                     {d.department_name}
                     {d.department_code ? ` (${d.department_code})` : ''}
                   </TableCell>
                   <TableCell mobileRole="field" mobileLabel="Category">
                     <EmploymentCategoryBadge category={d.employment_category} />
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right font-mono text-xs font-semibold">
+                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right font-mono text-body font-semibold">
                     {d.approved}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right font-mono text-xs font-bold text-indigo-700">
+                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right font-mono text-body font-bold text-indigo-700">
                     {d.active}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right font-mono text-xs font-bold text-amber-700">
+                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right font-mono text-body font-bold text-amber-700">
                     {d.vacancy}
                   </TableCell>
                   <TableCell mobileRole="status">
@@ -273,10 +273,10 @@ export function CentralOverviewView({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="p-4 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-table-header uppercase text-slate-500">
               Dossier Review Queue
             </span>
-            <span className="text-xl font-black text-amber-600 font-mono tabular-nums block mt-0.5">
+            <span className="text-kpi-number text-amber-600 font-mono tabular-nums block mt-0.5">
               {metrics?.pendingReviewCount ?? 0}
             </span>
           </div>
@@ -287,10 +287,10 @@ export function CentralOverviewView({
 
         <Card className="p-4 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              Returned for Correction
+            <span className="text-table-header uppercase text-slate-500">
+              Returned For Correction
             </span>
-            <span className="text-xl font-black text-rose-600 font-mono tabular-nums block mt-0.5">
+            <span className="text-kpi-number text-rose-600 font-mono tabular-nums block mt-0.5">
               {metrics?.needsCorrectionCount ?? 0}
             </span>
           </div>
@@ -301,10 +301,10 @@ export function CentralOverviewView({
 
         <Card className="p-4 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-table-header uppercase text-slate-500">
               Enrolled Employees
             </span>
-            <span className="text-xl font-black text-emerald-600 font-mono tabular-nums block mt-0.5">
+            <span className="text-kpi-number text-emerald-600 font-mono tabular-nums block mt-0.5">
               {metrics?.enrolledCount ?? summaryTotal.active}
             </span>
           </div>
@@ -315,10 +315,10 @@ export function CentralOverviewView({
 
         <Card className="p-4 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-table-header uppercase text-slate-500">
               Scoped Operational Branches
             </span>
-            <span className="text-xl font-black text-indigo-700 font-mono tabular-nums block mt-0.5">
+            <span className="text-kpi-number text-indigo-700 font-mono tabular-nums block mt-0.5">
               {branchRows.length || (metrics?.branchesCount ?? 0)}
             </span>
           </div>
@@ -332,14 +332,14 @@ export function CentralOverviewView({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="p-6 flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-2">
+            <div className="flex items-center gap-2 text-indigo-700 text-tag uppercase mb-2">
               <UserPlus className="w-4 h-4" />
               <span>Candidate Intake</span>
             </div>
-            <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+            <h3 className="text-card-heading text-slate-900">
               Issue Joining ID &amp; Trigger Onboarding
             </h3>
-            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+            <p className="text-body text-slate-600 mt-2">
               Create new joiner profile with mandatory Pakistani CNIC (13 digits), mobile, email, and designation. Automated system assigns unique{' '}
               <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-indigo-600">
                 PX-YYYY-XXXXXX
@@ -361,14 +361,14 @@ export function CentralOverviewView({
 
         <Card className="p-6 flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-amber-700 text-xs font-bold uppercase tracking-wider mb-2">
+            <div className="flex items-center gap-2 text-amber-700 text-tag uppercase mb-2">
               <ClipboardList className="w-4 h-4" />
               <span>Dossier Decision Desk</span>
             </div>
-            <h3 className="text-lg font-bold text-slate-900 tracking-tight">
+            <h3 className="text-card-heading text-slate-900">
               Review BM-Verified Candidates
             </h3>
-            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+            <p className="text-body text-slate-600 mt-2">
               Inspect physical verification marks from Branch Managers, uploaded documents, career &amp; education histories, and issue formal decision: <strong>Approve &amp; Enrol</strong> (generates Employee ID and compiled PDF Dossier), <strong>Return for Correction</strong> (select unlock sections), or <strong>Reject</strong>.
             </p>
           </div>

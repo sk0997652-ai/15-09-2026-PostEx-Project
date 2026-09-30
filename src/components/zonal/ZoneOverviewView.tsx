@@ -187,7 +187,7 @@ export function ZoneOverviewView({
       <UnifiedBranchHeadcountTable
         tableId="zonal-branch-headcount-table"
         rowIdPrefix="zonal-branch-row"
-        title="Branch-Wise Headcount & Fill-Rate Rollup in Zone"
+        title="Branch-Wise Headcount & Fill-Rate Rollup In Zone"
         description="All operational branches in your assigned zone split by Employment Category (Rider vs. In-House Staff). Click any Branch row to open the Historical Trend Chart and Designation breakdown."
         branchRows={branchRows}
         zoneRows={zoneRows}
@@ -218,7 +218,7 @@ export function ZoneOverviewView({
             <TableBody>
               {designationRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-xs text-slate-500">
+                  <TableCell colSpan={6} className="text-center py-8 text-caption text-slate-500">
                     No designation headcount entries configured in this zone yet.
                   </TableCell>
                 </TableRow>
@@ -230,16 +230,16 @@ export function ZoneOverviewView({
                     onClick={() => setSelectedEntity({ type: 'designation', data: d })}
                     className="cursor-pointer hover:bg-indigo-50/40"
                   >
-                    <TableCell mobileRole="primary" className="font-semibold text-xs text-slate-900">
+                    <TableCell mobileRole="primary" className="font-semibold text-body text-slate-900">
                       {d.designation_name}
                     </TableCell>
-                    <TableCell hideOnTablet mobileRole="field" mobileLabel="Department" className="text-xs text-slate-600">
+                    <TableCell hideOnTablet mobileRole="field" mobileLabel="Department" className="text-body text-slate-600">
                       {d.department_name}
                     </TableCell>
                     <TableCell mobileRole="field" mobileLabel="Category">
                       <EmploymentCategoryBadge category={d.employment_category} />
                     </TableCell>
-                    <TableCell mobileRole="field" mobileLabel="Appr / Act / Vac" className="md:text-right font-mono text-xs tabular-nums">
+                    <TableCell mobileRole="field" mobileLabel="Appr / Act / Vac" className="md:text-right font-mono text-body tabular-nums">
                       <span className="font-semibold">{d.approved}</span> /{' '}
                       <span className="font-bold text-indigo-700">{d.active}</span> /{' '}
                       <span className="font-bold text-amber-700">{d.vacancy}</span>
@@ -277,36 +277,36 @@ export function ZoneOverviewView({
           <div className="space-y-3">
             <div className="p-3.5 rounded-xl bg-indigo-50/60 border border-indigo-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-tag">
                   CH
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-indigo-950">Central HR Reviewers</div>
-                  <div className="text-[11px] text-indigo-700">Audit &amp; approve dossiers</div>
+                  <div className="text-body font-bold text-indigo-950">Central HR Reviewers</div>
+                  <div className="text-caption text-indigo-700">Audit &amp; approve dossiers</div>
                 </div>
               </div>
-              <span className="text-lg font-black text-indigo-900 font-mono tabular-nums">
+              <span className="text-card-heading text-indigo-900 font-mono tabular-nums">
                 {staffList.filter((s) => s.roles?.name === 'central_hr').length}
               </span>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-slate-800 text-white flex items-center justify-center font-bold text-xs">
+                <div className="w-8 h-8 rounded-lg bg-slate-800 text-white flex items-center justify-center text-tag">
                   BM
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-slate-900">Branch Managers</div>
-                  <div className="text-[11px] text-slate-500">In-person physical checks</div>
+                  <div className="text-body font-bold text-slate-900">Branch Managers</div>
+                  <div className="text-caption text-slate-500">In-person physical checks</div>
                 </div>
               </div>
-              <span className="text-lg font-black text-slate-900 font-mono tabular-nums">
+              <span className="text-card-heading text-slate-900 font-mono tabular-nums">
                 {staffList.filter((s) => s.roles?.name === 'branch_manager').length}
               </span>
             </div>
           </div>
 
-          <div className="mt-4 pt-3.5 border-t border-slate-100 text-[11px] text-slate-500 flex items-center gap-2 leading-relaxed">
+          <div className="mt-4 pt-3.5 border-t border-slate-100 text-caption text-slate-500 flex items-center gap-2">
             <Shield className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" />
             <span>
               Zonal HR has authorization to create &amp; manage Central HR and Branch Managers in this zone.
@@ -319,10 +319,10 @@ export function ZoneOverviewView({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="p-4 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-table-header uppercase text-slate-500">
               Total Zone Candidates
             </span>
-            <span className="text-xl font-black text-slate-900 font-mono tabular-nums block mt-0.5">
+            <span className="text-kpi-number text-slate-900 font-mono tabular-nums block mt-0.5">
               {metrics?.totalCandidates ?? 0}
             </span>
           </div>
@@ -333,10 +333,10 @@ export function ZoneOverviewView({
 
         <Card className="p-4 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-table-header uppercase text-slate-500">
               Pending Review
             </span>
-            <span className="text-xl font-black text-amber-600 font-mono tabular-nums block mt-0.5">
+            <span className="text-kpi-number text-amber-600 font-mono tabular-nums block mt-0.5">
               {metrics?.pendingApplications ?? 0}
             </span>
           </div>
@@ -347,10 +347,10 @@ export function ZoneOverviewView({
 
         <Card className="p-4 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-table-header uppercase text-slate-500">
               Approved &amp; Onboarded
             </span>
-            <span className="text-xl font-black text-emerald-600 font-mono tabular-nums block mt-0.5">
+            <span className="text-kpi-number text-emerald-600 font-mono tabular-nums block mt-0.5">
               {metrics?.approvedApplications ?? 0}
             </span>
           </div>
@@ -361,10 +361,10 @@ export function ZoneOverviewView({
 
         <Card className="p-4 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <span className="text-table-header uppercase text-slate-500">
               Zone Pipeline &amp; SLA
             </span>
-            <span className="text-xl font-black text-indigo-700 font-mono tabular-nums block mt-0.5">
+            <span className="text-kpi-number text-indigo-700 font-mono tabular-nums block mt-0.5">
               {metrics?.avgTurnaroundHours ?? 'N/A'}
             </span>
           </div>

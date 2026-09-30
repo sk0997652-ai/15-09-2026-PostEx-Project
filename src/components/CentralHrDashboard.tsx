@@ -31,6 +31,7 @@ import {
   DecisionActionModal,
   PdfDossierModal,
 } from './central';
+import { toTitleCase } from '../lib/formatText';
 
 interface CentralHrDashboardProps {
   currentUser: {
@@ -638,8 +639,8 @@ export function CentralHrDashboard({
                   <IdCard className="w-4 h-4 lg:w-5 lg:h-5" />
                 </div>
                 <div className="overflow-hidden sm:hidden lg:block">
-                  <h3 className="text-sm font-bold text-slate-100 truncate">{currentUser.name || currentUser.email}</h3>
-                  <div className="flex items-center gap-1 text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">
+                  <h3 className="text-card-heading text-slate-100 truncate">{currentUser.name ? toTitleCase(currentUser.name) : currentUser.email}</h3>
+                  <div className="flex items-center gap-1 text-tag text-indigo-400 uppercase tracking-wider">
                     <span>Central HR</span>
                   </div>
                 </div>
@@ -653,9 +654,9 @@ export function CentralHrDashboard({
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="mt-3 pt-2.5 border-t border-slate-700/50 sm:hidden lg:flex items-center justify-between text-xs text-slate-300 flex">
+            <div className="mt-3 pt-2.5 border-t border-slate-700/50 sm:hidden lg:flex items-center justify-between text-caption text-slate-300 flex">
               <span className="text-slate-400">Assigned Zone:</span>
-              <span className="font-semibold text-white bg-slate-700/60 px-2 py-0.5 rounded text-[11px] truncate max-w-[120px]">
+              <span className="font-semibold text-white bg-slate-700/60 px-2 py-0.5 rounded text-caption truncate max-w-[120px]">
                 {currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
               </span>
             </div>
@@ -667,7 +668,7 @@ export function CentralHrDashboard({
               id="central-nav-overview"
               title="Zone Overview"
               onClick={() => handleSelectTab('overview')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
                 activeTab === 'overview'
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -683,7 +684,7 @@ export function CentralHrDashboard({
               id="central-nav-headcount"
               title="Headcount Management"
               onClick={() => handleSelectTab('headcount')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
                 activeTab === 'headcount'
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -699,7 +700,7 @@ export function CentralHrDashboard({
               id="central-nav-workflow-tracker"
               title="Workflow Tracker"
               onClick={() => handleSelectTab('workflow_tracker')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
                 activeTab === 'workflow_tracker'
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -715,7 +716,7 @@ export function CentralHrDashboard({
               id="central-nav-data-import"
               title="Data Import"
               onClick={() => handleSelectTab('data_import')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
                 activeTab === 'data_import'
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -731,7 +732,7 @@ export function CentralHrDashboard({
               id="central-nav-create-joiner"
               title="Create New Joiner"
               onClick={() => handleSelectTab('create_joiner')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
                 activeTab === 'create_joiner'
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -741,7 +742,7 @@ export function CentralHrDashboard({
                 <UserPlus className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span className="sm:hidden lg:inline truncate">Create New Joiner</span>
               </div>
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-1.5 py-0.5 rounded font-mono sm:hidden lg:inline">
+              <span className="text-tag bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-1.5 py-0.5 rounded font-mono sm:hidden lg:inline">
                 PX-ID
               </span>
             </button>
@@ -750,7 +751,7 @@ export function CentralHrDashboard({
               id="central-nav-review-queue"
               title="Review Queue"
               onClick={() => handleSelectTab('review_queue')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
                 activeTab === 'review_queue'
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -761,7 +762,7 @@ export function CentralHrDashboard({
                 <span className="sm:hidden lg:inline truncate">Review Queue</span>
               </div>
               {metrics && metrics.pendingReviewCount > 0 && (
-                <span className="bg-amber-500 text-slate-900 font-bold text-[10px] px-2 py-0.5 rounded-full sm:hidden lg:inline">
+                <span className="bg-amber-500 text-slate-900 text-tag px-2 py-0.5 rounded-full sm:hidden lg:inline">
                   {metrics.pendingReviewCount}
                 </span>
               )}
@@ -771,7 +772,7 @@ export function CentralHrDashboard({
               id="central-nav-enrolled-roster"
               title="Enrolled Employees"
               onClick={() => handleSelectTab('enrolled_roster')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
                 activeTab === 'enrolled_roster'
                   ? 'bg-indigo-600 text-white shadow-xs font-bold'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -782,7 +783,7 @@ export function CentralHrDashboard({
                 <span className="sm:hidden lg:inline truncate">Enrolled Employees</span>
               </div>
               {metrics && metrics.enrolledCount > 0 && (
-                <span className="bg-slate-800 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/30 sm:hidden lg:inline">
+                <span className="bg-slate-800 text-emerald-300 text-tag px-2 py-0.5 rounded-full border border-emerald-500/30 sm:hidden lg:inline">
                   {metrics.enrolledCount}
                 </span>
               )}
@@ -792,7 +793,7 @@ export function CentralHrDashboard({
 
         {/* Bottom Sidebar Action */}
         <div className="p-2.5 sm:p-2 lg:p-4 border-t border-slate-800 space-y-2">
-          <div className="text-[11px] text-slate-400 px-1 sm:hidden lg:flex items-center justify-between flex">
+          <div className="text-caption text-slate-400 px-1 sm:hidden lg:flex items-center justify-between flex">
             <span className="flex items-center gap-1.5">
               <Shield className="w-3 h-3 text-emerald-400 shrink-0" />
               <span>Zone-Scoped Access</span>
@@ -802,7 +803,7 @@ export function CentralHrDashboard({
             id="central-hr-signout-btn"
             title="Sign Out Session"
             onClick={onSignOut}
-            className="w-full flex items-center justify-center gap-2 px-3 sm:px-0 lg:px-3 py-2 rounded-lg text-xs font-semibold text-rose-300 bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/40 transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 sm:px-0 lg:px-3 py-2 rounded-lg text-caption font-semibold text-rose-300 bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/40 transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5 shrink-0" />
             <span className="sm:hidden lg:inline">Sign Out Session</span>
@@ -816,7 +817,7 @@ export function CentralHrDashboard({
       <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
         {/* Global Notifications */}
         {errorMessage && (
-          <div className="mb-6 p-4 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-start justify-between shadow-xs">
+          <div className="mb-6 p-4 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-caption font-medium flex items-start justify-between shadow-xs">
             <div className="flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" />
               <div>
@@ -830,7 +831,7 @@ export function CentralHrDashboard({
         )}
 
         {successMessage && (
-          <div className="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-start justify-between shadow-xs">
+          <div className="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-caption font-medium flex items-start justify-between shadow-xs">
             <div className="flex items-start gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
               <div>

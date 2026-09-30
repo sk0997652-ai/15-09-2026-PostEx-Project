@@ -1,6 +1,7 @@
 import React from 'react';
 import { ZonalApplication } from '../../lib/zonalHrApi';
 import { Modal, Button, Select, Textarea } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface OverrideDecisionModalProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ export function OverrideDecisionModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Zonal HR Override Decision"
-      description={`Candidate: ${application?.candidate?.full_name}`}
+      description={`Candidate: ${toTitleCase(application?.candidate?.full_name || '')}`}
       size="md"
     >
       <form onSubmit={onSubmit} className="space-y-4">
@@ -62,7 +63,7 @@ export function OverrideDecisionModal({
           />
         </div>
 
-        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-[11px] text-slate-600">
+        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-caption text-slate-600">
           This action is recorded in the permanent audit trail and overrides any pending reviewer stages.
         </div>
 

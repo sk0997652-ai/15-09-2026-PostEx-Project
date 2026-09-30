@@ -6,6 +6,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Button, Textarea, Input } from '../ui';
+import { toTitleCase } from '../../lib/formatText';
 
 interface DecisionActionModalProps {
   isOpen: boolean;
@@ -50,23 +51,23 @@ export function DecisionActionModal({
     <div className="fixed inset-0 z-60 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-2 font-bold text-sm text-slate-900">
+          <div className="flex items-center gap-2 text-card-heading text-slate-900">
             {decisionModal.action === 'approve_enrol' && (
               <>
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                <span>Approve &amp; Formally Enrol Candidate</span>
+                <span>{toTitleCase('Approve & Formally Enrol Candidate')}</span>
               </>
             )}
             {decisionModal.action === 'return_correction' && (
               <>
                 <RotateCcw className="w-5 h-5 text-amber-600" />
-                <span>Return Application for Correction</span>
+                <span>{toTitleCase('Return Application for Correction')}</span>
               </>
             )}
             {decisionModal.action === 'reject' && (
               <>
                 <XCircle className="w-5 h-5 text-rose-600" />
-                <span>Reject Candidate Application</span>
+                <span>{toTitleCase('Reject Candidate Application')}</span>
               </>
             )}
           </div>
@@ -81,16 +82,16 @@ export function DecisionActionModal({
           </Button>
         </div>
 
-        <div className="text-xs text-slate-600 space-y-3">
+        <div className="text-body text-slate-600 space-y-3">
           <p>
-            Candidate: <strong className="text-slate-900">{decisionModal.candidateName}</strong> (Joining ID:{' '}
+            Candidate: <strong className="text-slate-900">{toTitleCase(decisionModal.candidateName)}</strong> (Joining ID:{' '}
             <span className="font-mono text-indigo-600">{decisionModal.joiningId}</span>)
           </p>
 
           {decisionModal.action === 'approve_enrol' && (
             <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-emerald-900 space-y-1">
               <p className="font-bold">On Confirmation:</p>
-              <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+              <ul className="list-disc list-inside space-y-0.5 text-caption">
                 <li>Auto-generates Employee ID: <code className="font-mono">EMP-[BRANCH]-XXXXX</code></li>
                 <li>Generates official PDF dossier record in storage</li>
                 <li>Locks application against edits</li>
@@ -103,9 +104,9 @@ export function DecisionActionModal({
             <div className="space-y-3">
               <div>
                 <label className="block text-slate-900 font-bold mb-1.5">
-                  Select Section(s) to Unlock for Candidate: <span className="text-rose-600">*</span>
+                  Select Section(s) To Unlock For Candidate: <span className="text-rose-600">*</span>
                 </label>
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div className="grid grid-cols-2 gap-2 text-caption">
                   {[
                     { id: 'documents', label: 'Uploaded Documents' },
                     { id: 'personal_info', label: 'Personal Information' },
