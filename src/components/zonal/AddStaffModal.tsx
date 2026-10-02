@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Lock, User, Briefcase, MapPin } from 'lucide-react';
 import { Modal, Button, Input, Select } from '../ui';
 import { ZonalDepartmentOption, ZonalDesignationOption } from '../../lib/zonalHrApi';
+import { formatCodeName } from '../../lib/formatText';
 
 interface AddStaffModalProps {
   isOpen: boolean;
@@ -223,18 +224,19 @@ export function AddStaffModal({
               id="zonal-new-staff-department"
               label="Department *"
               required
+              searchable
               value={newStaffDepartmentId}
               onChange={(e) => {
                 setNewStaffDepartmentId?.(e.target.value);
                 setNewStaffDesignationId?.('');
               }}
             >
-              <option value="">Select Department</option>
+              <option value="">- Select - (Select Department)</option>
               {departments
                 .filter((d) => d.is_active !== false)
                 .map((d) => (
                   <option key={d.id} value={d.id}>
-                    {d.name} {d.department_code ? `(${d.department_code})` : ''}
+                    {formatCodeName(d.department_code, d.name)}
                   </option>
                 ))}
             </Select>
@@ -243,15 +245,16 @@ export function AddStaffModal({
               id="zonal-new-staff-designation"
               label="Designation *"
               required
+              searchable
               disabled={!newStaffDepartmentId}
               value={newStaffDesignationId}
               onChange={(e) => setNewStaffDesignationId?.(e.target.value)}
               hint={!newStaffDepartmentId ? 'Select a Department first to filter designations.' : undefined}
             >
-              <option value="">Select Designation</option>
+              <option value="">- Select - (Select Designation)</option>
               {filteredDesignations.map((desig) => (
                 <option key={desig.id} value={desig.id}>
-                  {desig.name}
+                  {formatCodeName(desig.designation_code, desig.name)}
                   {desig.employment_category ? ` — ${desig.employment_category}` : ''}
                 </option>
               ))}
@@ -421,10 +424,12 @@ export function AddStaffModal({
                         className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0"
                       />
                       <div className="min-w-0 flex-1">
-                        <span className="block truncate">{br.name}</span>
-                        {br.branch_code && (
+                        <span className="block truncate">
+                          {formatCodeName(br.branch_code, br.name)}
+                        </span>
+                        {br.branch_type && (
                           <span className="text-caption text-slate-500 font-mono">
-                            {br.branch_code} {br.branch_type ? `· ${br.branch_type}` : ''}
+                            {br.branch_type}
                           </span>
                         )}
                       </div>

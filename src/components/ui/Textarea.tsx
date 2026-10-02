@@ -4,6 +4,7 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
   label?: string;
   error?: string;
   hint?: string;
+  helperText?: string;
 }
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
@@ -12,6 +13,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       label,
       error,
       hint,
+      helperText,
       id,
       className = '',
       disabled,
@@ -21,6 +23,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
     ref
   ) => {
     const textareaId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+    const resolvedHint = hint ?? helperText;
 
     const borderFocusClasses = error
       ? 'border-rose-300 focus:border-rose-600 focus:ring-rose-600'
@@ -43,8 +46,8 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         />
         {error ? (
           <p className="text-caption font-medium text-rose-600">{error}</p>
-        ) : hint ? (
-          <p className="text-caption text-slate-500">{hint}</p>
+        ) : resolvedHint ? (
+          <p className="text-caption text-slate-500">{resolvedHint}</p>
         ) : null}
       </div>
     );

@@ -11,6 +11,7 @@ import { CandidateTrack } from '../types/formTemplates';
 import { validateStatusTransition } from './workflowStateMachine';
 import { notificationService } from './notificationService';
 import { dataRetentionService } from './dataRetentionStore';
+import { masterDataFallbackStore } from './masterDataFallbackStore';
 
 export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
   const router = Router();
@@ -340,13 +341,20 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
       const zoneId = req.centralUser.zone_id;
 
       const [{ data: designations }, { data: branches }] = await Promise.all([
-        supabaseAdmin.from('designations').select('id, name, department_id, employment_category, is_active, departments(id, name)').order('name'),
-        supabaseAdmin.from('branches').select('id, name, address').eq('zone_id', zoneId).order('name'),
+        supabaseAdmin
+          .from('designations')
+          .select('*, departments(id, name, department_code)')
+          .order('name'),
+        supabaseAdmin
+          .from('branches')
+          .select('id, name, branch_code, branch_type, address, city_address')
+          .eq('zone_id', zoneId)
+          .order('name'),
       ]);
 
       return res.json({
         success: true,
-        designations: designations || [],
+        designations: masterDataFallbackStore.enrichDesignations(designations || []),
         branches: branches || [],
         zone: {
           id: zoneId,

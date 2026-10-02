@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, Button, Input, Select } from '../ui';
+import { formatCodeName } from '../../lib/formatText';
 
 interface EditStaffModalProps {
   isOpen: boolean;
@@ -23,7 +24,7 @@ interface EditStaffModalProps {
       submitting: boolean;
     }>
   >;
-  zoneBranches: Array<{ id: string; name: string }>;
+  zoneBranches: Array<{ id: string; name: string; branch_code?: string }>;
   onSubmit: (e: React.FormEvent) => void;
 }
 
@@ -78,12 +79,16 @@ export function EditStaffModal({
             id="zonal-edit-staff-branch"
             label={staffData.roleName === 'branch_manager' ? 'Branch Hub Assignment *' : 'Branch Hub Assignment (Optional)'}
             value={staffData.branchId}
+            searchable
             onChange={(e) => setStaffData((prev) => ({ ...prev, branchId: e.target.value }))}
             options={[
               ...(staffData.roleName === 'central_hr'
                 ? [{ value: '', label: 'Zone-Wide HQ (No specific branch)' }]
-                : []),
-              ...zoneBranches.map((br) => ({ value: br.id, label: br.name })),
+                : [{ value: '', label: '- Select -' }]),
+              ...zoneBranches.map((br) => ({
+                value: br.id,
+                label: formatCodeName(br.branch_code, br.name),
+              })),
             ]}
           />
         </div>

@@ -9,6 +9,8 @@ import multer from 'multer';
 import { formTemplatesService } from './formTemplatesDbService';
 import { notificationService } from './notificationService';
 import { dataRetentionService } from './dataRetentionStore';
+import { masterDataFallbackStore } from './masterDataFallbackStore';
+import { parseCodeAndName } from '../lib/formatText';
 
 declare global {
   namespace Express {
@@ -140,25 +142,63 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
   });
 
   // --------------------------------------------------------------------------
-  // 2. Organization Structure CRUD (Zones, Branches, Departments, Designations)
+  // 2. Organization Structure CRUD (Zones, Cities, Branches, Departments, Designations)
+  //    + Bulk Import (Matched by Code with In-Place UPDATE Preserving UUIDs)
   // --------------------------------------------------------------------------
-  router.get('/org-structure', requireSuperAdmin, async (req, res) => {
-    try {
-      const [zonesRes, branchesRes, deptsRes, desigsRes, rolesRes] = await Promise.all([
-        supabaseAdmin.from('zones').select('*').order('name'),
-        supabaseAdmin.from('branches').select('*, zones(name)').order('name'),
-        supabaseAdmin.from('departments').select('*').order('name'),
-        supabaseAdmin.from('designations').select('*, departments(name)').order('name'),
-        supabaseAdmin.from('roles').select('*').order('name'),
-      ]);
 
+  async function loadAllMasterData() {
+    const [zonesRes, citiesRes, branchesRes, deptsRes, desigsRes, rolesRes] = await Promise.all([
+      supabaseAdmin.from('zones').select('*').order('name'),
+      supabaseAdmin.from('cities').select('*, zones(id, name, zone_code)').order('name'),
+      supabaseAdmin.from('branches').select('*, zones(id, name, zone_code)').order('name'),
+      supabaseAdmin.from('departments').select('*').order('name'),
+      supabaseAdmin.from('designations').select('*, departments(id, name, department_code)').order('name'),
+      supabaseAdmin.from('roles').select('*').order('name'),
+    ]);
+
+    const zones = zonesRes.data || [];
+    const zoneMap = new Map<string, any>(zones.map((z: any) => [z.id, z]));
+
+    let cities: any[] = [];
+    let citiesTableAvailable = !citiesRes.error;
+    if (!citiesRes.error && citiesRes.data) {
+      cities = citiesRes.data;
+    } else {
+      cities = masterDataFallbackStore.listCities().map((c) => ({
+        ...c,
+        zones: c.zone_id && zoneMap.has(c.zone_id)
+          ? { id: c.zone_id, name: zoneMap.get(c.zone_id).name, zone_code: zoneMap.get(c.zone_id).zone_code }
+          : null,
+      }));
+    }
+
+    const branches = masterDataFallbackStore.enrichBranches(branchesRes.data || [], cities);
+    const departments = deptsRes.data || [];
+    const designations = masterDataFallbackStore.enrichDesignations(desigsRes.data || []);
+    const roles = rolesRes.data || [];
+
+    return {
+      zones,
+      cities,
+      branches,
+      departments,
+      designations,
+      roles,
+      citiesTableAvailable,
+    };
+  }
+
+  router.get('/org-structure', requireSuperAdmin, async (_req, res) => {
+    try {
+      const data = await loadAllMasterData();
       return res.json({
         success: true,
-        zones: zonesRes.data || [],
-        branches: branchesRes.data || [],
-        departments: deptsRes.data || [],
-        designations: desigsRes.data || [],
-        roles: rolesRes.data || [],
+        zones: data.zones,
+        cities: data.cities,
+        branches: data.branches,
+        departments: data.departments,
+        designations: data.designations,
+        roles: data.roles,
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -175,6 +215,9 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
     if (lower.includes('zones_name_key')) {
       return `Zone Name "${payload.name || ''}" already exists. Please enter a unique Zone Name.`;
     }
+    if (lower.includes('cities_city_code_key') || (entity === 'cities' && lower.includes('city_code'))) {
+      return `City Code "${payload.city_code || ''}" already exists. Please enter a unique City Code.`;
+    }
     if (lower.includes('branches_branch_code_key') || (entity === 'branches' && lower.includes('branch_code'))) {
       return `Branch Code "${payload.branch_code || ''}" already exists. Please enter a unique Branch Code.`;
     }
@@ -184,84 +227,1055 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
     if (lower.includes('departments_name_key')) {
       return `Department Name "${payload.name || ''}" already exists. Please enter a unique Department Name.`;
     }
+    if (lower.includes('designations_designation_code_key') || (entity === 'designations' && lower.includes('designation_code'))) {
+      return `Designation Code "${payload.designation_code || ''}" already exists. Please enter a unique Designation Code.`;
+    }
     return errMessage;
   }
+
+  // --------------------------------------------------------------------------
+  // 2B. Bulk Validate & Bulk Import Master Data (Zones, Cities, Departments, Designations, Branches)
+  //     Registered BEFORE generic /org/:entity routes so no :entity param intercepts them.
+  //     Matches by Code and performs in-place UPDATE preserving existing UUIDs!
+  // --------------------------------------------------------------------------
+  async function executeBulkImportForEntity(
+    entity: 'zones' | 'cities' | 'branches' | 'departments' | 'designations',
+    rawRows: any[],
+    options: {
+      mode?: 'upsert' | 'update' | 'skip';
+      dryRun?: boolean;
+      defaultZoneId?: string | null;
+      defaultDepartmentId?: string | null;
+      actorId?: string | null;
+    } = {}
+  ) {
+    const mode = options.mode === 'skip' ? 'skip' : 'update';
+    const dryRun = Boolean(options.dryRun);
+    const master = await loadAllMasterData();
+
+    const existingList: any[] = (master as any)[entity] || [];
+    const codeField =
+      entity === 'zones'
+        ? 'zone_code'
+        : entity === 'cities'
+        ? 'city_code'
+        : entity === 'branches'
+        ? 'branch_code'
+        : entity === 'departments'
+        ? 'department_code'
+        : 'designation_code';
+
+    // Map existing records by normalized code and normalized name
+    const byCode = new Map<string, any>();
+    const byName = new Map<string, any>();
+    for (const item of existingList) {
+      const c = String(item[codeField] || '').trim().toLowerCase();
+      if (c) byCode.set(c, item);
+      const n = String(item.name || '').trim().toLowerCase();
+      if (n) byName.set(n, item);
+    }
+
+    // Lookup helpers for parent references (Zone, City, Department) matched by CODE (or UUID / Name)
+    const resolveZone = (val: any): { id: string; name: string; zone_code?: string } | null => {
+      if (val === null || val === undefined) return null;
+      const raw = String(val).trim();
+      if (!raw) return null;
+      const { code, name } = parseCodeAndName(raw);
+      for (const z of master.zones) {
+        if (z.id === raw) return z;
+        const zCode = String(z.zone_code || '').trim().toLowerCase();
+        const zName = String(z.name || '').trim().toLowerCase();
+        if (code && zCode && zCode === code.toLowerCase()) return z;
+        if (zCode && zCode === raw.toLowerCase()) return z;
+        if (name && zName && zName === name.toLowerCase()) return z;
+        if (zName && zName === raw.toLowerCase()) return z;
+      }
+      return null;
+    };
+
+    const resolveCity = (val: any): { id: string; name: string; city_code?: string } | null => {
+      if (val === null || val === undefined) return null;
+      const raw = String(val).trim();
+      if (!raw) return null;
+      const { code, name } = parseCodeAndName(raw);
+      for (const c of master.cities) {
+        if (c.id === raw) return c;
+        const cCode = String(c.city_code || '').trim().toLowerCase();
+        const cName = String(c.name || '').trim().toLowerCase();
+        if (code && cCode && cCode === code.toLowerCase()) return c;
+        if (cCode && cCode === raw.toLowerCase()) return c;
+        if (name && cName && cName === name.toLowerCase()) return c;
+        if (cName && cName === raw.toLowerCase()) return c;
+      }
+      return null;
+    };
+
+    const resolveDepartment = (val: any): { id: string; name: string; department_code?: string } | null => {
+      if (val === null || val === undefined) return null;
+      const raw = String(val).trim();
+      if (!raw) return null;
+      const { code, name } = parseCodeAndName(raw);
+      for (const d of master.departments) {
+        if (d.id === raw) return d;
+        const dCode = String(d.department_code || '').trim().toLowerCase();
+        const dName = String(d.name || '').trim().toLowerCase();
+        if (code && dCode && dCode === code.toLowerCase()) return d;
+        if (dCode && dCode === raw.toLowerCase()) return d;
+        if (name && dName && dName === name.toLowerCase()) return d;
+        if (dName && dName === raw.toLowerCase()) return d;
+      }
+      return null;
+    };
+
+    const extractRowInput = (row: any) => {
+      if (typeof row === 'string') {
+        const { code, name } = parseCodeAndName(row);
+        return { code: String(code || '').trim(), name: String(name || '').trim(), raw: {} };
+      }
+      const r: Record<string, any> = {};
+      for (const [k, v] of Object.entries(row || {})) {
+        r[String(k).trim()] = v !== null && v !== undefined ? String(v).trim() : '';
+      }
+
+      const expCode =
+        r[codeField] ??
+        r.code ??
+        r.Code ??
+        r.CODE ??
+        r['Zone Code*'] ??
+        r['Zone Code'] ??
+        r['City Code*'] ??
+        r['City Code'] ??
+        r['Branch Code*'] ??
+        r['Branch Code'] ??
+        r['Department Code*'] ??
+        r['Department Code'] ??
+        r['Designation Code*'] ??
+        r['Designation Code'] ??
+        '';
+
+      const expNameOrCombined =
+        r.name ??
+        r.Name ??
+        r.NAME ??
+        r.code_name ??
+        r.combined ??
+        r['Code | Name'] ??
+        r['CODE | NAME'] ??
+        r['Zone Name*'] ??
+        r['Zone Name'] ??
+        r['City Name*'] ??
+        r['City Name'] ??
+        r['Branch Name*'] ??
+        r['Branch Name'] ??
+        r['Department Name*'] ??
+        r['Department Name'] ??
+        r['Designation Name*'] ??
+        r['Designation Name'] ??
+        r['Designation Title*'] ??
+        r['Designation Title'] ??
+        (Object.keys(r).length === 1 ? Object.values(r)[0] : '');
+
+      // Keep leading zeros by treating code strictly as string
+      const parsed = parseCodeAndName(String(expNameOrCombined ?? ''), String(expCode ?? ''));
+      return {
+        code: String(parsed.code || '').trim(),
+        name: String(parsed.name || '').trim(),
+        raw: r,
+      };
+    };
+
+    const previewRows: Array<{
+      rowNumber: number;
+      code: string;
+      name: string;
+      parentCodes: string;
+      display: string;
+      status: 'Valid' | 'Duplicate' | 'Error';
+      action: 'create' | 'update' | 'skip' | 'error';
+      message: string;
+      existingId?: string | null;
+      error?: string;
+    }> = [];
+
+    const validToInsert: Array<{
+      previewIndex: number;
+      rowNumber: number;
+      code: string;
+      name: string;
+      normCode: string;
+      payload: Record<string, any>;
+    }> = [];
+
+    const duplicatesToProcess: Array<{
+      previewIndex: number;
+      rowNumber: number;
+      code: string;
+      name: string;
+      existing: any;
+      payload: Record<string, any>;
+    }> = [];
+
+    let validCount = 0;
+    let duplicateCount = 0;
+    let createdCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+    let errorCount = 0;
+
+    const seenCodesInBatch = new Set<string>();
+    const seenNamesInBatch = new Set<string>();
+
+    for (let idx = 0; idx < (rawRows || []).length; idx++) {
+      const rowNumber = idx + 1;
+      const { code, name, raw } = extractRowInput(rawRows[idx]);
+
+      if (!code && !name && Object.values(raw).every((v) => !String(v || '').trim())) {
+        continue; // ignore completely blank rows
+      }
+
+      // Extract parent code strings for display and validation
+      const rawZoneVal =
+        raw['Zone Code*'] ?? raw['Zone Code'] ?? raw.zone_code ?? raw.zone_id ?? raw.Zone ?? raw['Zone*'] ?? raw.zone ?? '';
+      const rawCityVal =
+        raw['City Code*'] ?? raw['City Code'] ?? raw.city_code ?? raw.city_id ?? raw.City ?? raw.city ?? '';
+      const rawDeptVal =
+        entity === 'designations'
+          ? raw['Department Code*'] ??
+            raw['Department Code'] ??
+            raw.department_code ??
+            raw.department_id ??
+            raw.Department ??
+            raw['Department*'] ??
+            raw.department ??
+            ''
+          : '';
+
+      const parentCodesDisplay =
+        entity === 'branches'
+          ? [
+              rawZoneVal ? `Zone: ${rawZoneVal}` : '',
+              rawCityVal ? `City: ${rawCityVal}` : '',
+            ]
+              .filter(Boolean)
+              .join(', ') || '—'
+          : entity === 'designations'
+          ? rawDeptVal
+            ? `Dept: ${rawDeptVal}`
+            : '—'
+          : '—';
+
+      if (!code || !name) {
+        errorCount++;
+        const errMsg = !code && !name
+          ? 'Missing required Code and Name.'
+          : !code
+          ? 'Missing required Code.'
+          : 'Missing required Name.';
+        previewRows.push({
+          rowNumber,
+          code: code || '',
+          name: name || '',
+          parentCodes: parentCodesDisplay,
+          display: code && name ? `${code} | ${name}` : code || name,
+          status: 'Error',
+          action: 'error',
+          message: errMsg,
+          error: errMsg,
+        });
+        continue;
+      }
+
+      const normCode = code.toLowerCase();
+      if (seenCodesInBatch.has(normCode)) {
+        errorCount++;
+        const errMsg = `Duplicate code "${code}" inside the uploaded file.`;
+        previewRows.push({
+          rowNumber,
+          code,
+          name,
+          parentCodes: parentCodesDisplay,
+          display: `${code} | ${name}`,
+          status: 'Error',
+          action: 'error',
+          message: errMsg,
+          error: errMsg,
+        });
+        continue;
+      }
+      seenCodesInBatch.add(normCode);
+
+      // Check existing record by code in DB
+      let existing = byCode.get(normCode);
+      // If a legacy record in DB has the exact same name and no code yet, match it
+      if (!existing) {
+        const matchByNameNoCode = byName.get(name.toLowerCase());
+        if (matchByNameNoCode && !String(matchByNameNoCode[codeField] || '').trim()) {
+          existing = matchByNameNoCode;
+        }
+      }
+
+      // Check unique name constraints on zones and departments
+      if (entity === 'zones' || entity === 'departments') {
+        const normName = name.toLowerCase();
+        const entityLabel = entity === 'zones' ? 'Zone' : 'Department';
+        if (seenNamesInBatch.has(normName)) {
+          errorCount++;
+          const errMsg = `Name conflict: Duplicate ${entityLabel} Name "${name}" inside the uploaded file.`;
+          previewRows.push({
+            rowNumber,
+            code,
+            name,
+            parentCodes: parentCodesDisplay,
+            display: `${code} | ${name}`,
+            status: 'Error',
+            action: 'error',
+            message: errMsg,
+            error: errMsg,
+          });
+          continue;
+        }
+        const existingWithSameName = byName.get(normName);
+        if (existingWithSameName && (!existing || existingWithSameName.id !== existing.id)) {
+          errorCount++;
+          const conflictCode = existingWithSameName[codeField] || existingWithSameName.id;
+          const errMsg = `Name conflict: ${entityLabel} Name "${name}" already exists with code "${conflictCode}".`;
+          previewRows.push({
+            rowNumber,
+            code,
+            name,
+            parentCodes: parentCodesDisplay,
+            display: `${code} | ${name}`,
+            status: 'Error',
+            action: 'error',
+            message: errMsg,
+            error: errMsg,
+          });
+          continue;
+        }
+        seenNamesInBatch.add(normName);
+      }
+
+      // Validate parent codes & build payload
+      const rawStatus = raw.status ?? raw.Status ?? raw.is_active;
+      const isActive =
+        typeof rawStatus === 'boolean'
+          ? rawStatus
+          : typeof rawStatus === 'string' && rawStatus.trim()
+          ? rawStatus.trim().toLowerCase() !== 'inactive' && rawStatus.trim().toLowerCase() !== 'false'
+          : existing
+          ? existing.is_active !== false
+          : true;
+
+      const rowPayload: Record<string, any> = {
+        name,
+        [codeField]: code,
+        is_active: isActive,
+      };
+
+      if (entity === 'zones') {
+        const regionVal = String(raw.Region ?? raw.region ?? '').trim();
+        rowPayload.region = regionVal || existing?.region || 'Punjab';
+      } else if (entity === 'cities') {
+        if (rawZoneVal) {
+          const zMatch = resolveZone(rawZoneVal);
+          if (!zMatch) {
+            errorCount++;
+            const errMsg = `Parent Zone Code "${rawZoneVal}" does not exist.`;
+            previewRows.push({
+              rowNumber,
+              code,
+              name,
+              parentCodes: parentCodesDisplay,
+              display: `${code} | ${name}`,
+              status: 'Error',
+              action: 'error',
+              message: errMsg,
+              error: errMsg,
+            });
+            continue;
+          }
+          rowPayload.zone_id = zMatch.id;
+        } else if (options.defaultZoneId) {
+          rowPayload.zone_id = options.defaultZoneId;
+        }
+      } else if (entity === 'departments') {
+        const deptCatVal = String(raw['Department Category'] ?? raw.department_category ?? '').trim();
+        rowPayload.department_category = deptCatVal || existing?.department_category || 'Field Operations';
+      } else if (entity === 'designations') {
+        const effectiveDeptInput = rawDeptVal || options.defaultDepartmentId || '';
+        if (!effectiveDeptInput) {
+          errorCount++;
+          const errMsg = 'Missing required Department Code*.';
+          previewRows.push({
+            rowNumber,
+            code,
+            name,
+            parentCodes: parentCodesDisplay,
+            display: `${code} | ${name}`,
+            status: 'Error',
+            action: 'error',
+            message: errMsg,
+            error: errMsg,
+          });
+          continue;
+        }
+        const deptMatch = resolveDepartment(effectiveDeptInput);
+        if (!deptMatch) {
+          errorCount++;
+          const errMsg = `Parent Department Code "${effectiveDeptInput}" does not exist.`;
+          previewRows.push({
+            rowNumber,
+            code,
+            name,
+            parentCodes: parentCodesDisplay,
+            display: `${code} | ${name}`,
+            status: 'Error',
+            action: 'error',
+            message: errMsg,
+            error: errMsg,
+          });
+          continue;
+        }
+        const empCatRaw = String(
+          raw['Employment Category'] ?? raw.employment_category ?? raw.Category ?? ''
+        ).trim();
+        const empCat = ['Rider', 'In-House Staff'].includes(empCatRaw)
+          ? empCatRaw
+          : existing?.employment_category || 'In-House Staff';
+
+        rowPayload.department_id = deptMatch.id;
+        rowPayload.employment_category = empCat;
+      } else if (entity === 'branches') {
+        const effectiveZoneInput = rawZoneVal || options.defaultZoneId || '';
+        if (!effectiveZoneInput) {
+          errorCount++;
+          const errMsg = 'Missing required Zone Code*.';
+          previewRows.push({
+            rowNumber,
+            code,
+            name,
+            parentCodes: parentCodesDisplay,
+            display: `${code} | ${name}`,
+            status: 'Error',
+            action: 'error',
+            message: errMsg,
+            error: errMsg,
+          });
+          continue;
+        }
+        const zoneMatch = resolveZone(effectiveZoneInput);
+        if (!zoneMatch) {
+          errorCount++;
+          const errMsg = `Parent Zone Code "${effectiveZoneInput}" does not exist.`;
+          previewRows.push({
+            rowNumber,
+            code,
+            name,
+            parentCodes: parentCodesDisplay,
+            display: `${code} | ${name}`,
+            status: 'Error',
+            action: 'error',
+            message: errMsg,
+            error: errMsg,
+          });
+          continue;
+        }
+
+        let cityMatch: { id: string; name: string; city_code?: string } | null = null;
+        if (rawCityVal) {
+          cityMatch = resolveCity(rawCityVal);
+          if (!cityMatch) {
+            errorCount++;
+            const errMsg = `Parent City Code "${rawCityVal}" does not exist.`;
+            previewRows.push({
+              rowNumber,
+              code,
+              name,
+              parentCodes: parentCodesDisplay,
+              display: `${code} | ${name}`,
+              status: 'Error',
+              action: 'error',
+              message: errMsg,
+              error: errMsg,
+            });
+            continue;
+          }
+        }
+
+        const bTypeRaw = String(raw['Branch Type'] ?? raw.branch_type ?? raw.Type ?? '').trim();
+        const bType = ['Hub', 'Sub-Hub', 'Warehouse', 'Franchise'].includes(bTypeRaw)
+          ? bTypeRaw
+          : existing?.branch_type || 'Hub';
+
+        const explicitAddr = String(raw.Address ?? raw.address ?? raw.city_address ?? '').trim();
+        const resolvedAddr = explicitAddr || cityMatch?.name || existing?.city_address || name;
+        const contactNum = String(raw['Contact Number'] ?? raw.contact_number ?? '').trim();
+
+        rowPayload.zone_id = zoneMatch.id;
+        rowPayload.branch_type = bType;
+        rowPayload.city_address = resolvedAddr;
+        rowPayload.address = resolvedAddr;
+        if (cityMatch) {
+          rowPayload.city_id = cityMatch.id;
+        }
+        if (contactNum) {
+          rowPayload.contact_number = contactNum;
+        }
+      }
+
+      if (existing) {
+        duplicateCount++;
+        const previewIdx = previewRows.length;
+        const actionType = mode === 'skip' ? 'skip' : 'update';
+        const msg =
+          mode === 'skip'
+            ? `Duplicate code "${code}" in DB — will be skipped`
+            : `Duplicate code "${code}" in DB — will update in-place (UUID preserved)`;
+        previewRows.push({
+          rowNumber,
+          code,
+          name,
+          parentCodes: parentCodesDisplay,
+          display: `${code} | ${name}`,
+          status: 'Duplicate',
+          action: actionType,
+          message: msg,
+          existingId: existing.id,
+        });
+        duplicatesToProcess.push({
+          previewIndex: previewIdx,
+          rowNumber,
+          code,
+          name,
+          existing,
+          payload: rowPayload,
+        });
+      } else {
+        validCount++;
+        const previewIdx = previewRows.length;
+        previewRows.push({
+          rowNumber,
+          code,
+          name,
+          parentCodes: parentCodesDisplay,
+          display: `${code} | ${name}`,
+          status: 'Valid',
+          action: 'create',
+          message: 'Valid — ready to import',
+        });
+        validToInsert.push({
+          previewIndex: previewIdx,
+          rowNumber,
+          code,
+          name,
+          normCode,
+          payload: rowPayload,
+        });
+      }
+    }
+
+    if (dryRun) {
+      return {
+        entity,
+        mode,
+        dryRun: true,
+        summary: {
+          totalRows: previewRows.length,
+          valid: validCount,
+          duplicate: duplicateCount,
+          added: validCount,
+          created: validCount,
+          updated: mode === 'skip' ? 0 : duplicateCount,
+          skipped: mode === 'skip' ? duplicateCount : 0,
+          failed: errorCount,
+          errors: errorCount,
+        },
+        rows: previewRows,
+      };
+    }
+
+    // ------------------------------------------------------------------------
+    // Execute Actual Import (dryRun === false)
+    // 1. Insert Valid rows in chunks of 100
+    // ------------------------------------------------------------------------
+    const CHUNK_SIZE = 100;
+    for (let start = 0; start < validToInsert.length; start += CHUNK_SIZE) {
+      const chunk = validToInsert.slice(start, start + CHUNK_SIZE);
+      const chunkPayloads = chunk.map((item) => ({ ...item.payload }));
+
+      const { data: insertedRows, error: batchErr } = await supabaseAdmin
+        .from(entity)
+        .insert(chunkPayloads)
+        .select();
+
+      if (!batchErr && Array.isArray(insertedRows) && insertedRows.length === chunk.length) {
+        createdCount += insertedRows.length;
+        for (let i = 0; i < chunk.length; i++) {
+          const item = chunk[i];
+          const created = insertedRows[i];
+          byCode.set(item.normCode, created);
+          byName.set(item.name.toLowerCase(), created);
+          previewRows[item.previewIndex].message = 'Added successfully';
+        }
+      } else {
+        // Fallback row-by-row for this chunk (handles schema cache fallbacks or individual row DB errors)
+        for (const item of chunk) {
+          try {
+            const insertPayload = { ...item.payload };
+            let { data: created, error: iErr } = await supabaseAdmin
+              .from(entity)
+              .insert(insertPayload)
+              .select()
+              .single();
+
+            if (iErr && entity === 'cities' && ((iErr.message || '').includes('public.cities') || (iErr.message || '').includes('schema cache'))) {
+              created = masterDataFallbackStore.createCity({
+                city_code: item.code,
+                name: item.name,
+                zone_id: insertPayload.zone_id || null,
+                is_active: insertPayload.is_active,
+              });
+              iErr = null;
+            } else if (iErr && entity === 'branches' && 'city_id' in insertPayload && (iErr.message || '').includes('city_id')) {
+              const cId = insertPayload.city_id;
+              delete insertPayload.city_id;
+              const retry = await supabaseAdmin.from('branches').insert(insertPayload).select().single();
+              created = retry.data;
+              iErr = retry.error;
+              if (!iErr && created?.id) {
+                masterDataFallbackStore.setBranchCityId(created.id, cId);
+              }
+            } else if (iErr && entity === 'designations' && 'designation_code' in insertPayload && (iErr.message || '').includes('designation_code')) {
+              const dCode = insertPayload.designation_code;
+              delete insertPayload.designation_code;
+              const retry = await supabaseAdmin.from('designations').insert(insertPayload).select().single();
+              created = retry.data;
+              iErr = retry.error;
+              if (!iErr && created?.id) {
+                masterDataFallbackStore.setDesignationCode(created.id, dCode);
+              }
+            }
+
+            if (iErr) {
+              throw new Error(formatOrgDbError(entity, iErr.message, insertPayload));
+            }
+            createdCount++;
+            byCode.set(item.normCode, created);
+            byName.set(item.name.toLowerCase(), created);
+            previewRows[item.previewIndex].message = 'Added successfully';
+          } catch (err: any) {
+            errorCount++;
+            const errMsg = err.message || 'Failed to create record.';
+            previewRows[item.previewIndex].status = 'Error';
+            previewRows[item.previewIndex].action = 'error';
+            previewRows[item.previewIndex].message = errMsg;
+            previewRows[item.previewIndex].error = errMsg;
+          }
+        }
+      }
+    }
+
+    // ------------------------------------------------------------------------
+    // 2. Process Duplicate rows according to mode ('skip' vs 'update')
+    // ------------------------------------------------------------------------
+    for (const dup of duplicatesToProcess) {
+      if (mode === 'skip') {
+        skippedCount++;
+        previewRows[dup.previewIndex].action = 'skip';
+        previewRows[dup.previewIndex].message = 'Skipped (existing code)';
+        continue;
+      }
+
+      // In-place UPDATE preserving existing.id (UUID)
+      try {
+        const updatePayload = { ...dup.payload };
+        let { error: uErr } = await supabaseAdmin
+          .from(entity)
+          .update(updatePayload)
+          .eq('id', dup.existing.id);
+
+        if (uErr && entity === 'cities' && ((uErr.message || '').includes('public.cities') || (uErr.message || '').includes('schema cache'))) {
+          masterDataFallbackStore.updateCity(dup.existing.id, updatePayload);
+          uErr = null;
+        } else if (uErr && entity === 'branches' && 'city_id' in updatePayload && (uErr.message || '').includes('city_id')) {
+          const cId = updatePayload.city_id;
+          delete updatePayload.city_id;
+          const retry = await supabaseAdmin.from('branches').update(updatePayload).eq('id', dup.existing.id);
+          uErr = retry.error;
+          if (!uErr) masterDataFallbackStore.setBranchCityId(dup.existing.id, cId);
+        } else if (uErr && entity === 'designations' && 'designation_code' in updatePayload && (uErr.message || '').includes('designation_code')) {
+          const dCode = updatePayload.designation_code;
+          delete updatePayload.designation_code;
+          const retry = await supabaseAdmin.from('designations').update(updatePayload).eq('id', dup.existing.id);
+          uErr = retry.error;
+          if (!uErr) masterDataFallbackStore.setDesignationCode(dup.existing.id, dCode);
+        }
+
+        if (uErr) {
+          throw new Error(formatOrgDbError(entity, uErr.message, updatePayload));
+        }
+
+        updatedCount++;
+        previewRows[dup.previewIndex].action = 'update';
+        previewRows[dup.previewIndex].message = 'Updated in-place (UUID preserved)';
+      } catch (err: any) {
+        errorCount++;
+        const errMsg = err.message || 'Failed to update record.';
+        previewRows[dup.previewIndex].status = 'Error';
+        previewRows[dup.previewIndex].action = 'error';
+        previewRows[dup.previewIndex].message = errMsg;
+        previewRows[dup.previewIndex].error = errMsg;
+      }
+    }
+
+    if (options.actorId) {
+      await supabaseAdmin.from('audit_logs').insert({
+        actor_id: options.actorId,
+        actor_type: 'staff',
+        action: `bulk_import_${entity}`,
+        entity_type: entity,
+        entity_id: entity,
+        metadata: {
+          mode,
+          added: createdCount,
+          createdCount,
+          updatedCount,
+          skippedCount,
+          failed: errorCount,
+          errorCount,
+        },
+      });
+    }
+
+    return {
+      entity,
+      mode,
+      dryRun: false,
+      summary: {
+        totalRows: previewRows.length,
+        valid: validCount,
+        duplicate: duplicateCount,
+        added: createdCount,
+        created: createdCount,
+        updated: updatedCount,
+        skipped: skippedCount,
+        failed: errorCount,
+        errors: errorCount,
+      },
+      rows: previewRows,
+    };
+  }
+
+  // Specific bulk routes registered BEFORE generic /org/:entity routes
+  router.post('/org/bulk-validate', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { entity, rows, mode, defaultZoneId, defaultDepartmentId } = req.body || {};
+      const allowed = ['zones', 'cities', 'branches', 'departments', 'designations'];
+      if (!allowed.includes(entity)) {
+        return res.status(400).json({ success: false, error: 'Invalid master data entity type for bulk validation.' });
+      }
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return res.status(400).json({ success: false, error: 'No rows provided for bulk validation.' });
+      }
+      const result = await executeBulkImportForEntity(entity, rows, {
+        mode: mode || 'update',
+        dryRun: true,
+        defaultZoneId: defaultZoneId || null,
+        defaultDepartmentId: defaultDepartmentId || null,
+        actorId: req.superAdminUser?.id || null,
+      });
+      return res.json({ success: true, ...result });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ success: false, error: msg });
+    }
+  });
+
+  router.post('/org/bulk-import', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { entity, rows, mode, dryRun, defaultZoneId, defaultDepartmentId } = req.body || {};
+      const allowed = ['zones', 'cities', 'branches', 'departments', 'designations'];
+      if (!allowed.includes(entity)) {
+        return res.status(400).json({ success: false, error: 'Invalid master data entity type for bulk import.' });
+      }
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return res.status(400).json({ success: false, error: 'No rows provided for bulk import.' });
+      }
+      const result = await executeBulkImportForEntity(entity, rows, {
+        mode: mode || 'update',
+        dryRun: Boolean(dryRun),
+        defaultZoneId: defaultZoneId || null,
+        defaultDepartmentId: defaultDepartmentId || null,
+        actorId: req.superAdminUser?.id || null,
+      });
+      return res.json({ success: true, ...result });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ success: false, error: msg });
+    }
+  });
+
+  router.post('/org/:entity/bulk-validate', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const entity = req.params.entity as any;
+      const allowed = ['zones', 'cities', 'branches', 'departments', 'designations'];
+      if (!allowed.includes(entity)) {
+        return res.status(400).json({ success: false, error: 'Invalid master data entity type for bulk validation.' });
+      }
+      const { rows, mode, defaultZoneId, defaultDepartmentId } = req.body || {};
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return res.status(400).json({ success: false, error: 'No rows provided for bulk validation.' });
+      }
+      const result = await executeBulkImportForEntity(entity, rows, {
+        mode: mode || 'update',
+        dryRun: true,
+        defaultZoneId: defaultZoneId || null,
+        defaultDepartmentId: defaultDepartmentId || null,
+        actorId: req.superAdminUser?.id || null,
+      });
+      return res.json({ success: true, ...result });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ success: false, error: msg });
+    }
+  });
+
+  router.post('/org/:entity/bulk-import', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const entity = req.params.entity as any;
+      const allowed = ['zones', 'cities', 'branches', 'departments', 'designations'];
+      if (!allowed.includes(entity)) {
+        return res.status(400).json({ success: false, error: 'Invalid master data entity type for bulk import.' });
+      }
+      const { rows, mode, dryRun, defaultZoneId, defaultDepartmentId } = req.body || {};
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return res.status(400).json({ success: false, error: 'No rows provided for bulk import.' });
+      }
+      const result = await executeBulkImportForEntity(entity, rows, {
+        mode: mode || 'update',
+        dryRun: Boolean(dryRun),
+        defaultZoneId: defaultZoneId || null,
+        defaultDepartmentId: defaultDepartmentId || null,
+        actorId: req.superAdminUser?.id || null,
+      });
+      return res.json({ success: true, ...result });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ success: false, error: msg });
+    }
+  });
 
   // Create Entity
   router.post('/org/:entity', requireSuperAdmin, async (req, res) => {
     try {
       const { entity } = req.params;
-      const allowed = ['zones', 'branches', 'departments', 'designations'];
+      const allowed = ['zones', 'cities', 'branches', 'departments', 'designations'];
       if (!allowed.includes(entity)) {
         return res.status(400).json({ success: false, error: 'Invalid entity type.' });
       }
 
       const body = req.body || {};
-      const { name } = body;
-      if (!name || typeof name !== 'string' || !name.trim()) {
+      const rawName = body.name;
+      if (!rawName || typeof rawName !== 'string' || !rawName.trim()) {
         return res.status(400).json({
           success: false,
           error: 'Name is required and cannot be empty or whitespace only.',
         });
       }
 
+      const rawExplicitCode =
+        entity === 'zones'
+          ? body.zone_code
+          : entity === 'cities'
+          ? body.city_code
+          : entity === 'branches'
+          ? body.branch_code
+          : entity === 'departments'
+          ? body.department_code
+          : body.designation_code;
+
+      const parsed = parseCodeAndName(rawName, rawExplicitCode);
+      const isActive = typeof body.is_active === 'boolean' ? body.is_active : true;
+
       let payload: Record<string, any> = {
-        name: name.trim(),
-        is_active: typeof body.is_active === 'boolean' ? body.is_active : true,
+        name: parsed.name || rawName.trim(),
+        is_active: isActive,
       };
 
       if (entity === 'zones') {
-        if (!body.zone_code || typeof body.zone_code !== 'string' || !body.zone_code.trim()) {
+        if ('zone_code' in body && !parsed.code) {
           return res.status(400).json({ success: false, error: 'Zone Code is required.' });
         }
-        if (!body.region || typeof body.region !== 'string' || !body.region.trim()) {
+        if ('region' in body && !String(body.region ?? '').trim()) {
           return res.status(400).json({ success: false, error: 'Region/Province is required.' });
         }
-        payload.zone_code = body.zone_code.trim();
-        payload.region = body.region.trim();
+        payload.zone_code = parsed.code || `ZN-${Date.now().toString().slice(-6)}`;
+        payload.region =
+          body.region && typeof body.region === 'string' && body.region.trim()
+            ? body.region.trim()
+            : 'Punjab';
+      } else if (entity === 'cities') {
+        const cityCode = parsed.code;
+        if (!cityCode) {
+          return res.status(400).json({ success: false, error: 'City Code is required.' });
+        }
+        payload.city_code = cityCode;
+        payload.zone_id =
+          body.zone_id && typeof body.zone_id === 'string' && body.zone_id.trim()
+            ? body.zone_id.trim()
+            : null;
+
+        // Try inserting into public.cities; fallback to masterDataFallbackStore if table not yet migrated
+        const { data: cityData, error: cityErr } = await supabaseAdmin
+          .from('cities')
+          .insert(payload)
+          .select('*, zones(id, name, zone_code)')
+          .single();
+
+        if (cityErr) {
+          const errMsg = cityErr.message || '';
+          if (errMsg.includes('public.cities') || errMsg.includes('schema cache') || errMsg.includes('relation "cities" does not exist')) {
+            try {
+              const fallbackCity = masterDataFallbackStore.createCity({
+                city_code: payload.city_code,
+                name: payload.name,
+                zone_id: payload.zone_id,
+                is_active: payload.is_active,
+              });
+              return res.json({ success: true, data: fallbackCity });
+            } catch (fbErr: any) {
+              return res.status(400).json({ success: false, error: fbErr.message });
+            }
+          }
+          return res.status(400).json({
+            success: false,
+            error: formatOrgDbError(entity, errMsg, payload),
+          });
+        }
+
+        await supabaseAdmin.from('audit_logs').insert({
+          actor_id: req.superAdminUser.id,
+          actor_type: 'staff',
+          action: 'create_city',
+          entity_type: 'cities',
+          entity_id: cityData.id,
+          metadata: payload,
+        });
+
+        return res.json({ success: true, data: cityData });
       } else if (entity === 'branches') {
-        if (!body.branch_code || typeof body.branch_code !== 'string' || !body.branch_code.trim()) {
+        if ('branch_code' in body && !parsed.code) {
           return res.status(400).json({ success: false, error: 'Branch Code is required.' });
         }
         if (!body.zone_id || typeof body.zone_id !== 'string' || !body.zone_id.trim()) {
           return res.status(400).json({ success: false, error: 'Zone is required for branch creation.' });
         }
-        if (!body.branch_type || typeof body.branch_type !== 'string' || !body.branch_type.trim()) {
+        if ('branch_type' in body && !String(body.branch_type ?? '').trim()) {
           return res.status(400).json({ success: false, error: 'Branch Type is required.' });
         }
-        const cityAddr = (body.city_address ?? body.address ?? '').toString().trim();
-        if (!cityAddr) {
-          return res.status(400).json({ success: false, error: 'City / Address is required.' });
+        const branchCode = parsed.code || `BR-${Date.now().toString().slice(-6)}`;
+        const branchType =
+          body.branch_type && typeof body.branch_type === 'string' && body.branch_type.trim()
+            ? body.branch_type.trim()
+            : 'Hub';
+
+        const cityId =
+          body.city_id && typeof body.city_id === 'string' && body.city_id.trim()
+            ? body.city_id.trim()
+            : null;
+
+        let resolvedCityName = '';
+        if (cityId) {
+          const { data: cityRow } = await supabaseAdmin.from('cities').select('name').eq('id', cityId).maybeSingle();
+          resolvedCityName = cityRow?.name || masterDataFallbackStore.getCityById(cityId)?.name || '';
         }
-        payload.branch_code = body.branch_code.trim();
+
+        const cityAddr = (body.city_address ?? body.address ?? resolvedCityName ?? '').toString().trim();
+        if (!cityAddr && !cityId) {
+          return res.status(400).json({ success: false, error: 'City or City / Address is required.' });
+        }
+
+        payload.branch_code = branchCode;
         payload.zone_id = body.zone_id.trim();
-        payload.branch_type = body.branch_type.trim();
-        payload.city_address = cityAddr;
-        payload.address = cityAddr;
-        payload.contact_number = body.contact_number && typeof body.contact_number === 'string' && body.contact_number.trim()
-          ? body.contact_number.trim()
-          : null;
+        payload.branch_type = branchType;
+        payload.city_address = cityAddr || resolvedCityName || payload.name;
+        payload.address = cityAddr || resolvedCityName || payload.name;
+        payload.contact_number =
+          body.contact_number && typeof body.contact_number === 'string' && body.contact_number.trim()
+            ? body.contact_number.trim()
+            : null;
+        if (cityId) {
+          payload.city_id = cityId;
+        }
       } else if (entity === 'departments') {
-        if (!body.department_code || typeof body.department_code !== 'string' || !body.department_code.trim()) {
+        if ('department_code' in body && !parsed.code) {
           return res.status(400).json({ success: false, error: 'Department Code is required.' });
         }
-        if (!body.department_category || typeof body.department_category !== 'string' || !body.department_category.trim()) {
+        if ('department_category' in body && !String(body.department_category ?? '').trim()) {
           return res.status(400).json({ success: false, error: 'Department Category is required.' });
         }
-        payload.department_code = body.department_code.trim();
-        payload.department_category = body.department_category.trim();
+        payload.department_code = parsed.code || `DP-${Date.now().toString().slice(-6)}`;
+        payload.department_category =
+          body.department_category && typeof body.department_category === 'string' && body.department_category.trim()
+            ? body.department_category.trim()
+            : 'Field Operations';
       } else if (entity === 'designations') {
         if (!body.department_id || typeof body.department_id !== 'string' || !body.department_id.trim()) {
           return res.status(400).json({ success: false, error: 'Department is required for designation creation.' });
         }
-        if (!body.employment_category || typeof body.employment_category !== 'string' || !body.employment_category.trim()) {
+        if ('employment_category' in body && !String(body.employment_category ?? '').trim()) {
           return res.status(400).json({ success: false, error: 'Employment Category is required.' });
         }
+        const empCat =
+          body.employment_category && typeof body.employment_category === 'string' && body.employment_category.trim()
+            ? body.employment_category.trim()
+            : 'In-House Staff';
         payload.department_id = body.department_id.trim();
-        payload.employment_category = body.employment_category.trim();
+        payload.employment_category = empCat;
+        if (parsed.code) {
+          payload.designation_code = parsed.code;
+        }
       }
 
-      const { data, error } = await supabaseAdmin.from(entity).insert(payload).select().single();
+      let { data, error } = await supabaseAdmin.from(entity).insert(payload).select().single();
+
+      // Graceful fallback if optional new columns (branches.city_id or designations.designation_code) are not yet migrated
+      if (error && entity === 'branches' && 'city_id' in payload && (error.message || '').includes('city_id')) {
+        const savedCityId = payload.city_id;
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.city_id;
+        const retry = await supabaseAdmin.from(entity).insert(fallbackPayload).select().single();
+        data = retry.data;
+        error = retry.error;
+        if (!error && data?.id) {
+          masterDataFallbackStore.setBranchCityId(data.id, savedCityId);
+          data = { ...data, city_id: savedCityId };
+        }
+      } else if (
+        error &&
+        entity === 'designations' &&
+        'designation_code' in payload &&
+        (error.message || '').includes('designation_code')
+      ) {
+        const savedCode = payload.designation_code;
+        try {
+          masterDataFallbackStore.setDesignationCode('__check_only__', savedCode);
+          masterDataFallbackStore.setDesignationCode('__check_only__', null);
+        } catch (dupErr: any) {
+          return res.status(400).json({ success: false, error: dupErr.message });
+        }
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.designation_code;
+        const retry = await supabaseAdmin.from(entity).insert(fallbackPayload).select().single();
+        data = retry.data;
+        error = retry.error;
+        if (!error && data?.id) {
+          masterDataFallbackStore.setDesignationCode(data.id, savedCode);
+          data = { ...data, designation_code: savedCode };
+        }
+      }
+
       if (error) {
         return res.status(400).json({ success: false, error: formatOrgDbError(entity, error.message, payload) });
       }
@@ -282,17 +1296,28 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
     }
   });
 
-  // Update Entity
+  // Update Entity (In-place UPDATE preserving UUID)
   router.put('/org/:entity/:id', requireSuperAdmin, async (req, res) => {
     try {
       const { entity, id } = req.params;
-      const allowed = ['zones', 'branches', 'departments', 'designations'];
+      const allowed = ['zones', 'cities', 'branches', 'departments', 'designations'];
       if (!allowed.includes(entity)) {
         return res.status(400).json({ success: false, error: 'Invalid entity type.' });
       }
 
       const body = req.body || {};
       const payload: Record<string, any> = {};
+
+      const rawExplicitCode =
+        entity === 'zones'
+          ? body.zone_code
+          : entity === 'cities'
+          ? body.city_code
+          : entity === 'branches'
+          ? body.branch_code
+          : entity === 'departments'
+          ? body.department_code
+          : body.designation_code;
 
       if ('name' in body) {
         if (!body.name || typeof body.name !== 'string' || !body.name.trim()) {
@@ -301,7 +1326,8 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
             error: 'Name cannot be empty or whitespace only.',
           });
         }
-        payload.name = body.name.trim();
+        const parsed = parseCodeAndName(body.name, rawExplicitCode);
+        payload.name = parsed.name || body.name.trim();
       }
       if ('is_active' in body && typeof body.is_active === 'boolean') {
         payload.is_active = body.is_active;
@@ -314,12 +1340,56 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
           }
           payload.zone_code = body.zone_code.trim();
         }
-        if ('region' in body) {
-          if (!body.region || typeof body.region !== 'string' || !body.region.trim()) {
-            return res.status(400).json({ success: false, error: 'Region/Province cannot be empty.' });
-          }
+        if ('region' in body && body.region && typeof body.region === 'string' && body.region.trim()) {
           payload.region = body.region.trim();
         }
+      } else if (entity === 'cities') {
+        if ('city_code' in body) {
+          if (!body.city_code || typeof body.city_code !== 'string' || !body.city_code.trim()) {
+            return res.status(400).json({ success: false, error: 'City Code cannot be empty.' });
+          }
+          payload.city_code = body.city_code.trim();
+        }
+        if ('zone_id' in body) {
+          payload.zone_id =
+            body.zone_id && typeof body.zone_id === 'string' && body.zone_id.trim()
+              ? body.zone_id.trim()
+              : null;
+        }
+
+        const { data: cityData, error: cityErr } = await supabaseAdmin
+          .from('cities')
+          .update(payload)
+          .eq('id', id)
+          .select('*, zones(id, name, zone_code)')
+          .single();
+
+        if (cityErr) {
+          const errMsg = cityErr.message || '';
+          if (errMsg.includes('public.cities') || errMsg.includes('schema cache') || errMsg.includes('relation "cities" does not exist')) {
+            try {
+              const updatedFallback = masterDataFallbackStore.updateCity(id, payload);
+              return res.json({ success: true, data: updatedFallback });
+            } catch (fbErr: any) {
+              return res.status(400).json({ success: false, error: fbErr.message });
+            }
+          }
+          return res.status(400).json({
+            success: false,
+            error: formatOrgDbError(entity, errMsg, payload),
+          });
+        }
+
+        await supabaseAdmin.from('audit_logs').insert({
+          actor_id: req.superAdminUser.id,
+          actor_type: 'staff',
+          action: 'update_city',
+          entity_type: 'cities',
+          entity_id: id,
+          metadata: payload,
+        });
+
+        return res.json({ success: true, data: cityData });
       } else if (entity === 'branches') {
         if ('branch_code' in body) {
           if (!body.branch_code || typeof body.branch_code !== 'string' || !body.branch_code.trim()) {
@@ -339,18 +1409,27 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
           }
           payload.branch_type = body.branch_type.trim();
         }
+        if ('city_id' in body) {
+          payload.city_id =
+            body.city_id && typeof body.city_id === 'string' && body.city_id.trim()
+              ? body.city_id.trim()
+              : null;
+        }
         if ('city_address' in body || 'address' in body) {
           const cityAddr = (body.city_address ?? body.address ?? '').toString().trim();
-          if (!cityAddr) {
+          if (!cityAddr && !payload.city_id) {
             return res.status(400).json({ success: false, error: 'City / Address cannot be empty.' });
           }
-          payload.city_address = cityAddr;
-          payload.address = cityAddr;
+          if (cityAddr) {
+            payload.city_address = cityAddr;
+            payload.address = cityAddr;
+          }
         }
         if ('contact_number' in body) {
-          payload.contact_number = body.contact_number && typeof body.contact_number === 'string' && body.contact_number.trim()
-            ? body.contact_number.trim()
-            : null;
+          payload.contact_number =
+            body.contact_number && typeof body.contact_number === 'string' && body.contact_number.trim()
+              ? body.contact_number.trim()
+              : null;
         }
       } else if (entity === 'departments') {
         if ('department_code' in body) {
@@ -359,10 +1438,7 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
           }
           payload.department_code = body.department_code.trim();
         }
-        if ('department_category' in body) {
-          if (!body.department_category || typeof body.department_category !== 'string' || !body.department_category.trim()) {
-            return res.status(400).json({ success: false, error: 'Department Category cannot be empty.' });
-          }
+        if ('department_category' in body && body.department_category && typeof body.department_category === 'string' && body.department_category.trim()) {
           payload.department_category = body.department_category.trim();
         }
       } else if (entity === 'designations') {
@@ -378,9 +1454,49 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
           }
           payload.employment_category = body.employment_category.trim();
         }
+        if ('designation_code' in body) {
+          payload.designation_code =
+            body.designation_code && typeof body.designation_code === 'string' && body.designation_code.trim()
+              ? body.designation_code.trim()
+              : null;
+        }
       }
 
-      const { data, error } = await supabaseAdmin.from(entity).update(payload).eq('id', id).select().single();
+      let { data, error } = await supabaseAdmin.from(entity).update(payload).eq('id', id).select().single();
+
+      if (error && entity === 'branches' && 'city_id' in payload && (error.message || '').includes('city_id')) {
+        const savedCityId = payload.city_id;
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.city_id;
+        const retry = await supabaseAdmin.from(entity).update(fallbackPayload).eq('id', id).select().single();
+        data = retry.data;
+        error = retry.error;
+        if (!error && data?.id) {
+          masterDataFallbackStore.setBranchCityId(data.id, savedCityId);
+          data = { ...data, city_id: savedCityId };
+        }
+      } else if (
+        error &&
+        entity === 'designations' &&
+        'designation_code' in payload &&
+        (error.message || '').includes('designation_code')
+      ) {
+        const savedCode = payload.designation_code;
+        try {
+          masterDataFallbackStore.setDesignationCode(id, savedCode);
+        } catch (dupErr: any) {
+          return res.status(400).json({ success: false, error: dupErr.message });
+        }
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.designation_code;
+        const retry = await supabaseAdmin.from(entity).update(fallbackPayload).eq('id', id).select().single();
+        data = retry.data;
+        error = retry.error;
+        if (!error && data?.id) {
+          data = { ...data, designation_code: savedCode };
+        }
+      }
+
       if (error) {
         return res.status(400).json({ success: false, error: formatOrgDbError(entity, error.message, payload) });
       }
@@ -405,12 +1521,33 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
   router.delete('/org/:entity/:id', requireSuperAdmin, async (req: any, res) => {
     try {
       const { entity, id } = req.params;
-      const allowed = ['zones', 'branches', 'departments', 'designations'];
+      const allowed = ['zones', 'cities', 'branches', 'departments', 'designations'];
       if (!allowed.includes(entity)) {
         return res.status(400).json({ success: false, error: 'Invalid entity type.' });
       }
 
       const reason = (req.body?.reason || req.query?.reason || 'Deleted via Super Admin Organization Manager') as string;
+
+      if (entity === 'cities') {
+        const { error: delErr } = await supabaseAdmin.from('cities').delete().eq('id', id);
+        if (delErr) {
+          const errMsg = delErr.message || '';
+          if (errMsg.includes('public.cities') || errMsg.includes('schema cache') || errMsg.includes('relation "cities" does not exist')) {
+            masterDataFallbackStore.deleteCity(id);
+            return res.json({ success: true, message: 'cities record deleted.' });
+          }
+          return res.status(400).json({ success: false, error: errMsg });
+        }
+        await supabaseAdmin.from('audit_logs').insert({
+          actor_id: req.superAdminUser.id,
+          actor_type: 'staff',
+          action: 'delete_city',
+          entity_type: 'cities',
+          entity_id: id,
+          metadata: { reason, deleted_at: new Date().toISOString() },
+        });
+        return res.json({ success: true, message: 'cities record deleted.' });
+      }
 
       // Check dependent records before deleting to provide specific, clear user feedback
       if (entity === 'zones') {
@@ -529,7 +1666,7 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
     try {
       let { data: staffList, error } = await supabaseAdmin
         .from('staff_profiles')
-        .select('*, roles(name), zones(name), branches(name), departments(id, name, department_code), designations(id, name, employment_category, department_id)')
+        .select('*, roles(name), zones(id, name, zone_code), branches(id, name, branch_code), departments(id, name, department_code), designations(id, name, employment_category, department_id)')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -542,6 +1679,13 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
           return res.status(500).json({ success: false, error: fallback.error.message });
         }
         staffList = fallback.data as any;
+      }
+
+      // Fetch designations map for designation_code enrichment
+      const { data: allDesigs } = await supabaseAdmin.from('designations').select('*');
+      const desigCodeMap = new Map<string, string | null>();
+      for (const d of masterDataFallbackStore.enrichDesignations(allDesigs || [])) {
+        desigCodeMap.set(d.id, d.designation_code || null);
       }
 
       // Fetch tagged branches from staff_branch_assignments if table exists
@@ -569,9 +1713,21 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
       const nextStaffEmployeeId = await computeNextStaffEmployeeId();
 
       const enriched = (staffList || []).map((s: any) => {
-        const tagged = taggedBranchesByStaff.get(s.id) || (s.branch_id && s.branches ? [{ id: s.branch_id, name: s.branches.name }] : []);
+        const tagged =
+          taggedBranchesByStaff.get(s.id) ||
+          (s.branch_id && s.branches
+            ? [{ id: s.branch_id, name: s.branches.name, branch_code: s.branches.branch_code }]
+            : []);
+        const enrichedDesig = s.designations
+          ? {
+              ...s.designations,
+              designation_code:
+                s.designations.designation_code ?? desigCodeMap.get(s.designations.id) ?? null,
+            }
+          : null;
         return {
           ...s,
+          designations: enrichedDesig,
           email: emailMap.get(s.id) || 'unknown@postex.pk',
           tagged_branches: tagged,
           branch_ids: tagged.map((b) => b.id),
@@ -626,7 +1782,7 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
       }
 
       const requiresZone = ['zonal_hr_manager', 'central_hr', 'branch_manager'].includes(roleRow.name);
-      if (requiresZone && (!zone_id || !String(zone_id).trim())) {
+      if (requiresZone && 'zone_id' in (req.body || {}) && (!zone_id || !String(zone_id).trim())) {
         return res.status(400).json({
           success: false,
           error: `Zone Assignment is required for the ${roleRow.name.replace(/_/g, ' ')} role.`,
@@ -662,7 +1818,11 @@ export function createSuperAdminRouter(supabaseAdmin: SupabaseClient) {
         : [];
       const uniqueBranchIds = Array.from(new Set(rawBranchIds));
 
-      if (roleRow.name === 'branch_manager' && uniqueBranchIds.length === 0) {
+      if (
+        roleRow.name === 'branch_manager' &&
+        ('branch_ids' in (req.body || {}) || 'branch_id' in (req.body || {})) &&
+        uniqueBranchIds.length === 0
+      ) {
         return res.status(400).json({
           success: false,
           error: 'At least one branch must be selected for a Branch Manager.',

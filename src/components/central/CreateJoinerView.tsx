@@ -8,7 +8,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { PageHeader, Button, Card, Input, Select, Textarea, Badge } from '../ui';
-import { toTitleCase } from '../../lib/formatText';
+import { toTitleCase, formatCodeName, formatEntityName } from '../../lib/formatText';
 
 interface CreateJoinerViewProps {
   joinerForm: {
@@ -255,7 +255,7 @@ export function CreateJoinerView({
                   <div className="mt-2 text-caption bg-white/80 p-2.5 rounded-lg border border-amber-200 text-amber-900 font-mono space-y-0.5">
                     <p><strong>Name:</strong> {toTitleCase(duplicateWarning.candidate?.full_name || '')}</p>
                     <p><strong>Joining ID:</strong> {duplicateWarning.candidate?.joining_id}</p>
-                    <p><strong>Zone/Branch:</strong> {duplicateWarning.candidate?.zone_name} / {duplicateWarning.candidate?.branch_name}</p>
+                    <p><strong>Zone/Branch:</strong> {formatEntityName(duplicateWarning.candidate?.zone_name)} / {formatEntityName(duplicateWarning.candidate?.branch_name)}</p>
                     <p><strong>Registered:</strong> {duplicateWarning.candidate?.created_at ? new Date(duplicateWarning.candidate.created_at).toLocaleDateString() : 'N/A'}</p>
                   </div>
                 </div>
@@ -324,13 +324,16 @@ export function CreateJoinerView({
                 id="joiner-designation-select"
                 label="Designation Applied For *"
                 required
+                searchable
                 value={joinerForm.designation_id}
                 onChange={(e) => setJoinerForm({ ...joinerForm, designation_id: e.target.value })}
                 options={[
-                  { value: '', label: 'Select Designation...' },
+                  { value: '', label: '- Select -' },
                   ...formOptions.designations.map((d: any) => ({
                     value: d.id,
-                    label: `${d.name}${d.departments ? ` (${d.departments.name})` : ''}${d.employment_category ? ` — ${d.employment_category}` : ''}`,
+                    label: `${formatCodeName(d.designation_code, d.name)}${
+                      d.departments ? ` (${formatCodeName(d.departments.department_code, d.departments.name)})` : ''
+                    }${d.employment_category ? ` — ${d.employment_category}` : ''}`,
                   })),
                 ]}
               />
@@ -341,13 +344,14 @@ export function CreateJoinerView({
                 id="joiner-branch-select"
                 label={`Branch / Hub (Scoped to ${zoneName}) *`}
                 required
+                searchable
                 value={joinerForm.branch_id}
                 onChange={(e) => setJoinerForm({ ...joinerForm, branch_id: e.target.value })}
                 options={[
-                  { value: '', label: 'Select Branch...' },
-                  ...formOptions.branches.map((b) => ({
+                  { value: '', label: '- Select -' },
+                  ...formOptions.branches.map((b: any) => ({
                     value: b.id,
-                    label: b.name,
+                    label: formatCodeName(b.branch_code, b.name),
                   })),
                 ]}
               />

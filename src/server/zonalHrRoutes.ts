@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import { validateStatusTransition } from './workflowStateMachine';
 import { notificationService } from './notificationService';
 import { dataRetentionService } from './dataRetentionStore';
+import { masterDataFallbackStore } from './masterDataFallbackStore';
 
 export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
   const router = Router();
@@ -385,7 +386,7 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
           supabaseAdmin.from('departments').select('id, name, department_code, department_category, is_active').order('name'),
           supabaseAdmin
             .from('designations')
-            .select('id, name, department_id, employment_category, is_active, departments(id, name)')
+            .select('*, departments(id, name, department_code)')
             .order('name'),
           computeNextStaffEmployeeId(),
         ]);
@@ -395,7 +396,7 @@ export function createZonalHrRouter(supabaseAdmin: SupabaseClient) {
         staff: enriched,
         branches: branches || [],
         departments: departments || [],
-        designations: designations || [],
+        designations: masterDataFallbackStore.enrichDesignations(designations || []),
         nextStaffEmployeeId,
       });
     } catch (err: unknown) {

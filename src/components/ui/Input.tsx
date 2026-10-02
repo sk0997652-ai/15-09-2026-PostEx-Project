@@ -4,6 +4,7 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   label?: string;
   error?: string;
   hint?: string;
+  helperText?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
 }
@@ -14,6 +15,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       label,
       error,
       hint,
+      helperText,
       leftIcon,
       rightIcon,
       id,
@@ -24,6 +26,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     ref
   ) => {
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+    const resolvedHint = hint ?? helperText;
 
     const borderFocusClasses = error
       ? 'border-rose-300 focus:border-rose-600 focus:ring-rose-600'
@@ -59,8 +62,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         </div>
         {error ? (
           <p className="text-caption font-medium text-rose-600">{error}</p>
-        ) : hint ? (
-          <p className="text-caption text-slate-500">{hint}</p>
+        ) : resolvedHint ? (
+          <p className="text-caption text-slate-500">{resolvedHint}</p>
         ) : null}
       </div>
     );

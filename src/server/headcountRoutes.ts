@@ -11,6 +11,7 @@
 import { Router } from 'express';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { dataRetentionService } from './dataRetentionStore';
+import { masterDataFallbackStore } from './masterDataFallbackStore';
 
 export interface HeadcountStaffContext {
   id: string;
@@ -315,7 +316,7 @@ export function createHeadcountRouter(supabaseAdmin: SupabaseClient) {
           branchesQuery,
           supabaseAdmin
             .from('designations')
-            .select('id, name, department_id, employment_category, is_active, departments(id, name, department_code, department_category)')
+            .select('*, departments(id, name, department_code, department_category)')
             .order('name'),
         ]);
 
@@ -328,7 +329,7 @@ export function createHeadcountRouter(supabaseAdmin: SupabaseClient) {
         user,
         zones: zones || [],
         branches: branches || [],
-        designations: designations || [],
+        designations: masterDataFallbackStore.enrichDesignations(designations || []),
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -414,12 +415,17 @@ export function createHeadcountRouter(supabaseAdmin: SupabaseClient) {
         const activeCount = activeCountMap.get(row.designation_id) || 0;
         const vacancy = Math.max(0, approvedCount - activeCount);
         const creator = row.created_by ? staffMap.get(row.created_by) : null;
+        const resolvedDesigCode =
+          desig?.designation_code ??
+          masterDataFallbackStore.getDesignationCode(row.designation_id) ??
+          null;
 
         return {
           id: row.id,
           branch_id: row.branch_id,
           designation_id: row.designation_id,
           designation_name: desig?.name || 'Unknown Designation',
+          designation_code: resolvedDesigCode,
           employment_category: desig?.employment_category || null,
           department_id: desig?.department_id || null,
           department_name: dept?.name || null,

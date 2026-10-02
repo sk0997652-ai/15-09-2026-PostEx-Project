@@ -22,6 +22,40 @@ export interface DashboardMetrics {
   totalBranches: number;
 }
 
+export type MasterDataEntityType = 'zones' | 'cities' | 'branches' | 'departments' | 'designations';
+
+export interface BulkImportPreviewRow {
+  rowNumber: number;
+  code: string;
+  name: string;
+  parentCodes?: string;
+  display: string;
+  status: 'Valid' | 'Duplicate' | 'Error';
+  action: 'create' | 'update' | 'skip' | 'error';
+  message?: string;
+  existingId?: string | null;
+  error?: string;
+}
+
+export interface BulkImportResponse {
+  success: boolean;
+  entity: MasterDataEntityType;
+  mode: 'upsert' | 'update' | 'skip';
+  dryRun: boolean;
+  summary: {
+    totalRows: number;
+    valid: number;
+    duplicate: number;
+    added: number;
+    created: number;
+    updated: number;
+    skipped: number;
+    failed: number;
+    errors: number;
+  };
+  rows: BulkImportPreviewRow[];
+}
+
 export interface OrgStructure {
   zones: Array<{
     id: string;
@@ -31,18 +65,29 @@ export interface OrgStructure {
     is_active?: boolean;
     created_at: string;
   }>;
+  cities?: Array<{
+    id: string;
+    name: string;
+    city_code?: string;
+    zone_id?: string | null;
+    is_active?: boolean;
+    created_at?: string;
+    zones?: { id: string; name: string; zone_code?: string } | null;
+  }>;
   branches: Array<{
     id: string;
     name: string;
     branch_code?: string;
     zone_id: string;
+    city_id?: string | null;
     branch_type?: 'Hub' | 'Sub-Hub' | 'Warehouse' | 'Franchise' | string;
     city_address?: string;
     address: string | null;
     contact_number?: string | null;
     is_active?: boolean;
     created_at?: string;
-    zones?: { name: string };
+    zones?: { id?: string; name: string; zone_code?: string };
+    cities?: { id: string; name: string; city_code?: string } | null;
   }>;
   departments: Array<{
     id: string;
@@ -55,11 +100,12 @@ export interface OrgStructure {
   designations: Array<{
     id: string;
     name: string;
+    designation_code?: string | null;
     department_id: string;
     employment_category?: 'Rider' | 'In-House Staff' | string;
     is_active?: boolean;
     created_at?: string;
-    departments?: { name: string };
+    departments?: { id?: string; name: string; department_code?: string };
   }>;
   roles: Array<{ id: string; name: string }>;
 }
@@ -82,10 +128,10 @@ export interface StaffUserItem {
   must_change_password: boolean;
   created_at: string;
   roles?: { name: string };
-  zones?: { name: string };
-  branches?: { name: string };
+  zones?: { id?: string; name: string; zone_code?: string };
+  branches?: { id?: string; name: string; branch_code?: string };
   departments?: { id: string; name: string; department_code?: string } | null;
-  designations?: { id: string; name: string; employment_category?: string; department_id?: string } | null;
+  designations?: { id: string; name: string; designation_code?: string | null; employment_category?: string; department_id?: string } | null;
 }
 
 export interface PermissionOverrideItem {
@@ -157,7 +203,7 @@ export const superAdminApi = {
     return data;
   },
 
-  async createOrgEntity(entity: 'zones' | 'branches' | 'departments' | 'designations', payload: any) {
+  async createOrgEntity(entity: MasterDataEntityType, payload: any) {
     const headers = { 'Content-Type': 'application/json', ...(await getAuthHeader()) };
     const res = await fetch(`/api/admin/org/${entity}`, {
       method: 'POST',
@@ -171,7 +217,7 @@ export const superAdminApi = {
     return data.data;
   },
 
-  async updateOrgEntity(entity: 'zones' | 'branches' | 'departments' | 'designations', id: string, payload: any) {
+  async updateOrgEntity(entity: MasterDataEntityType, id: string, payload: any) {
     const headers = { 'Content-Type': 'application/json', ...(await getAuthHeader()) };
     const res = await fetch(`/api/admin/org/${entity}/${id}`, {
       method: 'PUT',
@@ -185,7 +231,7 @@ export const superAdminApi = {
     return data.data;
   },
 
-  async deleteOrgEntity(entity: 'zones' | 'branches' | 'departments' | 'designations', id: string, reason?: string) {
+  async deleteOrgEntity(entity: MasterDataEntityType, id: string, reason?: string) {
     const headers = await getAuthHeader();
     const res = await fetch(`/api/admin/org/${entity}/${id}`, {
       method: 'DELETE',
@@ -200,6 +246,50 @@ export const superAdminApi = {
       throw new Error(data.error || `Failed to delete ${entity}`);
     }
     return true;
+  },
+
+  async bulkValidateMasterData(payload: {
+    entity: MasterDataEntityType;
+    rows: any[];
+    mode?: 'upsert' | 'update' | 'skip';
+    defaultZoneId?: string | null;
+    defaultDepartmentId?: string | null;
+  }): Promise<BulkImportResponse> {
+    const headers = { 'Content-Type': 'application/json', ...(await getAuthHeader()) };
+    const res = await fetch(`/api/admin/org/${payload.entity}/bulk-validate`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ ...payload, dryRun: true }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || `Failed to validate ${payload.entity}`);
+    }
+    return data;
+  },
+
+  async bulkImportMasterData(payload: {
+    entity: MasterDataEntityType;
+    rows: any[];
+    mode?: 'upsert' | 'update' | 'skip';
+    dryRun?: boolean;
+    defaultZoneId?: string | null;
+    defaultDepartmentId?: string | null;
+  }): Promise<BulkImportResponse> {
+    const headers = { 'Content-Type': 'application/json', ...(await getAuthHeader()) };
+    const endpoint = payload.dryRun
+      ? `/api/admin/org/${payload.entity}/bulk-validate`
+      : `/api/admin/org/${payload.entity}/bulk-import`;
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || `Failed to bulk import ${payload.entity}`);
+    }
+    return data;
   },
 
   async getNextStaffEmployeeId(): Promise<string> {

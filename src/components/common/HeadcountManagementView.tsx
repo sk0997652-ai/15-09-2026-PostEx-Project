@@ -33,7 +33,7 @@ import {
   Select,
 } from '../ui';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
-import { toTitleCase } from '../../lib/formatText';
+import { toTitleCase, formatCodeName, formatEntityName } from '../../lib/formatText';
 
 export interface HeadcountManagementViewProps {
   roleContext?: string;
@@ -389,7 +389,9 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
         const q = entrySearch.trim().toLowerCase();
         const matches =
           entry.designation_name.toLowerCase().includes(q) ||
+          (entry.designation_code || '').toLowerCase().includes(q) ||
           (entry.department_name || '').toLowerCase().includes(q) ||
+          (entry.department_code || '').toLowerCase().includes(q) ||
           (entry.employment_category || '').toLowerCase().includes(q);
         if (!matches) return false;
       }
@@ -484,13 +486,14 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
               <Select
                 id="headcount-zone-filter"
                 label="Filter by Zone"
+                searchable
                 value={selectedZoneId}
                 onChange={(e) => handleZoneFilterChange(e.target.value)}
               >
                 <option value="all">All Operating Zones ({zones.length})</option>
                 {zones.map((z) => (
                   <option key={z.id} value={z.id}>
-                    {z.name} {z.zone_code ? `(${z.zone_code})` : ''}
+                    {formatCodeName(z.zone_code, z.name)}
                   </option>
                 ))}
               </Select>
@@ -501,6 +504,7 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
             <Select
               id="headcount-branch-select"
               label={userContext?.role === 'branch_manager' ? 'Assigned Branch' : 'Select Branch within Your Access Scope'}
+              searchable={userContext?.role !== 'branch_manager'}
               value={selectedBranchId}
               onChange={(e) => setSelectedBranchId(e.target.value)}
               disabled={userContext?.role === 'branch_manager' || filteredBranches.length === 0}
@@ -510,10 +514,9 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
               ) : (
                 filteredBranches.map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.name}
-                    {b.branch_code ? ` (${b.branch_code})` : ''}
+                    {formatCodeName(b.branch_code, b.name)}
                     {b.branch_type ? ` · ${b.branch_type}` : ''}
-                    {b.zones?.name ? ` — ${b.zones.name}` : ''}
+                    {b.zones?.name ? ` — ${formatCodeName(b.zones.zone_code, b.zones.name)}` : ''}
                   </option>
                 ))
               )}
@@ -525,20 +528,16 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
               <div className="text-right space-y-0.5">
                 <div className="font-semibold text-slate-800 flex items-center justify-end gap-1.5">
                   <Building2 className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>{selectedBranchInfo.name}</span>
+                  <span>{formatEntityName(selectedBranchInfo.name)}</span>
                 </div>
                 <div className="text-tag text-slate-500">
-                  <span>{selectedBranchInfo.branch_code || 'No Code'}</span>
                   {selectedBranchInfo.branch_type && (
-                    <>
-                      <span aria-hidden="true"> · </span>
-                      <span>{selectedBranchInfo.branch_type}</span>
-                    </>
+                    <span>{selectedBranchInfo.branch_type}</span>
                   )}
                   {selectedBranchInfo.zones?.name && (
                     <>
-                      <span aria-hidden="true"> · </span>
-                      <span>{selectedBranchInfo.zones.name}</span>
+                      {selectedBranchInfo.branch_type && <span aria-hidden="true"> · </span>}
+                      <span>{formatEntityName(selectedBranchInfo.zones.name)}</span>
                     </>
                   )}
                 </div>
@@ -654,9 +653,15 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
               filteredEntries.map((entry) => (
                 <TableRow key={entry.id} data-designation-id={entry.designation_id}>
                   <TableCell mobileRole="primaryFull">
-                    <div className="font-semibold text-slate-900 text-body">{entry.designation_name}</div>
+                    <div className="font-semibold text-slate-900 text-body">
+                      {formatEntityName(entry.designation_name)}
+                    </div>
                     <div className="text-caption text-slate-500 mt-0.5 flex items-center gap-1.5">
-                      <span>{entry.department_name || 'Unassigned Department'}</span>
+                      <span>
+                        {entry.department_name
+                          ? formatEntityName(entry.department_name)
+                          : 'Unassigned Department'}
+                      </span>
                       {entry.employment_category && (
                         <>
                           <span aria-hidden="true">·</span>
@@ -782,15 +787,18 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
             id="headcount-modal-designation-select"
             label="Designation"
             required
+            searchable={modalMode !== 'edit'}
             disabled={modalMode === 'edit'}
             value={formDesignationId}
             onChange={(e) => handleDesignationSelectChange(e.target.value)}
           >
-            <option value="">Select Designation...</option>
+            <option value="">- Select -</option>
             {designations.map((d) => (
               <option key={d.id} value={d.id}>
-                {d.name}
-                {d.departments?.name ? ` (${d.departments.name})` : ''}
+                {formatCodeName(d.designation_code, d.name)}
+                {d.departments?.name
+                  ? ` (${formatCodeName(d.departments.department_code, d.departments.name)})`
+                  : ''}
                 {d.employment_category ? ` — ${d.employment_category}` : ''}
               </option>
             ))}

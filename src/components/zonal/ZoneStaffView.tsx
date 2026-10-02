@@ -23,11 +23,11 @@ import {
   TablePagination,
   TableToolbar,
 } from '../ui';
-import { toTitleCase } from '../../lib/formatText';
+import { toTitleCase, formatCodeName, formatEntityName } from '../../lib/formatText';
 
 interface ZoneStaffViewProps {
   staffList: ZonalStaffProfile[];
-  zoneBranches: Array<{ id: string; name: string }>;
+  zoneBranches: Array<{ id: string; name: string; branch_code?: string }>;
   zoneName: string;
   onOpenAddStaff: () => void;
   onOpenEditStaff: (staff: ZonalStaffProfile) => void;
@@ -144,7 +144,10 @@ export function ZoneStaffView({
             },
             options: [
               { value: '', label: 'All Branches' },
-              ...zoneBranches.map((b) => ({ value: b.id, label: b.name })),
+              ...zoneBranches.map((b) => ({
+                value: b.id,
+                label: formatCodeName(b.branch_code, b.name),
+              })),
             ],
           },
         ]}
@@ -237,10 +240,14 @@ export function ZoneStaffView({
                         {staff.staff_employee_id || '—'}
                       </div>
                       <div className="text-body text-slate-700">
-                        {staff.designations?.name || 'No Designation'}
+                        {staff.designations
+                          ? formatEntityName(staff.designations.name)
+                          : 'No Designation'}
                       </div>
                       <div className="text-caption text-slate-400">
-                        {staff.departments?.name || 'No Department'}
+                        {staff.departments
+                          ? formatEntityName(staff.departments.name)
+                          : 'No Department'}
                       </div>
                     </TableCell>
                     <TableCell mobileRole="field" mobileLabel="Assigned Role">
@@ -264,8 +271,10 @@ export function ZoneStaffView({
                       {taggedList.length > 0 ? (
                         <span>
                           {taggedList.length === 1
-                            ? taggedList[0].name
-                            : `${taggedList.length} branches: ${taggedList.map((b) => b.name).join(', ')}`}
+                            ? formatEntityName(taggedList[0].name)
+                            : `${taggedList.length} branches: ${taggedList
+                                .map((b) => formatEntityName(b.name))
+                                .join(', ')}`}
                         </span>
                       ) : (
                         <span className="text-slate-400 italic">Zone-Wide (Central)</span>

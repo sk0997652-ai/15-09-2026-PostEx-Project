@@ -69,8 +69,51 @@ export type BranchTuple = [string, string, string]; // [branchName, zoneName, hr
 export type TaskTuple = [string, number, string]; // [taskName, targetDay, shortLabel]
 export type DoneValue = number | 'x' | null;
 
+export type WorkflowTaskStatus = 'pending' | 'submitted' | 'verified' | 'returned' | 'not_needed';
+
+export interface JoinerTaskHistoryEntry {
+  id: string;
+  action: 'submitted' | 'resubmitted' | 'verified' | 'returned';
+  actorName: string;
+  actorRole: string;
+  timestamp: string;
+  note?: string;
+  evidenceReference?: string;
+  evidenceFileName?: string;
+  returnReason?: string;
+}
+
+export interface JoinerTaskDetail {
+  taskIndex: number;
+  taskKey: string;
+  taskName: string;
+  shortLabel: string;
+  targetDay: number;
+  status: WorkflowTaskStatus;
+  assignedAt: string;
+  dueAt: string;
+  completedDayOffset?: number | null;
+  submittedAt?: string;
+  submittedByName?: string;
+  submittedByRole?: string;
+  verifiedAt?: string;
+  verifiedByName?: string;
+  verifiedByRole?: string;
+  returnedAt?: string;
+  returnedByName?: string;
+  returnedByRole?: string;
+  returnReason?: string;
+  completionNote?: string;
+  evidenceReference?: string;
+  evidenceFileName?: string;
+  evidenceUrl?: string;
+  history: JoinerTaskHistoryEntry[];
+}
+
 export interface JoinerRecord {
   id: string;
+  employeeCode?: string;
+  joinedDate?: string;
   n: string;
   d: string;
   hasMachineAccess: boolean;
@@ -78,6 +121,7 @@ export interface JoinerRecord {
   ago: number;
   done: DoneValue[];
   hr: string;
+  taskDetails?: JoinerTaskDetail[];
 }
 
 export interface ExitRecord {
@@ -217,8 +261,10 @@ function buildInitialSeedState(): HrPortalState {
       const dd = t + Math.round(rnd() * 8);
       return dd <= ago ? dd : null;
     });
-    return {
+    const baseJoiner: JoinerRecord = {
       id: `joiner-${i + 1}`,
+      employeeCode: `PX-JNR-${1001 + i}`,
+      joinedDate: new Date(Date.now() - ago * 86400000).toISOString().slice(0, 10),
       n: FIRST_NAMES[i % 10] + ' ' + LAST_NAMES[(i * 3 + 1) % 6],
       d: d[0],
       hasMachineAccess: Boolean(d[1]),
@@ -227,6 +273,7 @@ function buildInitialSeedState(): HrPortalState {
       done,
       hr: b[2],
     };
+    return hydrateJoinerRecord(baseJoiner, INITIAL_TASKS, i);
   });
 
   const exits: ExitRecord[] = Array.from({ length: 8 }, (_, i) => {
@@ -348,6 +395,9 @@ export function getHrPortalState(): HrPortalState {
             ? ex.checklist
             : parsed.ecfItems.map((_, idx) => idx < (ex.k ?? 0)),
         }));
+        parsed.joiners = parsed.joiners.map((j, idx) =>
+          hydrateJoinerRecord(j, parsed.tasks || INITIAL_TASKS, idx)
+        );
         parsed.auditLogs = Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [];
         parsed.approvedHeadcountOverrides = parsed.approvedHeadcountOverrides || {};
         memoryState = parsed;
@@ -817,7 +867,25 @@ export function exportRowsToExcel(
   filename: string,
   sheetName: string,
   rows: Record<string, any>[],
-  textColumns: string[] = ['CNIC*', 'CNIC', 'Masked CNIC', 'Contact Number*', 'Contact Number', 'Mobile']
+  textColumns: string[] = [
+    'CNIC*',
+    'CNIC',
+    'Masked CNIC',
+    'Contact Number*',
+    'Contact Number',
+    'Mobile',
+    'Code',
+    'Zone Code*',
+    'Zone Code',
+    'City Code*',
+    'City Code',
+    'Department Code*',
+    'Department Code',
+    'Designation Code*',
+    'Designation Code',
+    'Branch Code*',
+    'Branch Code',
+  ]
 ): void {
   const ws = XLSX.utils.json_to_sheet(rows);
   const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
@@ -827,7 +895,11 @@ export function exportRowsToExcel(
   for (let C = range.s.c; C <= range.e.c; ++C) {
     const headerAddr = XLSX.utils.encode_cell({ r: 0, c: C });
     const headerCell = ws[headerAddr];
-    if (headerCell && textColumns.includes(String(headerCell.v).trim())) {
+    const headerName = headerCell ? String(headerCell.v).trim() : '';
+    if (
+      headerName &&
+      (textColumns.includes(headerName) || headerName.toLowerCase().includes('code'))
+    ) {
       textColIndices.add(C);
     }
   }
@@ -855,4 +927,614 @@ export function exportRowsToExcel(
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
   XLSX.writeFile(wb, filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`);
+}
+
+export function exportRowsToCsv(filename: string, rows: Record<string, any>[]): void {
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const csv = XLSX.utils.sheet_to_csv(ws);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename.endsWith('.csv') ? filename : `${filename}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export async function readExcelFileRows(file: File): Promise<Record<string, string>[]> {
+  const buffer = await file.arrayBuffer();
+  const wb = XLSX.read(buffer, { type: 'array', raw: false });
+  const firstSheetName = wb.SheetNames[0];
+  if (!firstSheetName) return [];
+  const ws = wb.Sheets[firstSheetName];
+  const rawRows = XLSX.utils.sheet_to_json<Record<string, any>>(ws, {
+    defval: '',
+    raw: false,
+  });
+  return rawRows.map((row) => {
+    const trimmedRow: Record<string, string> = {};
+    for (const [k, v] of Object.entries(row || {})) {
+      trimmedRow[String(k).trim()] = String(v ?? '').trim();
+    }
+    return trimmedRow;
+  });
+}
+
+// ============================================================================
+// Joiner Operational Workflow Tasks & Verification Helpers
+// ============================================================================
+
+export function makeTaskKey(taskName: string, shortLabel: string, idx: number): string {
+  const base = (shortLabel || taskName || `task_${idx}`)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '');
+  return base || `task_${idx}`;
+}
+
+function buildDefaultEvidenceRef(shortLabel: string, empCode: string, joinerName: string, idx: number): string {
+  const low = shortLabel.toLowerCase();
+  const slug = joinerName.toLowerCase().replace(/\s+/g, '.');
+  if (low.includes('code')) return empCode;
+  if (low.includes('machine')) return `BIO-${8200 + idx}`;
+  if (low.includes('login')) return `${slug}@postex.pk`;
+  if (low.includes('sim')) return `0300-${String(4100000 + idx * 37).slice(0, 7)}`;
+  if (low.includes('id')) return `IDC-2026-${String(1001 + idx)}`;
+  if (low.includes('doc')) return `TCS-HO-${String(99100 + idx * 13)}`;
+  return `REF-${empCode}-${idx + 1}`;
+}
+
+export function hydrateJoinerRecord(
+  joiner: JoinerRecord,
+  tasks: TaskTuple[],
+  seedIdx = 0
+): JoinerRecord {
+  const numericIdx = Number(String(joiner.id || '').replace(/\D+/g, '')) || seedIdx + 1;
+  const employeeCode = joiner.employeeCode || `PX-JNR-${1000 + numericIdx}`;
+  const joinedMs = Date.now() - Math.max(0, joiner.ago) * 86400000;
+  const joinedDate = joiner.joinedDate || new Date(joinedMs).toISOString().slice(0, 10);
+  const existingDetails = Array.isArray(joiner.taskDetails) ? joiner.taskDetails : [];
+
+  const nextTaskDetails: JoinerTaskDetail[] = tasks.map(([taskName, targetDay, shortLabel], k) => {
+    const taskKey = makeTaskKey(taskName, shortLabel, k);
+    const existing = existingDetails.find(
+      (td) => td.taskIndex === k || td.taskKey === taskKey || td.taskName === taskName
+    );
+    const assignedAt = new Date(joinedMs).toISOString();
+    const dueAt = new Date(joinedMs + targetDay * 86400000).toISOString();
+
+    if (existing) {
+      return {
+        ...existing,
+        taskIndex: k,
+        taskKey,
+        taskName,
+        shortLabel,
+        targetDay,
+        assignedAt: existing.assignedAt || assignedAt,
+        dueAt: existing.dueAt || dueAt,
+        history: Array.isArray(existing.history) ? existing.history : [],
+      };
+    }
+
+    const rawDone = joiner.done[k];
+    if (rawDone === 'x') {
+      return {
+        taskIndex: k,
+        taskKey,
+        taskName,
+        shortLabel,
+        targetDay,
+        status: 'not_needed',
+        assignedAt,
+        dueAt,
+        completedDayOffset: null,
+        history: [],
+      };
+    }
+
+    if (typeof rawDone === 'number') {
+      const doneMs = joinedMs + Math.min(rawDone, joiner.ago) * 86400000;
+      const submitIso = new Date(Math.max(joinedMs + 3600000, doneMs - 7200000)).toISOString();
+      const verifyIso = new Date(doneMs).toISOString();
+      const ref = buildDefaultEvidenceRef(shortLabel, employeeCode, joiner.n, numericIdx);
+      return {
+        taskIndex: k,
+        taskKey,
+        taskName,
+        shortLabel,
+        targetDay,
+        status: 'verified',
+        assignedAt,
+        dueAt,
+        completedDayOffset: rawDone,
+        submittedAt: submitIso,
+        submittedByName: joiner.hr,
+        submittedByRole: 'central_hr',
+        verifiedAt: verifyIso,
+        verifiedByName: `${joiner.b[1]} HR Manager`,
+        verifiedByRole: 'zonal_hr',
+        completionNote: `${taskName} completed and verified for ${joiner.n}.`,
+        evidenceReference: ref,
+        evidenceFileName: `${taskKey}_${employeeCode.toLowerCase()}.pdf`,
+        history: [
+          {
+            id: `hist-sub-${joiner.id}-${k}`,
+            action: 'submitted',
+            actorName: joiner.hr,
+            actorRole: 'Central HR',
+            timestamp: submitIso,
+            note: `${taskName} submitted with reference ${ref}.`,
+            evidenceReference: ref,
+            evidenceFileName: `${taskKey}_${employeeCode.toLowerCase()}.pdf`,
+          },
+          {
+            id: `hist-ver-${joiner.id}-${k}`,
+            action: 'verified',
+            actorName: `${joiner.b[1]} HR Manager`,
+            actorRole: 'Zonal HR',
+            timestamp: verifyIso,
+            note: 'Verified against onboarding documentation.',
+            evidenceReference: ref,
+          },
+        ],
+      };
+    }
+
+    return {
+      taskIndex: k,
+      taskKey,
+      taskName,
+      shortLabel,
+      targetDay,
+      status: 'pending',
+      assignedAt,
+      dueAt,
+      completedDayOffset: null,
+      history: [],
+    };
+  });
+
+  // Synchronize done[] array so ONLY 'verified' tasks have numeric completion offsets
+  const syncedDone: DoneValue[] = nextTaskDetails.map((td, k) => {
+    if (td.status === 'not_needed') return 'x';
+    if (td.status === 'verified') {
+      return typeof td.completedDayOffset === 'number'
+        ? td.completedDayOffset
+        : typeof joiner.done[k] === 'number'
+        ? (joiner.done[k] as number)
+        : joiner.ago;
+    }
+    return null;
+  });
+
+  return {
+    ...joiner,
+    employeeCode,
+    joinedDate,
+    done: syncedDone,
+    taskDetails: nextTaskDetails,
+  };
+}
+
+export function formatRoleDisplayName(roleRaw: string): string {
+  const r = (roleRaw || '').toLowerCase();
+  if (r.includes('super')) return 'Super Admin';
+  if (r.includes('zonal')) return 'Zonal HR';
+  if (r.includes('central')) return 'Central HR';
+  if (r.includes('branch')) return 'Branch Manager';
+  return roleRaw || 'HR Staff';
+}
+
+export function canRoleVerifyWorkflowTask(roleRaw: string): boolean {
+  const r = (roleRaw || '').toLowerCase();
+  return r === 'super_admin' || r === 'zonal_hr' || r === 'zonal_hr_manager' || r === 'branch_manager';
+}
+
+export function submitJoinerWorkflowTask(params: {
+  joinerId: string;
+  taskIndex: number;
+  evidenceReference: string;
+  completionNote?: string;
+  evidenceFileName?: string;
+  evidenceUrl?: string;
+  actorName: string;
+  actorRole: string;
+  serverTimestamp?: string;
+}): { success: boolean; error?: string; updatedTask?: JoinerTaskDetail } {
+  const trimmedRef = (params.evidenceReference || '').trim();
+  const trimmedFile = (params.evidenceFileName || '').trim();
+  const trimmedNote = (params.completionNote || '').trim();
+
+  if (!trimmedRef && !trimmedFile) {
+    return {
+      success: false,
+      error: 'Evidence Reference / ID or attached proof is required before submitting a task.',
+    };
+  }
+
+  const current = getHrPortalState();
+  const joiner = current.joiners.find((j) => j.id === params.joinerId);
+  if (!joiner) {
+    return { success: false, error: 'Joiner record not found.' };
+  }
+
+  const hydrated = hydrateJoinerRecord(joiner, current.tasks);
+  const existingTask = hydrated.taskDetails?.[params.taskIndex];
+  if (!existingTask) {
+    return { success: false, error: 'Onboarding task not found.' };
+  }
+
+  if (existingTask.status === 'not_needed') {
+    return { success: false, error: 'This task is marked Not Needed for this designation.' };
+  }
+
+  if (existingTask.status === 'verified') {
+    return { success: false, error: 'This task has already been verified.' };
+  }
+
+  const nowIso = params.serverTimestamp || new Date().toISOString();
+  const isResubmit = existingTask.status === 'returned';
+  const histAction: JoinerTaskHistoryEntry['action'] = isResubmit ? 'resubmitted' : 'submitted';
+  const auditAction = isResubmit ? 'workflow_task_resubmitted' : 'workflow_task_submitted';
+
+  const historyEntry: JoinerTaskHistoryEntry = {
+    id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    action: histAction,
+    actorName: params.actorName,
+    actorRole: formatRoleDisplayName(params.actorRole),
+    timestamp: nowIso,
+    note: trimmedNote || `${existingTask.taskName} submitted for verification.`,
+    evidenceReference: trimmedRef || undefined,
+    evidenceFileName: trimmedFile || undefined,
+  };
+
+  const nextTask: JoinerTaskDetail = {
+    ...existingTask,
+    status: 'submitted', // Strictly 'submitted', NEVER 'verified' directly!
+    completedDayOffset: null,
+    submittedAt: nowIso,
+    submittedByName: params.actorName,
+    submittedByRole: params.actorRole,
+    completionNote: trimmedNote,
+    evidenceReference: trimmedRef,
+    evidenceFileName: trimmedFile || existingTask.evidenceFileName,
+    evidenceUrl: params.evidenceUrl || existingTask.evidenceUrl,
+    history: [historyEntry, ...(existingTask.history || [])],
+  };
+
+  updateHrPortalState((prev) => {
+    const nextJoiners = prev.joiners.map((item, idx) => {
+      if (item.id !== params.joinerId) return item;
+      const h = hydrateJoinerRecord(item, prev.tasks, idx);
+      const updatedDetails = (h.taskDetails || []).map((td, k) =>
+        k === params.taskIndex ? nextTask : td
+      );
+      const updatedDone = [...h.done];
+      updatedDone[params.taskIndex] = null; // Not done until verified
+      return {
+        ...h,
+        done: updatedDone,
+        taskDetails: updatedDetails,
+      };
+    });
+
+    const nextAudit = appendPortalAuditLog(
+      prev,
+      auditAction,
+      'workflow_task',
+      `${hydrated.employeeCode || hydrated.id}:${existingTask.taskKey}`,
+      {
+        joiner_id: hydrated.id,
+        employee_code: hydrated.employeeCode,
+        joiner_name: hydrated.n,
+        branch: hydrated.b[0],
+        zone: hydrated.b[1],
+        task_index: params.taskIndex,
+        task_key: existingTask.taskKey,
+        task_name: existingTask.taskName,
+        previous_status: existingTask.status,
+        new_status: 'submitted',
+        evidence_reference: trimmedRef,
+        evidence_file_name: trimmedFile || null,
+        completion_note: trimmedNote || null,
+        submitted_by: params.actorName,
+        submitted_by_role: formatRoleDisplayName(params.actorRole),
+      }
+    );
+
+    return {
+      ...prev,
+      joiners: nextJoiners,
+      auditLogs: nextAudit,
+    };
+  });
+
+  return { success: true, updatedTask: nextTask };
+}
+
+export function verifyJoinerWorkflowTask(params: {
+  joinerId: string;
+  taskIndex: number;
+  verificationNote?: string;
+  actorName: string;
+  actorRole: string;
+  serverTimestamp?: string;
+}): { success: boolean; error?: string; updatedTask?: JoinerTaskDetail } {
+  if (!canRoleVerifyWorkflowTask(params.actorRole)) {
+    return {
+      success: false,
+      error: 'Central HR cannot self-verify tasks. Verification must be performed by Zonal HR, Branch Manager, or Super Admin.',
+    };
+  }
+
+  const current = getHrPortalState();
+  const joiner = current.joiners.find((j) => j.id === params.joinerId);
+  if (!joiner) {
+    return { success: false, error: 'Joiner record not found.' };
+  }
+
+  const hydrated = hydrateJoinerRecord(joiner, current.tasks);
+  const existingTask = hydrated.taskDetails?.[params.taskIndex];
+  if (!existingTask) {
+    return { success: false, error: 'Onboarding task not found.' };
+  }
+
+  if (existingTask.status !== 'submitted') {
+    return {
+      success: false,
+      error: `Task must be in "Submitted" status with evidence before it can be verified (current status: ${existingTask.status}).`,
+    };
+  }
+
+  const nowIso = params.serverTimestamp || new Date().toISOString();
+  const completedDay = hydrated.ago;
+  const noteText = (params.verificationNote || '').trim() || 'Evidence reviewed and verified.';
+
+  const historyEntry: JoinerTaskHistoryEntry = {
+    id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    action: 'verified',
+    actorName: params.actorName,
+    actorRole: formatRoleDisplayName(params.actorRole),
+    timestamp: nowIso,
+    note: noteText,
+    evidenceReference: existingTask.evidenceReference,
+    evidenceFileName: existingTask.evidenceFileName,
+  };
+
+  const nextTask: JoinerTaskDetail = {
+    ...existingTask,
+    status: 'verified',
+    completedDayOffset: completedDay,
+    verifiedAt: nowIso,
+    verifiedByName: params.actorName,
+    verifiedByRole: params.actorRole,
+    history: [historyEntry, ...(existingTask.history || [])],
+  };
+
+  updateHrPortalState((prev) => {
+    const nextJoiners = prev.joiners.map((item, idx) => {
+      if (item.id !== params.joinerId) return item;
+      const h = hydrateJoinerRecord(item, prev.tasks, idx);
+      const updatedDetails = (h.taskDetails || []).map((td, k) =>
+        k === params.taskIndex ? nextTask : td
+      );
+      const updatedDone = [...h.done];
+      updatedDone[params.taskIndex] = completedDay;
+      return {
+        ...h,
+        done: updatedDone,
+        taskDetails: updatedDetails,
+      };
+    });
+
+    const nextAudit = appendPortalAuditLog(
+      prev,
+      'workflow_task_verified',
+      'workflow_task',
+      `${hydrated.employeeCode || hydrated.id}:${existingTask.taskKey}`,
+      {
+        joiner_id: hydrated.id,
+        employee_code: hydrated.employeeCode,
+        joiner_name: hydrated.n,
+        branch: hydrated.b[0],
+        zone: hydrated.b[1],
+        task_index: params.taskIndex,
+        task_key: existingTask.taskKey,
+        task_name: existingTask.taskName,
+        previous_status: 'submitted',
+        new_status: 'verified',
+        evidence_reference: existingTask.evidenceReference,
+        verification_note: noteText,
+        verified_by: params.actorName,
+        verified_by_role: formatRoleDisplayName(params.actorRole),
+      }
+    );
+
+    return {
+      ...prev,
+      joiners: nextJoiners,
+      auditLogs: nextAudit,
+    };
+  });
+
+  return { success: true, updatedTask: nextTask };
+}
+
+export function returnJoinerWorkflowTask(params: {
+  joinerId: string;
+  taskIndex: number;
+  returnReason: string;
+  actorName: string;
+  actorRole: string;
+  serverTimestamp?: string;
+}): { success: boolean; error?: string; updatedTask?: JoinerTaskDetail } {
+  if (!canRoleVerifyWorkflowTask(params.actorRole)) {
+    return {
+      success: false,
+      error: 'Central HR cannot return submitted tasks. Review requires Zonal HR, Branch Manager, or Super Admin.',
+    };
+  }
+
+  const trimmedReason = (params.returnReason || '').trim();
+  if (!trimmedReason) {
+    return {
+      success: false,
+      error: 'A return reason is required when returning a task for correction.',
+    };
+  }
+
+  const current = getHrPortalState();
+  const joiner = current.joiners.find((j) => j.id === params.joinerId);
+  if (!joiner) {
+    return { success: false, error: 'Joiner record not found.' };
+  }
+
+  const hydrated = hydrateJoinerRecord(joiner, current.tasks);
+  const existingTask = hydrated.taskDetails?.[params.taskIndex];
+  if (!existingTask) {
+    return { success: false, error: 'Onboarding task not found.' };
+  }
+
+  if (existingTask.status !== 'submitted') {
+    return {
+      success: false,
+      error: 'Only tasks in "Submitted" status can be returned for correction.',
+    };
+  }
+
+  const nowIso = params.serverTimestamp || new Date().toISOString();
+
+  const historyEntry: JoinerTaskHistoryEntry = {
+    id: `hist-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    action: 'returned',
+    actorName: params.actorName,
+    actorRole: formatRoleDisplayName(params.actorRole),
+    timestamp: nowIso,
+    returnReason: trimmedReason,
+    note: `Returned for correction: ${trimmedReason}`,
+    evidenceReference: existingTask.evidenceReference,
+  };
+
+  const nextTask: JoinerTaskDetail = {
+    ...existingTask,
+    status: 'returned',
+    completedDayOffset: null,
+    returnedAt: nowIso,
+    returnedByName: params.actorName,
+    returnedByRole: params.actorRole,
+    returnReason: trimmedReason,
+    history: [historyEntry, ...(existingTask.history || [])],
+  };
+
+  updateHrPortalState((prev) => {
+    const nextJoiners = prev.joiners.map((item, idx) => {
+      if (item.id !== params.joinerId) return item;
+      const h = hydrateJoinerRecord(item, prev.tasks, idx);
+      const updatedDetails = (h.taskDetails || []).map((td, k) =>
+        k === params.taskIndex ? nextTask : td
+      );
+      const updatedDone = [...h.done];
+      updatedDone[params.taskIndex] = null;
+      return {
+        ...h,
+        done: updatedDone,
+        taskDetails: updatedDetails,
+      };
+    });
+
+    const nextAudit = appendPortalAuditLog(
+      prev,
+      'workflow_task_returned',
+      'workflow_task',
+      `${hydrated.employeeCode || hydrated.id}:${existingTask.taskKey}`,
+      {
+        joiner_id: hydrated.id,
+        employee_code: hydrated.employeeCode,
+        joiner_name: hydrated.n,
+        branch: hydrated.b[0],
+        zone: hydrated.b[1],
+        task_index: params.taskIndex,
+        task_key: existingTask.taskKey,
+        task_name: existingTask.taskName,
+        previous_status: 'submitted',
+        new_status: 'returned',
+        return_reason: trimmedReason,
+        returned_by: params.actorName,
+        returned_by_role: formatRoleDisplayName(params.actorRole),
+      }
+    );
+
+    return {
+      ...prev,
+      joiners: nextJoiners,
+      auditLogs: nextAudit,
+    };
+  });
+
+  return { success: true, updatedTask: nextTask };
+}
+
+export function syncJoinerTasksFromBackend(serverTasks: any[]): void {
+  if (!Array.isArray(serverTasks) || serverTasks.length === 0) return;
+
+  updateHrPortalState((prev) => {
+    const nextJoiners = prev.joiners.map((item, idx) => {
+      const h = hydrateJoinerRecord(item, prev.tasks, idx);
+      const matchingRows = serverTasks.filter(
+        (row) => row.joiner_id === h.id || (h.employeeCode && row.employee_code === h.employeeCode)
+      );
+      if (matchingRows.length === 0) return h;
+
+      const updatedDetails = (h.taskDetails || []).map((td, k) => {
+        const row = matchingRows.find(
+          (r) => r.task_key === td.taskKey || Number(r.task_index) === k
+        );
+        if (!row) return td;
+        return {
+          ...td,
+          status: (row.status as WorkflowTaskStatus) || td.status,
+          submittedAt: row.submitted_at || td.submittedAt,
+          submittedByName: row.submitted_by_name || td.submittedByName,
+          submittedByRole: row.submitted_by_role || td.submittedByRole,
+          verifiedAt: row.verified_at || td.verifiedAt,
+          verifiedByName: row.verified_by_name || td.verifiedByName,
+          verifiedByRole: row.verified_by_role || td.verifiedByRole,
+          returnedAt: row.returned_at || td.returnedAt,
+          returnedByName: row.returned_by_name || td.returnedByName,
+          returnedByRole: row.returned_by_role || td.returnedByRole,
+          returnReason: row.return_reason || td.returnReason,
+          completionNote: row.completion_note || td.completionNote,
+          evidenceReference: row.evidence_reference || td.evidenceReference,
+          evidenceFileName: row.evidence_file_name || td.evidenceFileName,
+          evidenceUrl: row.evidence_url || td.evidenceUrl,
+        };
+      });
+
+      const updatedDone: DoneValue[] = updatedDetails.map((td, k) => {
+        if (td.status === 'not_needed') return 'x';
+        if (td.status === 'verified') {
+          return typeof td.completedDayOffset === 'number'
+            ? td.completedDayOffset
+            : typeof h.done[k] === 'number'
+            ? (h.done[k] as number)
+            : h.ago;
+        }
+        return null;
+      });
+
+      return {
+        ...h,
+        done: updatedDone,
+        taskDetails: updatedDetails,
+      };
+    });
+
+    return {
+      ...prev,
+      joiners: nextJoiners,
+    };
+  });
 }

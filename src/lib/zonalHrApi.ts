@@ -37,10 +37,10 @@ export interface ZonalStaffProfile {
   must_change_password: boolean;
   created_at: string;
   roles?: { id: string; name: string } | null;
-  zones?: { id: string; name: string } | null;
-  branches?: { id: string; name: string } | null;
+  zones?: { id: string; name: string; zone_code?: string } | null;
+  branches?: { id: string; name: string; branch_code?: string } | null;
   departments?: { id: string; name: string; department_code?: string } | null;
-  designations?: { id: string; name: string; employment_category?: string; department_id?: string } | null;
+  designations?: { id: string; name: string; designation_code?: string | null; employment_category?: string; department_id?: string } | null;
 }
 
 export interface ZonalDepartmentOption {
@@ -54,10 +54,11 @@ export interface ZonalDepartmentOption {
 export interface ZonalDesignationOption {
   id: string;
   name: string;
+  designation_code?: string | null;
   department_id: string;
   employment_category?: string;
   is_active?: boolean;
-  departments?: { id: string; name: string } | null;
+  departments?: { id: string; name: string; department_code?: string } | null;
 }
 
 export interface ZonalCandidate {

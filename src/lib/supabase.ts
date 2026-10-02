@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-const rawUrl = import.meta.env.VITE_SUPABASE_URL;
-const rawAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const rawUrl =
+  import.meta.env?.VITE_SUPABASE_URL ||
+  (typeof process !== 'undefined' ? process.env?.VITE_SUPABASE_URL : undefined);
+const rawAnonKey =
+  import.meta.env?.VITE_SUPABASE_ANON_KEY ||
+  (typeof process !== 'undefined' ? process.env?.VITE_SUPABASE_ANON_KEY : undefined);
 
 export const supabaseUrl = typeof rawUrl === 'string' ? rawUrl.trim() : '';
 export const supabaseAnonKey = typeof rawAnonKey === 'string' ? rawAnonKey.trim() : '';

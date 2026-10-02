@@ -33,7 +33,7 @@ import {
   Select,
   Badge,
 } from '../ui';
-import { toTitleCase } from '../../lib/formatText';
+import { toTitleCase, formatCodeName, formatEntityName } from '../../lib/formatText';
 
 export interface StaffManagementViewProps {
   staff: StaffUserItem[];
@@ -478,7 +478,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
               { value: '', label: 'All Zones' },
               ...(org?.zones || []).map((z) => ({
                 value: z.id,
-                label: z.name,
+                label: formatCodeName(z.zone_code, z.name),
               })),
             ],
           },
@@ -553,10 +553,14 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                           {s.staff_employee_id || '—'}
                         </span>
                         <span className="text-caption text-slate-700 block">
-                          {s.designations?.name || 'No Designation'}
+                          {s.designations
+                            ? formatEntityName(s.designations.name)
+                            : 'No Designation'}
                         </span>
                         <span className="text-caption text-slate-400 block">
-                          {s.departments?.name || 'No Department'}
+                          {s.departments
+                            ? formatEntityName(s.departments.name)
+                            : 'No Department'}
                         </span>
                       </div>
                     </TableCell>
@@ -572,13 +576,17 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                       className="text-slate-600"
                     >
                       <span className="font-medium text-slate-800 block text-caption">
-                        {s.zones?.name || 'All Zones (HQ)'}
+                        {s.zones
+                          ? formatEntityName(s.zones.name)
+                          : 'All Zones (HQ)'}
                       </span>
                       {taggedList.length > 0 ? (
                         <span className="text-caption text-slate-500 block mt-0.5">
                           {taggedList.length === 1
-                            ? taggedList[0].name
-                            : `${taggedList.length} branches: ${taggedList.map((b) => b.name).join(', ')}`}
+                            ? formatEntityName(taggedList[0].name)
+                            : `${taggedList.length} branches: ${taggedList
+                                .map((b) => formatEntityName(b.name))
+                                .join(', ')}`}
                         </span>
                       ) : (
                         <span className="text-caption text-slate-400 block">Zone-Wide / All Branches</span>
@@ -797,6 +805,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                 id="new-staff-department"
                 label="Department *"
                 required
+                searchable
                 value={newStaffForm.department_id}
                 onChange={(e) =>
                   setNewStaffForm({
@@ -806,12 +815,12 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                   })
                 }
               >
-                <option value="">Select Department</option>
+                <option value="">- Select - (Select Department)</option>
                 {(org?.departments || [])
                   .filter((d) => d.is_active !== false)
                   .map((d) => (
                     <option key={d.id} value={d.id}>
-                      {d.name} {d.department_code ? `(${d.department_code})` : ''}
+                      {formatCodeName(d.department_code, d.name)}
                     </option>
                   ))}
               </Select>
@@ -820,6 +829,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                 id="new-staff-designation"
                 label="Designation *"
                 required
+                searchable
                 disabled={!newStaffForm.department_id}
                 value={newStaffForm.designation_id}
                 onChange={(e) =>
@@ -827,10 +837,10 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                 }
                 hint={!newStaffForm.department_id ? 'Select a Department first to filter designations.' : undefined}
               >
-                <option value="">Select Designation</option>
+                <option value="">- Select - (Select Designation)</option>
                 {filteredCreateDesignations.map((desig) => (
                   <option key={desig.id} value={desig.id}>
-                    {desig.name}
+                    {formatCodeName(desig.designation_code, desig.name)}
                     {desig.employment_category ? ` — ${desig.employment_category}` : ''}
                   </option>
                 ))}
@@ -922,6 +932,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                 id="new-staff-zone"
                 label={isZoneRequiredForCreate ? 'Zone Assignment *' : 'Zone Assignment (Optional for Super Admin)'}
                 required={isZoneRequiredForCreate}
+                searchable
                 value={newStaffForm.zone_id}
                 onChange={(e) =>
                   setNewStaffForm({
@@ -932,13 +943,13 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                 }
               >
                 <option value="">
-                  {isZoneRequiredForCreate ? 'Select Zone Assignment' : 'All Zones (HQ)'}
+                  {isZoneRequiredForCreate ? '- Select -' : 'All Zones (HQ)'}
                 </option>
                 {(org?.zones || [])
                   .filter((z) => z.is_active !== false)
                   .map((z) => (
                     <option key={z.id} value={z.id}>
-                      {z.name} {z.zone_code ? `(${z.zone_code})` : ''}
+                      {formatCodeName(z.zone_code, z.name)}
                     </option>
                   ))}
               </Select>
@@ -1029,10 +1040,12 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                             className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 shrink-0"
                           />
                           <div className="min-w-0 flex-1">
-                            <span className="block truncate">{b.name}</span>
-                            {b.branch_code && (
+                            <span className="block truncate">
+                              {formatCodeName(b.branch_code, b.name)}
+                            </span>
+                            {b.branch_type && (
                               <span className="text-caption text-slate-500 font-mono">
-                                {b.branch_code} {b.branch_type ? `· ${b.branch_type}` : ''}
+                                {b.branch_type}
                               </span>
                             )}
                           </div>
@@ -1136,6 +1149,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
               <Select
                 id="edit-staff-department"
                 label="Department"
+                searchable
                 value={editingStaff.department_id || ''}
                 onChange={(e) =>
                   setEditingStaff({
@@ -1145,10 +1159,10 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                   })
                 }
               >
-                <option value="">Select Department</option>
+                <option value="">- Select -</option>
                 {org?.departments.map((d) => (
                   <option key={d.id} value={d.id}>
-                    {d.name}
+                    {formatCodeName(d.department_code, d.name)}
                   </option>
                 ))}
               </Select>
@@ -1156,16 +1170,17 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
               <Select
                 id="edit-staff-designation"
                 label="Designation"
+                searchable
                 disabled={!editingStaff.department_id}
                 value={editingStaff.designation_id || ''}
                 onChange={(e) =>
                   setEditingStaff({ ...editingStaff, designation_id: e.target.value })
                 }
               >
-                <option value="">Select Designation</option>
+                <option value="">- Select -</option>
                 {filteredEditDesignations.map((desig) => (
                   <option key={desig.id} value={desig.id}>
-                    {desig.name}
+                    {formatCodeName(desig.designation_code, desig.name)}
                   </option>
                 ))}
               </Select>
@@ -1198,6 +1213,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
               <Select
                 id="edit-staff-zone"
                 label="Assigned Zone"
+                searchable
                 value={editingStaff.zone_id || ''}
                 onChange={(e) =>
                   setEditingStaff({
@@ -1211,7 +1227,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                 <option value="">All Zones (HQ)</option>
                 {org?.zones.map((z) => (
                   <option key={z.id} value={z.id}>
-                    {z.name}
+                    {formatCodeName(z.zone_code, z.name)}
                   </option>
                 ))}
               </Select>
@@ -1269,7 +1285,7 @@ export const StaffManagementView: React.FC<StaffManagementViewProps> = ({
                           }}
                           className="rounded border-slate-300 text-indigo-600 shrink-0"
                         />
-                        <span className="truncate">{b.name}</span>
+                        <span className="truncate">{formatCodeName(b.branch_code, b.name)}</span>
                       </label>
                     );
                   })}

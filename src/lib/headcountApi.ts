@@ -39,6 +39,7 @@ export interface HeadcountBranch {
 export interface HeadcountDesignation {
   id: string;
   name: string;
+  designation_code?: string | null;
   department_id: string;
   employment_category?: 'Rider' | 'In-House Staff' | string;
   is_active?: boolean;
@@ -50,6 +51,7 @@ export interface HeadcountEntryItem {
   branch_id: string;
   designation_id: string;
   designation_name: string;
+  designation_code?: string | null;
   employment_category: string | null;
   department_id: string | null;
   department_name: string | null;
