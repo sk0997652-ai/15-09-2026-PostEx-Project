@@ -12,6 +12,7 @@ import {
   Upload,
   ShieldCheck,
   ChevronRight,
+  Settings,
 } from 'lucide-react';
 import {
   useHrPortalStore,
@@ -49,6 +50,9 @@ import {
   TableToolbar,
 } from '../ui';
 import { toTitleCase } from '../../lib/formatText';
+import { JoinerTrackerSubView } from './JoinerTrackerSubView';
+import { ExitTrackerSubView } from './ExitTrackerSubView';
+import { UserPerformanceSubView } from './UserPerformanceSubView';
 
 export type WorkflowTrackerRole = 'super_admin' | 'zonal_hr' | 'central_hr' | 'branch_manager';
 
@@ -492,20 +496,20 @@ export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
     setNewEcfItem('');
   };
 
-  const subTabs: [('j' | 'e' | 's' | 't'), string][] = canViewHrPerformance
+  const subTabs: [('j' | 'e' | 's'), string][] = canViewHrPerformance
     ? [
         ['j', 'Joiner Tracker'],
-        ['e', 'Exits & ECF'],
-        ['s', 'HR Performance'],
-        ['t', 'Task Settings'],
+        ['e', 'Exit Tracker'],
+        ['s', 'User Performance Tracker'],
       ]
     : [
         ['j', 'Joiner Tracker'],
-        ['e', 'Exits & ECF'],
-        ['t', 'Task Settings'],
+        ['e', 'Exit Tracker'],
       ];
 
-  const activeSubTab = !canViewHrPerformance && wview === 's' ? 'j' : wview;
+  const activeSubTab = (!canViewHrPerformance && wview === 's') || (role !== 'super_admin' && wview === 't')
+    ? 'j'
+    : wview;
 
   // Filtered Joiner rows
   const filteredJoiners = useMemo(() => {
@@ -786,765 +790,88 @@ export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
         description="Onboarding tasks, exits and HR performance — issued and owned by HR."
       />
 
-      {/* Sub-tabs Navigation matching OrganizationStructureView */}
+      {/* Sub-tabs Navigation */}
       <div
         id="wseg"
-        className="flex border-b border-slate-200 gap-6 text-caption font-semibold overflow-x-auto"
+        className="flex items-center justify-between border-b border-slate-200 text-caption font-semibold"
       >
-        {subTabs.map(([key, label]) => {
-          const isActive = key === activeSubTab;
-          return (
-            <button
-              key={key}
-              type="button"
-              data-w={key}
-              onClick={() => setWview(key)}
-              className={`pb-3 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                isActive
-                  ? 'text-indigo-700 border-b-2 border-indigo-600 font-bold'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              {label}
-            </button>
-          );
-        })}
+        <div className="flex gap-6 overflow-x-auto">
+          {subTabs.map(([key, label]) => {
+            const isActive = key === activeSubTab;
+            return (
+              <button
+                key={key}
+                type="button"
+                data-w={key}
+                onClick={() => setWview(key)}
+                className={`pb-3 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                  isActive
+                    ? 'text-indigo-700 border-b-2 border-indigo-600 font-bold'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Super Admin only: Task Settings gear link at the far right */}
+        {role === 'super_admin' && (
+          <button
+            type="button"
+            id="task-settings-gear-link"
+            data-w="t"
+            onClick={() => setWview('t')}
+            className={`pb-3 transition-colors cursor-pointer flex items-center gap-1.5 text-xs whitespace-nowrap shrink-0 ${
+              activeSubTab === 't'
+                ? 'text-indigo-700 border-b-2 border-indigo-600 font-bold'
+                : 'text-slate-400 hover:text-slate-700'
+            }`}
+            title="Task Settings (Super Admin only)"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>Task Settings</span>
+          </button>
+        )}
       </div>
 
       <div className="space-y-6">
         {/* 1) JOINER TRACKER */}
         {activeSubTab === 'j' && (
-          <>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <Card className="p-5">
-                <div className="text-table-header uppercase text-slate-500">Joiners In View</div>
-                <div className="text-kpi-number text-slate-900 font-mono tabular-nums mt-1">
-                  {scopedPeople.length}
-                </div>
-                <div className="text-caption text-slate-500 mt-0.5">across scope</div>
-              </Card>
-
-              <Card className="p-5">
-                <div className="text-table-header uppercase text-slate-500">Fully Onboarded</div>
-                <div className="text-kpi-number text-emerald-600 font-mono tabular-nums mt-1">
-                  {compCount}
-                </div>
-                <div className="text-caption text-slate-500 mt-0.5">
-                  {scopedPeople.length > 0
-                    ? Math.round((compCount / scopedPeople.length) * 100)
-                    : 0}
-                  % of joiners
-                </div>
-              </Card>
-
-              <Card className="p-5">
-                <div className="text-table-header uppercase text-slate-500">Overdue Tasks</div>
-                <div className="text-kpi-number text-rose-600 font-mono tabular-nums mt-1">
-                  {A.ov}
-                </div>
-                <div className="text-caption text-slate-500 mt-0.5">past target day</div>
-              </Card>
-
-              <Card className="p-5">
-                <div className="text-table-header uppercase text-slate-500">Tasks Done On Time</div>
-                <div className="text-kpi-number text-slate-900 font-mono tabular-nums mt-1">
-                  {A.pct.toFixed(0)}%
-                </div>
-                <div className="text-caption text-slate-500 mt-0.5">of all verified tasks</div>
-              </Card>
-            </div>
-
-            <Card title="Overdue By Task">
-              <div className="space-y-3">
-                {tasks.map((t, k) => (
-                  <div
-                    key={`${t[0]}-${k}`}
-                    className="grid grid-cols-[170px_1fr_auto] items-center gap-3 text-caption"
-                  >
-                    <span className="text-slate-700 font-medium truncate">{t[0]}</span>
-                    {renderBar((oc[k] / mx) * 100, oc[k] ? 'b' : '')}
-                    <b className="font-mono font-semibold text-slate-900 w-8 text-right">{oc[k]}</b>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card
-              title="Joiners"
-              description="Click the edit (pencil) icon on any joiner row to submit task evidence, review submissions, and verify onboarding tasks."
-              action={
-                <Button
-                  id="export-joiners-excel-btn"
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleExportJoiners}
-                  leftIcon={<Download className="w-4 h-4" />}
-                >
-                  Export To Excel
-                </Button>
-              }
-            >
-              <div className="space-y-4">
-                <TableToolbar
-                  searchInputId="q"
-                  searchValue={q}
-                  onSearchChange={setQ}
-                  searchPlaceholder="Search joiner, code, branch or HR"
-                  filters={[
-                    {
-                      id: 'fs',
-                      label: 'Filter by Status',
-                      value: fs,
-                      onChange: setFs,
-                      options: [
-                        { value: '', label: 'All statuses' },
-                        { value: 'Has overdue', label: 'Has overdue' },
-                        { value: 'In progress', label: 'In progress' },
-                        { value: 'Submitted', label: 'Awaiting verification (Submitted)' },
-                        { value: 'Complete', label: 'Complete' },
-                      ],
-                    },
-                  ]}
-                  hasActiveFilters={Boolean(q || fs)}
-                  onReset={() => {
-                    setQ('');
-                    setFs('');
-                  }}
-                />
-
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Joiner</TableHead>
-                      <TableHead>Branch</TableHead>
-                      <TableHead>Hr Officer</TableHead>
-                      <TableHead>Joined</TableHead>
-                      {tasks.map((t, k) => (
-                        <TableHead key={`${t[2]}-${k}`}>{toTitleCase(t[2])}</TableHead>
-                      ))}
-                      <TableHead>Progress</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody id="tb">
-                    {filteredJoiners.length === 0 ? (
-                      <TableRow>
-                        <TableCell
-                          colSpan={tasks.length + 7}
-                          className="text-center py-8 text-caption text-slate-500"
-                        >
-                          No joiners match.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredJoiners.map(([j, st], idx) => (
-                        <TableRow
-                          key={`${j.id || j.n}-${idx}`}
-                          data-joiner-id={j.id}
-                          className={
-                            selectedJoinerId === j.id ? 'bg-indigo-50/40' : undefined
-                          }
-                        >
-                          <TableCell mobileRole="primary">
-                            <div className="font-semibold text-slate-900">{toTitleCase(j.n)}</div>
-                            <div className="text-caption text-slate-500 flex items-center gap-1.5">
-                              <span>{j.d}</span>
-                              {j.employeeCode && (
-                                <span className="font-mono text-slate-400">• {j.employeeCode}</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell mobileRole="field" mobileLabel="Branch" className="text-slate-700">
-                            <div>{j.b[0]}</div>
-                            <div className="text-caption text-slate-400">{j.b[1]}</div>
-                          </TableCell>
-                          <TableCell mobileRole="field" mobileLabel="HR Officer" className="text-slate-700">
-                            {toTitleCase(j.hr)}
-                          </TableCell>
-                          <TableCell mobileRole="field" mobileLabel="Joined" className="font-mono text-slate-600">
-                            {j.ago}d ago
-                          </TableCell>
-                          {tasks.map((t, k) => (
-                            <TableCell key={k} mobileRole="field" mobileLabel={toTitleCase(t[2])}>
-                              {renderChip(j, k)}
-                            </TableCell>
-                          ))}
-                          <TableCell mobileRole="field" mobileLabel="Progress">
-                            <Badge
-                              data-testid={`joiner-progress-${j.id}`}
-                              variant={
-                                st.st === 'Complete' ? 'success' : st.ov ? 'error' : 'neutral'
-                              }
-                              className="font-mono"
-                            >
-                              {st.dn}/{st.a}
-                            </Badge>
-                          </TableCell>
-                          <TableCell mobileRole="status" data-testid={`joiner-status-${j.id}`}>
-                            <div className="flex flex-col items-start gap-1">
-                              <Badge
-                                variant={
-                                  st.st === 'Complete'
-                                    ? 'success'
-                                    : st.st === 'Has overdue'
-                                    ? 'error'
-                                    : 'warning'
-                                }
-                              >
-                                {st.st}
-                              </Badge>
-                              {st.submittedCount > 0 && (
-                                <Badge variant="info">{st.submittedCount} Submitted</Badge>
-                              )}
-                              {st.returnedCount > 0 && (
-                                <Badge variant="error">{st.returnedCount} Returned</Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell mobileRole="actions" className="text-right">
-                            <button
-                              type="button"
-                              id={`edit-joiner-btn-${j.id}`}
-                              data-testid={`edit-joiner-btn-${j.id}`}
-                              onClick={() => openJoinerDrawer(j)}
-                              title={`Manage workflow tasks for ${toTitleCase(j.n)}`}
-                              className="inline-flex items-center justify-center p-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors cursor-pointer"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </Card>
-          </>
+          <JoinerTrackerSubView
+            role={role}
+            zoneName={zoneName}
+            branchName={branchName}
+            assignedBranches={assignedBranches}
+            currentUser={currentUser}
+          />
         )}
 
-        {/* 2) EXITS & ECF */}
-        {activeSubTab === 'e' &&
-          (() => {
-            const totX = Math.max(ecfItems.length, 1);
-            const op = scopedExits.filter((e) => exDoneCount(e) < ecfItems.length);
-            const od = op.filter((e) => e.ago > SLA_X).length;
-            return (
-              <>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                  <Card className="p-5">
-                    <div className="text-table-header uppercase text-slate-500">Open Ecfs</div>
-                    <div className="text-kpi-number text-slate-900 font-mono tabular-nums mt-1">
-                      {op.length}
-                    </div>
-                    <div className="text-caption text-slate-500 mt-0.5">clearance not complete</div>
-                  </Card>
+        {/* 2) EXIT TRACKER */}
+        {activeSubTab === 'e' && (
+          <ExitTrackerSubView
+            role={role}
+            zoneName={zoneName}
+            branchName={branchName}
+            assignedBranches={assignedBranches}
+            currentUser={currentUser}
+          />
+        )}
 
-                  <Card className="p-5">
-                    <div className="text-table-header uppercase text-slate-500">Overdue Ecfs</div>
-                    <div className="text-kpi-number text-rose-600 font-mono tabular-nums mt-1">
-                      {od}
-                    </div>
-                    <div className="text-caption text-slate-500 mt-0.5">open past {SLA_X} days</div>
-                  </Card>
-
-                  <Card className="p-5">
-                    <div className="text-table-header uppercase text-slate-500">Cleared</div>
-                    <div className="text-kpi-number text-emerald-600 font-mono tabular-nums mt-1">
-                      {scopedExits.length - op.length}
-                    </div>
-                    <div className="text-caption text-slate-500 mt-0.5">ECF fully complete</div>
-                  </Card>
-
-                  <Card className="p-5">
-                    <div className="text-table-header uppercase text-slate-500">Exits In View</div>
-                    <div className="text-kpi-number text-slate-900 font-mono tabular-nums mt-1">
-                      {scopedExits.length}
-                    </div>
-                    <div className="text-caption text-slate-500 mt-0.5">all exit types</div>
-                  </Card>
-                </div>
-
-                <Card
-                  title="Employee Clearance Forms"
-                  description="Click any checklist item tag to mark Done/Pending. When all items are Done, status becomes Cleared and employee moves to Exited/Archive."
-                  action={
-                    <Button
-                      id="export-exits-excel-btn"
-                      variant="secondary"
-                      size="sm"
-                      onClick={handleExportExits}
-                      leftIcon={<Download className="w-4 h-4" />}
-                    >
-                      Export To Excel
-                    </Button>
-                  }
-                >
-                  <div className="space-y-4">
-                    <TableToolbar
-                      searchInputId="exit-q"
-                      searchValue={exitQ}
-                      onSearchChange={setExitQ}
-                      searchPlaceholder="Search employee, branch or HR"
-                      filters={[
-                        {
-                          id: 'exit-fs',
-                          label: 'Filter by Status',
-                          value: exitFs,
-                          onChange: setExitFs,
-                          options: [
-                            { value: '', label: 'All statuses' },
-                            { value: 'In progress', label: 'In progress' },
-                            { value: 'Overdue', label: 'Overdue' },
-                            { value: 'Cleared', label: 'Cleared' },
-                          ],
-                        },
-                      ]}
-                      hasActiveFilters={Boolean(exitQ || exitFs)}
-                      onReset={() => {
-                        setExitQ('');
-                        setExitFs('');
-                      }}
-                    />
-
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Employee</TableHead>
-                          <TableHead>Branch</TableHead>
-                          <TableHead>Hr Officer</TableHead>
-                          <TableHead>Exit Type</TableHead>
-                          <TableHead>Left</TableHead>
-                          {ecfItems.map((x, idx) => (
-                            <TableHead key={`${x}-${idx}`}>{toTitleCase(x)}</TableHead>
-                          ))}
-                          <TableHead>Progress</TableHead>
-                          <TableHead>Status</TableHead>
-                          {role === 'super_admin' && <TableHead></TableHead>}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredExits.map((e, idx) => {
-                          const st = exS(e);
-                          const dn = exDoneCount(e);
-                          const canUndo =
-                            role === 'super_admin' &&
-                            canSuperAdminUndoExit(e.initiatedAt, e.ago);
-                          return (
-                            <TableRow key={`${e.id || e.n}-${idx}`}>
-                              <TableCell mobileRole="primary">
-                                <div className="font-semibold text-slate-900">{toTitleCase(e.n)}</div>
-                                <div className="text-caption text-slate-500">{e.d}</div>
-                              </TableCell>
-                              <TableCell mobileRole="field" mobileLabel="Branch" className="text-slate-700">
-                                {e.b[0]}
-                              </TableCell>
-                              <TableCell mobileRole="field" mobileLabel="HR Officer" className="text-slate-700">
-                                {toTitleCase(e.b[2])}
-                              </TableCell>
-                              <TableCell mobileRole="field" mobileLabel="Exit Type">
-                                <Badge variant={e.type === 'Absconding' ? 'error' : 'neutral'}>
-                                  {e.type}
-                                </Badge>
-                              </TableCell>
-                              <TableCell mobileRole="field" mobileLabel="Left" className="font-mono text-slate-600">
-                                {e.ago}d ago
-                              </TableCell>
-                              {ecfItems.map((itemLabel, i) => {
-                                const itemDone = isEcfItemDone(e, i);
-                                return (
-                                  <TableCell key={i} mobileRole="field" mobileLabel={toTitleCase(itemLabel)}>
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleExitChecklistItem(e.id, i, e.b[2])}
-                                      className="cursor-pointer focus:outline-none"
-                                      title="Click to toggle Done / Pending"
-                                    >
-                                      {itemDone ? (
-                                        <Badge variant="success">Done</Badge>
-                                      ) : (
-                                        <Badge variant={e.ago > SLA_X ? 'error' : 'neutral'}>
-                                          Pending
-                                        </Badge>
-                                      )}
-                                    </button>
-                                  </TableCell>
-                                );
-                              })}
-                              <TableCell mobileRole="field" mobileLabel="Progress">
-                                <div className="flex items-center gap-2.5 min-w-[120px]">
-                                  {renderBar(
-                                    (dn / totX) * 100,
-                                    e.ago > SLA_X && dn < ecfItems.length ? 'b' : ''
-                                  )}
-                                  <span className="text-caption font-bold font-mono text-slate-700 w-9 text-right">
-                                    {dn}/{ecfItems.length}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell mobileRole="status">
-                                <Badge variant={st[1]}>{st[0]}</Badge>
-                              </TableCell>
-                              {role === 'super_admin' && (
-                                <TableCell mobileRole="actions">
-                                  {canUndo && (
-                                    <Button
-                                      type="button"
-                                      variant="danger"
-                                      size="sm"
-                                      onClick={() =>
-                                        undoEmployeeExit({
-                                          exitId: e.id,
-                                          employeeId: e.employeeId,
-                                          actorName: 'Super Admin',
-                                        })
-                                      }
-                                    >
-                                      Undo Exit
-                                    </Button>
-                                  )}
-                                </TableCell>
-                              )}
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </Card>
-              </>
-            );
-          })()}
-
-        {/* 3) HR PERFORMANCE (Super Admin & Zonal HR only) */}
-        {activeSubTab === 's' &&
-          canViewHrPerformance &&
-          (() => {
-            const zs = [...new Set(scopedBranches.map((b) => b[1]))];
-            const G: [string, string, (b: BranchTuple) => boolean][] =
-              lvl === 'Zone'
-                ? zs.map((z) => [z, '', (x: BranchTuple) => x[1] === z])
-                : lvl === 'Branch'
-                ? scopedBranches.map((b) => [b[0], b[1], (x: BranchTuple) => x[0] === b[0]])
-                : scopedBranches.map((b) => [b[2], b[0], (x: BranchTuple) => x[2] === b[2]]);
-
-            const rows = G.map(([nm, sub, f]) => {
-              const groupJoiners = scopedPeople.filter((j) => f(j.b));
-              const groupExits = scopedExits.filter((e) => f(e.b));
-              const a = ag(groupJoiners, groupExits);
-              return { n: nm, sub, a, fl: flag(a), groupJoiners };
-            }).sort(
-              (x, y) => Number(x.a.n < MIN) - Number(y.a.n < MIN) || x.a.pct - y.a.pct
-            );
-
-            const handleExportHrPerformance = () => {
-              const exportData = rows.map((r) => ({
-                [lvl === 'HR' ? 'HR Officer' : lvl]: r.n,
-                Scope: r.sub || 'All',
-                Joiners: r.a.n,
-                'Verified Tasks': `${r.a.verifiedCount}/${r.a.applicableCount}`,
-                'Submitted (Awaiting Verification)': r.a.submittedCount,
-                'On-time Rate (%)': `${r.a.pct.toFixed(0)}%`,
-                'Avg Days': r.a.avg ? Number(r.a.avg.toFixed(1)) : '—',
-                Overdue: r.a.ov,
-                'Open ECFs': r.a.ecf,
-                Flag: r.fl[0],
-              }));
-              exportRowsToExcel(
-                `PostEx_HR_Performance_${lvl}_Export.xlsx`,
-                'HR Performance',
-                exportData
-              );
-            };
-
-            const activeDrillRow =
-              drilldownTarget && drilldownTarget.level === lvl
-                ? rows.find((r) => r.n === drilldownTarget.name) || null
-                : null;
-
-            return (
-              <>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                  <Card className="p-5">
-                    <div className="text-table-header uppercase text-slate-500">On-Time Task Rate</div>
-                    <div
-                      className={`text-kpi-number font-mono tabular-nums mt-1 ${
-                        A.pct >= 85 ? 'text-emerald-600' : 'text-slate-900'
-                      }`}
-                    >
-                      {A.pct.toFixed(0)}%
-                    </div>
-                    <div className="text-caption text-slate-500 mt-0.5">all HR officers</div>
-                  </Card>
-
-                  <Card className="p-5">
-                    <div className="text-table-header uppercase text-slate-500">Avg Days To Onboard</div>
-                    <div className="text-kpi-number text-slate-900 font-mono tabular-nums mt-1">
-                      {A.avg.toFixed(1)}
-                    </div>
-                    <div className="text-caption text-slate-500 mt-0.5">fully onboarded joiners</div>
-                  </Card>
-
-                  <Card className="p-5">
-                    <div className="text-table-header uppercase text-slate-500">Overdue Tasks</div>
-                    <div className="text-kpi-number text-rose-600 font-mono tabular-nums mt-1">
-                      {A.ov}
-                    </div>
-                    <div className="text-caption text-slate-500 mt-0.5">across scope</div>
-                  </Card>
-
-                  <Card className="p-5">
-                    <div className="text-table-header uppercase text-slate-500">Open Ecfs</div>
-                    <div className="text-kpi-number text-slate-900 font-mono tabular-nums mt-1">
-                      {A.ecf}
-                    </div>
-                    <div className="text-caption text-slate-500 mt-0.5">awaiting clearance</div>
-                  </Card>
-                </div>
-
-                <Card
-                  title={toTitleCase(`Scorecard by ${lvl}`)}
-                  description="Click any row to drill down into the joiners and onboarding task verification status for that scope."
-                  action={
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <div
-                        id="lv"
-                        className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-xl p-1 gap-1"
-                      >
-                        {(['Zone', 'Branch', 'HR officer'] as const).map((l) => {
-                          const dataKey = l === 'HR officer' ? 'HR' : l;
-                          const isOn = l === lvl || (lvl === 'HR' && l === 'HR officer');
-                          return (
-                            <button
-                              key={l}
-                              type="button"
-                              data-l={dataKey}
-                              onClick={() => {
-                                setLvl(dataKey);
-                                setDrilldownTarget(null);
-                              }}
-                              className={`px-3 py-1.5 rounded-lg text-caption font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                                isOn
-                                  ? 'bg-white text-indigo-700 shadow-xs'
-                                  : 'text-slate-600 hover:text-slate-900'
-                              }`}
-                            >
-                              {toTitleCase(l)}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <Button
-                        id="export-hr-performance-excel-btn"
-                        variant="secondary"
-                        size="sm"
-                        onClick={handleExportHrPerformance}
-                        leftIcon={<Download className="w-4 h-4" />}
-                      >
-                        Export To Excel
-                      </Button>
-                    </div>
-                  }
-                >
-                  <div className="space-y-4">
-                    <div className="rounded-xl bg-indigo-50/80 border border-indigo-200/80 px-4 py-2.5 text-caption text-indigo-900">
-                      Worst performers listed first. Fewer than {MIN} joiners is marked Low
-                      volume and not judged. Only verified tasks count toward completion.
-                    </div>
-
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{toTitleCase(lvl === 'HR' ? 'HR officer' : lvl)}</TableHead>
-                          <TableHead>Joiners</TableHead>
-                          <TableHead>Verified Tasks</TableHead>
-                          <TableHead>On-Time Rate</TableHead>
-                          <TableHead>Avg Days</TableHead>
-                          <TableHead>Overdue</TableHead>
-                          <TableHead>Open Ecfs</TableHead>
-                          <TableHead>Flag</TableHead>
-                          <TableHead className="text-right">Drill-Down</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {rows.map((r) => {
-                          const isSelected = activeDrillRow?.n === r.n;
-                          return (
-                            <TableRow
-                              key={r.n}
-                              onClick={() =>
-                                setDrilldownTarget(
-                                  isSelected ? null : { level: lvl, name: r.n }
-                                )
-                              }
-                              className={`cursor-pointer ${
-                                isSelected ? 'bg-indigo-50/50' : ''
-                              }`}
-                            >
-                              <TableCell mobileRole="primary">
-                                <div className="font-semibold text-slate-900">
-                                  {lvl === 'HR' ? toTitleCase(r.n) : r.n}
-                                </div>
-                                {r.sub ? (
-                                  <div className="text-caption text-slate-500">{r.sub}</div>
-                                ) : null}
-                              </TableCell>
-                              <TableCell mobileRole="field" mobileLabel="Joiners" className="font-mono text-slate-700">
-                                {r.a.n}
-                              </TableCell>
-                              <TableCell mobileRole="field" mobileLabel="Verified Tasks">
-                                <div className="flex items-center gap-1.5">
-                                  <Badge variant="neutral" className="font-mono">
-                                    {r.a.verifiedCount}/{r.a.applicableCount}
-                                  </Badge>
-                                  {r.a.submittedCount > 0 && (
-                                    <Badge variant="info">{r.a.submittedCount} Sub</Badge>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell mobileRole="field" mobileLabel="On-Time Rate">
-                                <div className="flex items-center gap-2.5 min-w-[120px]">
-                                  {renderBar(r.a.pct, r.fl[2])}
-                                  <span className="text-caption font-bold font-mono text-slate-700 w-9 text-right">
-                                    {r.a.pct.toFixed(0)}%
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell mobileRole="field" mobileLabel="Avg Days" className="font-mono text-slate-700">
-                                {r.a.avg ? r.a.avg.toFixed(1) : '—'}
-                              </TableCell>
-                              <TableCell mobileRole="field" mobileLabel="Overdue" className="font-mono text-slate-700">
-                                {r.a.ov}
-                              </TableCell>
-                              <TableCell mobileRole="field" mobileLabel="Open ECFs" className="font-mono text-slate-700">
-                                {r.a.ecf}
-                              </TableCell>
-                              <TableCell mobileRole="status">
-                                <Badge variant={r.fl[1]}>{r.fl[0]}</Badge>
-                              </TableCell>
-                              <TableCell mobileRole="actions" className="text-right">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDrilldownTarget(
-                                      isSelected ? null : { level: lvl, name: r.n }
-                                    );
-                                  }}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-indigo-700 hover:bg-indigo-50 text-tag font-semibold transition-colors cursor-pointer"
-                                >
-                                  <span>{isSelected ? 'Hide' : 'Joiners'}</span>
-                                  <ChevronRight className="w-3.5 h-3.5" />
-                                </button>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </Card>
-
-                {/* Interactive Drill-Down Card */}
-                {activeDrillRow && (
-                  <Card
-                    title={toTitleCase(`Joiner Breakdown — ${activeDrillRow.n}`)}
-                    description={`Showing ${activeDrillRow.groupJoiners.length} joiners in ${activeDrillRow.n}. Click the pencil icon on any joiner to open their workflow drawer.`}
-                    action={
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setDrilldownTarget(null)}
-                      >
-                        Close Breakdown
-                      </Button>
-                    }
-                  >
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Joiner</TableHead>
-                          <TableHead>Branch</TableHead>
-                          <TableHead>Hr Officer</TableHead>
-                          <TableHead>Joined</TableHead>
-                          {tasks.map((t, k) => (
-                            <TableHead key={`dd-${t[2]}-${k}`}>{toTitleCase(t[2])}</TableHead>
-                          ))}
-                          <TableHead>Progress</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Action</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {activeDrillRow.groupJoiners.map((j) => {
-                          const st = jstat(j);
-                          return (
-                            <TableRow key={`dd-row-${j.id}`}>
-                              <TableCell mobileRole="primary">
-                                <div className="font-semibold text-slate-900">{toTitleCase(j.n)}</div>
-                                <div className="text-caption text-slate-500">{j.d}</div>
-                              </TableCell>
-                              <TableCell mobileRole="field" mobileLabel="Branch">
-                                {j.b[0]}
-                              </TableCell>
-                              <TableCell mobileRole="field" mobileLabel="HR Officer">
-                                {toTitleCase(j.hr)}
-                              </TableCell>
-                              <TableCell mobileRole="field" mobileLabel="Joined" className="font-mono">
-                                {j.ago}d ago
-                              </TableCell>
-                              {tasks.map((t, k) => (
-                                <TableCell key={k} mobileRole="field" mobileLabel={toTitleCase(t[2])}>
-                                  {renderChip(j, k)}
-                                </TableCell>
-                              ))}
-                              <TableCell mobileRole="field" mobileLabel="Progress">
-                                <Badge
-                                  variant={
-                                    st.st === 'Complete' ? 'success' : st.ov ? 'error' : 'neutral'
-                                  }
-                                  className="font-mono"
-                                >
-                                  {st.dn}/{st.a}
-                                </Badge>
-                              </TableCell>
-                              <TableCell mobileRole="status">
-                                <Badge
-                                  variant={
-                                    st.st === 'Complete'
-                                      ? 'success'
-                                      : st.st === 'Has overdue'
-                                      ? 'error'
-                                      : 'warning'
-                                  }
-                                >
-                                  {st.st}
-                                </Badge>
-                              </TableCell>
-                              <TableCell mobileRole="actions" className="text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => openJoinerDrawer(j)}
-                                  title={`Manage workflow tasks for ${toTitleCase(j.n)}`}
-                                  className="inline-flex items-center justify-center p-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors cursor-pointer"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </button>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </Card>
-                )}
-              </>
-            );
-          })()}
+        {/* 3) USER PERFORMANCE TRACKER (Super Admin & Zonal HR only) */}
+        {activeSubTab === 's' && canViewHrPerformance && (
+          <UserPerformanceSubView
+            role={role}
+            zoneName={zoneName}
+            branchName={branchName}
+            assignedBranches={assignedBranches}
+            currentUser={currentUser}
+          />
+        )}
 
         {/* 4) TASK SETTINGS */}
-        {activeSubTab === 't' && (
+        {activeSubTab === 't' && role === 'super_admin' && (
           <>
             <div className="rounded-xl bg-indigo-50/80 border border-indigo-200/80 px-4 py-3 text-caption text-indigo-900">
               Deleting a task only stops tracking it going forward — it does not touch any

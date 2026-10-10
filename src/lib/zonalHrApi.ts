@@ -4,7 +4,7 @@
  */
 
 import { supabase } from './supabase';
-import { getStaffAccessToken } from './staffAuth';
+import { getStaffAccessToken, refreshStaffAccessToken } from './staffAuth';
 
 export interface ZonalMetrics {
   zoneId: string;
@@ -109,11 +109,55 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   };
 }
 
+// Fetch wrapper that handles expired tokens with automatic refresh and single retry
+async function fetchWithZonalAuth(url: string, init?: RequestInit): Promise<Response> {
+  let headers: Record<string, string>;
+  try {
+    headers = await getAuthHeaders();
+  } catch {
+    // If no initial token, attempt explicit refresh once
+    const refreshed = await refreshStaffAccessToken();
+    if (refreshed) {
+      headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${refreshed}`,
+      };
+    } else {
+      throw new Error('Active staff session token required. Please sign in again.');
+    }
+  }
+
+  let res = await fetch(url, {
+    ...init,
+    headers: {
+      ...headers,
+      ...((init?.headers as Record<string, string>) || {}),
+    },
+  });
+
+  // If 401 (Invalid or expired session token), attempt token refresh and retry once
+  if (res.status === 401) {
+    const refreshedToken = await refreshStaffAccessToken();
+    if (refreshedToken) {
+      const retryHeaders = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${refreshedToken}`,
+        ...((init?.headers as Record<string, string>) || {}),
+      };
+      res = await fetch(url, {
+        ...init,
+        headers: retryHeaders,
+      });
+    }
+  }
+
+  return res;
+}
+
 // 1. Get Zone-scoped metrics and turnaround stats
 export async function getZonalMetrics(zoneId?: string): Promise<{ zone: any; metrics: ZonalMetrics }> {
-  const headers = await getAuthHeaders();
   const query = zoneId ? `?zone_id=${encodeURIComponent(zoneId)}` : '';
-  const res = await fetch(`/api/zonal/metrics${query}`, { headers });
+  const res = await fetchWithZonalAuth(`/api/zonal/metrics${query}`);
   const data = await res.json();
   if (!res.ok || !data.success) {
     throw new Error(data.error || 'Failed to load zonal metrics');
@@ -129,9 +173,8 @@ export async function getZonalStaff(zoneId?: string): Promise<{
   designations: ZonalDesignationOption[];
   nextStaffEmployeeId: string;
 }> {
-  const headers = await getAuthHeaders();
   const query = zoneId ? `?zone_id=${encodeURIComponent(zoneId)}` : '';
-  const res = await fetch(`/api/zonal/staff${query}`, { headers });
+  const res = await fetchWithZonalAuth(`/api/zonal/staff${query}`);
   const data = await res.json();
   if (!res.ok || !data.success) {
     throw new Error(data.error || 'Failed to load zonal staff');
@@ -160,10 +203,8 @@ export async function createZonalStaff(payload: {
   branch_ids?: string[];
   zone_id?: string;
 }): Promise<{ staff: ZonalStaffProfile; one_time_temporary_password: string }> {
-  const headers = await getAuthHeaders();
-  const res = await fetch('/api/zonal/staff', {
+  const res = await fetchWithZonalAuth('/api/zonal/staff', {
     method: 'POST',
-    headers,
     body: JSON.stringify(payload),
   });
   const data = await res.json();
@@ -175,10 +216,8 @@ export async function createZonalStaff(payload: {
 
 // 4. Regenerate password for staff in zone
 export async function regenerateZonalStaffPassword(staffId: string): Promise<{ temporary_password: string }> {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`/api/zonal/staff/${encodeURIComponent(staffId)}/regenerate-password`, {
+  const res = await fetchWithZonalAuth(`/api/zonal/staff/${encodeURIComponent(staffId)}/regenerate-password`, {
     method: 'POST',
-    headers,
   });
   const data = await res.json();
   if (!res.ok || !data.success) {
@@ -202,10 +241,8 @@ export async function updateZonalStaff(
     role_name?: 'central_hr' | 'branch_manager';
   }
 ): Promise<ZonalStaffProfile> {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`/api/zonal/staff/${encodeURIComponent(staffId)}`, {
+  const res = await fetchWithZonalAuth(`/api/zonal/staff/${encodeURIComponent(staffId)}`, {
     method: 'PUT',
-    headers,
     body: JSON.stringify(payload),
   });
   const data = await res.json();
@@ -220,10 +257,8 @@ export async function toggleZonalStaffStatus(
   staffId: string,
   is_active: boolean
 ): Promise<ZonalStaffProfile> {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`/api/zonal/staff/${encodeURIComponent(staffId)}/status`, {
+  const res = await fetchWithZonalAuth(`/api/zonal/staff/${encodeURIComponent(staffId)}/status`, {
     method: 'PATCH',
-    headers,
     body: JSON.stringify({ is_active }),
   });
   const data = await res.json();
@@ -245,7 +280,6 @@ export async function getZonalApplications(params: {
   centralHrStaff: CentralHrStaffMember[];
   pagination: { page: number; limit: number; total: number; totalPages: number };
 }> {
-  const headers = await getAuthHeaders();
   const queryParams = new URLSearchParams();
   if (params.page) queryParams.set('page', String(params.page));
   if (params.limit) queryParams.set('limit', String(params.limit));
@@ -253,7 +287,7 @@ export async function getZonalApplications(params: {
   if (params.search) queryParams.set('search', params.search);
   if (params.zone_id) queryParams.set('zone_id', params.zone_id);
 
-  const res = await fetch(`/api/zonal/applications?${queryParams.toString()}`, { headers });
+  const res = await fetchWithZonalAuth(`/api/zonal/applications?${queryParams.toString()}`);
   const data = await res.json();
   if (!res.ok || !data.success) {
     throw new Error(data.error || 'Failed to load zonal applications');
@@ -271,10 +305,8 @@ export async function reassignZonalApplication(
   newCentralHrId: string,
   reason?: string
 ): Promise<{ success: boolean; message: string; application: ZonalApplication }> {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`/api/zonal/applications/${encodeURIComponent(applicationId)}/reassign`, {
+  const res = await fetchWithZonalAuth(`/api/zonal/applications/${encodeURIComponent(applicationId)}/reassign`, {
     method: 'POST',
-    headers,
     body: JSON.stringify({ new_central_hr_id: newCentralHrId, reason }),
   });
   const data = await res.json();
@@ -290,10 +322,8 @@ export async function overrideZonalApplicationDecision(
   decision: 'approved' | 'correction_needed' | 'rejected',
   reason: string
 ): Promise<{ success: boolean; message: string; application: ZonalApplication }> {
-  const headers = await getAuthHeaders();
-  const res = await fetch(`/api/zonal/applications/${encodeURIComponent(applicationId)}/override-decision`, {
+  const res = await fetchWithZonalAuth(`/api/zonal/applications/${encodeURIComponent(applicationId)}/override-decision`, {
     method: 'POST',
-    headers,
     body: JSON.stringify({ decision, reason }),
   });
   const data = await res.json();

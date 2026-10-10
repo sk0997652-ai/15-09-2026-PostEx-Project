@@ -32,13 +32,53 @@ supabase.auth.onAuthStateChange((event, session) => {
   }
 });
 
+export async function refreshStaffAccessToken(): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (!error && data?.session?.access_token) {
+      cachedAccessToken = data.session.access_token;
+      if (typeof window !== 'undefined') {
+        const metaRaw = localStorage.getItem(STAFF_SESSION_KEY);
+        if (metaRaw) {
+          try {
+            const meta = JSON.parse(metaRaw);
+            meta.accessToken = data.session.access_token;
+            meta.expiresAt = Date.now() + MAX_SESSION_DURATION_MS;
+            localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(meta));
+          } catch {
+            // ignore
+          }
+        }
+      }
+      return data.session.access_token;
+    }
+  } catch (err) {
+    console.warn('[STAFF AUTH] Failed to refresh session token:', err);
+  }
+  return null;
+}
+
 export async function getStaffAccessToken(): Promise<string | null> {
   // 1. Try Supabase Auth session
   try {
     const { data } = await supabase.auth.getSession();
     if (data?.session?.access_token) {
+      const expiresAt = data.session.expires_at; // in seconds
+      if (expiresAt && expiresAt * 1000 < Date.now() + 60000) {
+        // Less than 60s remaining or already expired - refresh proactively
+        const refreshed = await refreshStaffAccessToken();
+        if (refreshed) {
+          return refreshed;
+        }
+      }
       cachedAccessToken = data.session.access_token;
       return data.session.access_token;
+    } else {
+      // Session might need refresh if refresh token exists
+      const refreshed = await refreshStaffAccessToken();
+      if (refreshed) {
+        return refreshed;
+      }
     }
   } catch {
     // Fall through to cached / localStorage token

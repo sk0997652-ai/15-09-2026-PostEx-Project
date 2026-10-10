@@ -8,7 +8,7 @@ import crypto from 'crypto';
 import { generateAndUploadPdfDossier } from './dossierGenerator';
 import { formTemplatesService } from './formTemplatesDbService';
 import { CandidateTrack } from '../types/formTemplates';
-import { validateStatusTransition } from './workflowStateMachine';
+import { validateStatusTransition, executeApplicationTransition } from './workflowStateMachine';
 import { notificationService } from './notificationService';
 import { dataRetentionService } from './dataRetentionStore';
 import { masterDataFallbackStore } from './masterDataFallbackStore';
@@ -1112,67 +1112,40 @@ export function createCentralHrRouter(supabaseAdmin: SupabaseClient) {
           }
         }
 
-        // 1. Create or upsert Employee record (preserving designation_id link)
-        const empInsertPayload: Record<string, any> = {
-          application_id: id,
-          employee_id: employeeId,
-          pdf_dossier_storage_path: pdfStoragePath,
-          designation_id: enrolledDesignationId,
-        };
-
-        let { data: empRecord, error: empErr } = await supabaseAdmin
-          .from('employees')
-          .insert(empInsertPayload)
-          .select()
-          .single();
-
-        if (empErr && empErr.message.includes('designation_id')) {
-          delete empInsertPayload.designation_id;
-          const retryEmp = await supabaseAdmin
-            .from('employees')
-            .insert(empInsertPayload)
-            .select()
-            .single();
-          empRecord = retryEmp.data;
-          empErr = retryEmp.error;
-        }
-
-        if (empErr) {
-          throw new Error(`Failed to create employee record: ${empErr.message}`);
-        }
-
-        // 2. Lock & update application
-        await supabaseAdmin
-          .from('applications')
-          .update({
-            status: 'approved',
+        // 1. Execute Application Transition to 'approved' (creates employee row and 6 default asset status rows idempotently)
+        const transitionRes = await executeApplicationTransition({
+          supabaseAdmin,
+          applicationId: id,
+          targetStatus: 'approved',
+          actorId: req.centralUser.id,
+          actorType: 'staff',
+          actionName: 'central_hr_enrolled_employee',
+          reason: reason || 'Approved & Enrolled by Central HR',
+          extraUpdates: {
             locked: true,
             decided_at: new Date().toISOString(),
             decision_reason: reason || 'Approved & Enrolled by Central HR',
-          })
-          .eq('id', id);
+            pdf_dossier_storage_path: pdfStoragePath,
+          },
+          metadata: {
+            employee_id: employeeId,
+            joining_id: candidate.joining_id,
+            dossier_path: pdfStoragePath,
+          },
+        });
 
-        // 3. Record in hr_decisions table
+        if (!transitionRes.success) {
+          throw new Error(transitionRes.error || 'Failed to transition application to approved status.');
+        }
+
+        const empRecord = transitionRes.employee;
+
+        // 2. Record in hr_decisions table
         await supabaseAdmin.from('hr_decisions').insert({
           application_id: id,
           decided_by: req.centralUser.id,
           decision: 'approved',
           reason: reason || 'Candidate approved for formal company enrollment.',
-        });
-
-        // 4. Log in audit_logs
-        await supabaseAdmin.from('audit_logs').insert({
-          actor_id: req.centralUser.id,
-          actor_type: 'staff',
-          action: 'central_hr_enrolled_employee',
-          entity_type: 'applications',
-          entity_id: id,
-          metadata: {
-            employee_id: employeeId,
-            joining_id: candidate.joining_id,
-            dossier_path: pdfStoragePath,
-            reason: reason || 'Approved and enrolled',
-          },
         });
 
         // 5. Send Notification via Centralized Notification Service

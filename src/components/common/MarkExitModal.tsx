@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, LogOut, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, LogOut, CheckCircle2, Loader2 } from 'lucide-react';
 import { Modal, Button, Input, Select } from '../ui';
-import {
-  ExitType,
-  PortalEmployee,
-  markEmployeeExit,
-} from '../../lib/hrPortalStore';
+import { ExitType, PortalEmployee } from '../../lib/hrPortalStore';
+import { startEmployeeExit } from '../../lib/employeesApi';
 import { toTitleCase } from '../../lib/formatText';
+
+const EXIT_TYPE_MAP: Record<ExitType, 'resignation' | 'termination' | 'absconding'> = {
+  Resignation: 'resignation',
+  Termination: 'termination',
+  Absconding: 'absconding',
+};
 
 export interface MarkExitModalProps {
   isOpen: boolean;
@@ -31,6 +34,7 @@ export const MarkExitModal: React.FC<MarkExitModalProps> = ({
   const [notes, setNotes] = useState('');
   const [confirmStep, setConfirmStep] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -40,6 +44,7 @@ export const MarkExitModal: React.FC<MarkExitModalProps> = ({
       setNotes('');
       setConfirmStep(false);
       setError(null);
+      setSubmitting(false);
     }
   }, [isOpen, employee?.id]);
 
@@ -59,28 +64,40 @@ export const MarkExitModal: React.FC<MarkExitModalProps> = ({
     setConfirmStep(true);
   };
 
-  const handleConfirmExit = () => {
-    const res = markEmployeeExit({
-      employeeId: employee.id,
-      exitType,
-      lastWorkingDate,
-      reason: reason.trim(),
-      notes: notes.trim(),
-      actorName,
-    });
+  const handleConfirmExit = async () => {
+    if (!employee || submitting) return;
+    setSubmitting(true);
+    setError(null);
 
-    if (!res.success) {
-      setError(res.error || 'Failed to initiate employee exit.');
+    const apiExitType = EXIT_TYPE_MAP[exitType] || 'resignation';
+
+    try {
+      const res = await startEmployeeExit(employee.id, {
+        exit_type: apiExitType,
+        last_working_date: lastWorkingDate,
+        reason: reason.trim(),
+        notes: notes.trim() || undefined,
+      });
+
+      if (!res.success) {
+        setError(res.error || 'Failed to initiate employee exit.');
+        setConfirmStep(false);
+        return;
+      }
+
+      if (onSuccess) {
+        onSuccess(
+          `Exit initiated for ${toTitleCase(employee.fullName)} (${employee.employeeCode}). Status is now "Exit In Progress", removed from Active headcount, and added to Workflow Tracker > Exits & ECF.`
+        );
+      }
+      onClose();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg);
       setConfirmStep(false);
-      return;
+    } finally {
+      setSubmitting(false);
     }
-
-    if (onSuccess) {
-      onSuccess(
-        `Exit initiated for ${toTitleCase(employee.fullName)} (${employee.employeeCode}). Status is now "Exit In Progress", removed from Active headcount, and added to Workflow Tracker > Exits & ECF.`
-      );
-    }
-    onClose();
   };
 
   return (
@@ -207,6 +224,7 @@ export const MarkExitModal: React.FC<MarkExitModalProps> = ({
               type="button"
               variant="secondary"
               size="sm"
+              disabled={submitting}
               onClick={() => setConfirmStep(false)}
             >
               Back
@@ -216,6 +234,8 @@ export const MarkExitModal: React.FC<MarkExitModalProps> = ({
               variant="danger"
               size="sm"
               id="mark-exit-confirm-submit-btn"
+              disabled={submitting}
+              isLoading={submitting}
               onClick={handleConfirmExit}
               leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
             >

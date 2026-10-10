@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Download, LogOut, RotateCcw } from 'lucide-react';
+import { RefreshCw, Download } from 'lucide-react';
 import {
   OrgStructure,
   CandidateBrowserRecord,
@@ -19,15 +19,10 @@ import {
   StatusBadge,
   Badge,
 } from '../ui';
-import {
-  useHrPortalStore,
-  PortalEmployee,
-  exportRowsToExcel,
-  canSuperAdminUndoExit,
-  undoEmployeeExit,
-} from '../../lib/hrPortalStore';
-import { MarkExitModal } from '../common/MarkExitModal';
+import { exportRowsToExcel } from '../../lib/hrPortalStore';
 import { toTitleCase } from '../../lib/formatText';
+import { EmployeesTableView } from '../common/EmployeesTableView';
+import { ExitedEmployeesArchiveView } from './ExitedEmployeesArchiveView';
 
 export interface RecordBrowserViewProps {
   org: OrgStructure | null;
@@ -38,14 +33,8 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
   org,
   setNotification,
 }) => {
-  const [store] = useHrPortalStore();
   const [directoryMode, setDirectoryMode] = useState<'employees' | 'candidates'>('employees');
-
-  // Employee Directory & Archive state
-  const [empSearch, setEmpSearch] = useState('');
-  const [empBranchFilter, setEmpBranchFilter] = useState('');
-  const [empStatusFilter, setEmpStatusFilter] = useState<'Active' | 'Exit In Progress' | 'Exited' | 'all'>('Active');
-  const [exitTarget, setExitTarget] = useState<PortalEmployee | null>(null);
+  const [employeeSubTab, setEmployeeSubTab] = useState<'active_and_exiting' | 'exited_archive'>('active_and_exiting');
 
   // Candidate Browser state
   const [records, setRecords] = useState<CandidateBrowserRecord[]>([]);
@@ -92,29 +81,6 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
     loadRecordsData(1, recordPagination.limit, recordSearch, recordZoneFilter);
   }, [recordZoneFilter]);
 
-  // Filtered Employees (from browser store + any imported/seeded employees)
-  const filteredEmployees = useMemo(() => {
-    return store.employees.filter((emp) => {
-      if (empStatusFilter !== 'all' && emp.status !== empStatusFilter) return false;
-      if (empBranchFilter && emp.branch !== empBranchFilter) return false;
-      if (empSearch.trim()) {
-        const q = empSearch.trim().toLowerCase();
-        const matches =
-          emp.fullName.toLowerCase().includes(q) ||
-          emp.employeeCode.toLowerCase().includes(q) ||
-          emp.cnic.toLowerCase().includes(q) ||
-          emp.designation.toLowerCase().includes(q) ||
-          emp.branch.toLowerCase().includes(q);
-        if (!matches) return false;
-      }
-      return true;
-    });
-  }, [store.employees, empStatusFilter, empBranchFilter, empSearch]);
-
-  const branchOptions = useMemo(() => {
-    return Array.from(new Set(store.employees.map((e) => e.branch).filter(Boolean)));
-  }, [store.employees]);
-
   const uniqueRecords = useMemo(() => {
     const seen = new Set<string>();
     return records.filter((r) => {
@@ -138,31 +104,6 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
     setRecordZoneFilter('');
     setRecordStatusFilter('');
     loadRecordsData(1, recordPagination.limit, '', '');
-  };
-
-  const handleExportEmployeesExcel = () => {
-    const rows = filteredEmployees.map((emp) => ({
-      'Employee Code*': emp.employeeCode,
-      'Full Name*': emp.fullName,
-      'CNIC*': emp.cnic,
-      'Contact Number*': emp.contactNumber,
-      'Designation*': emp.designation,
-      'Branch*': emp.branch,
-      Zone: emp.zone,
-      'Joining Date*': emp.joiningDate,
-      Status: emp.status,
-      ...(emp.exitInfo
-        ? {
-            'Exit Type': emp.exitInfo.exitType,
-            'Last Working Date': emp.exitInfo.lastWorkingDate,
-            Reason: emp.exitInfo.reason,
-          }
-        : {}),
-    }));
-    exportRowsToExcel('PostEx_Employees_Export.xlsx', 'Employees', rows, [
-      'CNIC*',
-      'Contact Number*',
-    ]);
   };
 
   const handleExportCandidatesExcel = () => {
@@ -190,19 +131,17 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
         roleContext="Company Directory"
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            <Button
-              id="export-directory-excel-btn"
-              variant="secondary"
-              size="sm"
-              onClick={
-                directoryMode === 'employees'
-                  ? handleExportEmployeesExcel
-                  : handleExportCandidatesExcel
-              }
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Export to Excel</span>
-            </Button>
+            {directoryMode === 'candidates' && (
+              <Button
+                id="export-directory-excel-btn"
+                variant="secondary"
+                size="sm"
+                onClick={handleExportCandidatesExcel}
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Export to Excel</span>
+              </Button>
+            )}
             {directoryMode === 'candidates' && (
               <Button
                 id="refresh-records-btn"
@@ -232,9 +171,6 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
           }`}
         >
           <span>Employees &amp; Exit Lifecycle</span>
-          <Badge variant={directoryMode === 'employees' ? 'primary' : 'neutral'} size="sm">
-            {store.employees.length}
-          </Badge>
         </button>
         <button
           type="button"
@@ -255,209 +191,44 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
 
       {directoryMode === 'employees' ? (
         <div className="space-y-4">
-          <TableToolbar
-            searchInputId="employee-directory-search-input"
-            searchValue={empSearch}
-            onSearchChange={setEmpSearch}
-            searchPlaceholder="Search employee by code, name, CNIC, designation, or branch..."
-            filters={[
-              {
-                id: 'employee-directory-branch-filter',
-                label: 'Filter by Branch',
-                value: empBranchFilter,
-                onChange: setEmpBranchFilter,
-                options: [
-                  { value: '', label: 'All Branches' },
-                  ...branchOptions.map((b) => ({ value: b, label: b })),
-                ],
-              },
-            ]}
-            statusPills={[
-              {
-                value: 'Active',
-                label: 'Active',
-                variant: 'success',
-                count: store.employees.filter((e) => e.status === 'Active').length,
-              },
-              {
-                value: 'Exit In Progress',
-                label: 'Exit In Progress',
-                variant: 'warning',
-                count: store.employees.filter((e) => e.status === 'Exit In Progress').length,
-              },
-              {
-                value: 'Exited',
-                label: 'Exited / Archive',
-                variant: 'neutral',
-                count: store.employees.filter((e) => e.status === 'Exited').length,
-              },
-              {
-                value: 'all',
-                label: 'All Employees',
-                variant: 'info',
-                count: store.employees.length,
-              },
-            ]}
-            activeStatus={empStatusFilter}
-            onStatusChange={(val) =>
-              setEmpStatusFilter(
-                (val as 'Active' | 'Exit In Progress' | 'Exited' | 'all') || 'Active'
-              )
-            }
-            hasActiveFilters={Boolean(
-              empSearch || empBranchFilter || empStatusFilter !== 'Active'
-            )}
-            onReset={() => {
-              setEmpSearch('');
-              setEmpBranchFilter('');
-              setEmpStatusFilter('Active');
-            }}
-          />
+          <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+            <button
+              type="button"
+              id="subtab-active-employees"
+              onClick={() => setEmployeeSubTab('active_and_exiting')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                employeeSubTab === 'active_and_exiting'
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Active &amp; Exiting Employees
+            </button>
+            <button
+              type="button"
+              id="subtab-exited-archive"
+              onClick={() => setEmployeeSubTab('exited_archive')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                employeeSubTab === 'exited_archive'
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              <span>Exited Employees Archive</span>
+            </button>
+          </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee Code</TableHead>
-                <TableHead>Employee Name</TableHead>
-                <TableHead>Designation</TableHead>
-                <TableHead>CNIC / Phone</TableHead>
-                <TableHead>Branch / Zone</TableHead>
-                <TableHead hideOnTablet>Joining Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredEmployees.length > 0 ? (
-                filteredEmployees.map((emp) => {
-                  const canUndo =
-                    emp.status !== 'Active' &&
-                    canSuperAdminUndoExit(emp.exitInfo?.initiatedAt);
-
-                  return (
-                    <TableRow key={emp.id}>
-                      <TableCell
-                        mobileRole="field"
-                        mobileLabel="Employee Code"
-                        className="font-mono font-bold text-indigo-700 text-body"
-                      >
-                        {emp.employeeCode}
-                      </TableCell>
-                      <TableCell mobileRole="primary">
-                        <span className="font-bold text-slate-900 block">{toTitleCase(emp.fullName)}</span>
-                      </TableCell>
-                      <TableCell
-                        mobileRole="field"
-                        mobileLabel="Designation"
-                        className="text-slate-700 text-body"
-                      >
-                        {emp.designation}
-                      </TableCell>
-                      <TableCell
-                        mobileRole="field"
-                        mobileLabel="CNIC / Phone"
-                        className="font-mono text-body text-slate-600"
-                      >
-                        <div>{emp.cnic}</div>
-                        <div className="text-caption text-slate-400">{emp.contactNumber}</div>
-                      </TableCell>
-                      <TableCell
-                        mobileRole="field"
-                        mobileLabel="Branch / Zone"
-                        className="text-slate-600"
-                      >
-                        <span className="font-medium text-slate-800 block text-body">
-                          {emp.branch}
-                        </span>
-                        <span className="text-caption text-slate-400 block">{emp.zone}</span>
-                      </TableCell>
-                      <TableCell
-                        mobileRole="field"
-                        mobileLabel="Joining Date"
-                        hideOnTablet
-                        className="text-slate-500 font-mono text-body"
-                      >
-                        {emp.joiningDate}
-                      </TableCell>
-                      <TableCell mobileRole="status">
-                        {emp.status === 'Active' && (
-                          <Badge variant="success" size="sm" dot>
-                            Active
-                          </Badge>
-                        )}
-                        {emp.status === 'Exit In Progress' && (
-                          <Badge variant="warning" size="sm" dot>
-                            Exit In Progress ({emp.exitInfo?.exitType || 'ECF'})
-                          </Badge>
-                        )}
-                        {emp.status === 'Exited' && (
-                          <Badge variant="neutral" size="sm" dot>
-                            Exited (Archive)
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell mobileRole="actions" className="text-right">
-                        <div className="inline-flex items-center gap-1.5">
-                          {emp.status === 'Active' && (
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              id={`sa-mark-exit-btn-${emp.employeeCode}`}
-                              onClick={() => setExitTarget(emp)}
-                              leftIcon={<LogOut className="w-3.5 h-3.5" />}
-                            >
-                              Mark Exit
-                            </Button>
-                          )}
-                          {canUndo && (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              id={`sa-undo-exit-btn-${emp.employeeCode}`}
-                              onClick={() => {
-                                const res = undoEmployeeExit({
-                                  employeeId: emp.id,
-                                  actorName: 'Super Admin',
-                                });
-                                if (res.success) {
-                                  setNotification({
-                                    type: 'success',
-                                    text: `Undid exit for ${toTitleCase(emp.fullName)} (${emp.employeeCode}). Restored to Active headcount.`,
-                                  });
-                                } else {
-                                  setNotification({
-                                    type: 'error',
-                                    text: res.error || 'Could not undo exit.',
-                                  });
-                                }
-                              }}
-                              leftIcon={<RotateCcw className="w-3.5 h-3.5 text-indigo-600" />}
-                            >
-                              Undo Exit
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={8} className="py-12 text-center text-slate-400">
-                    No employees match the current filter.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-
-          <MarkExitModal
-            isOpen={Boolean(exitTarget)}
-            employee={exitTarget}
-            actorName="Super Admin"
-            onClose={() => setExitTarget(null)}
-            onSuccess={(msg) => setNotification({ type: 'success', text: msg })}
-          />
+          {employeeSubTab === 'active_and_exiting' ? (
+            <EmployeesTableView
+              role="super_admin"
+              actorName="Super Admin"
+              onNotification={(notif) => setNotification(notif)}
+            />
+          ) : (
+            <ExitedEmployeesArchiveView
+              onNotification={(notif) => setNotification(notif)}
+            />
+          )}
         </div>
       ) : (
         <>

@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import nodemailer, { type Transporter, type SendMailOptions as NodemailerSendMailOptions } from 'nodemailer';
 
 export type NotificationChannel = 'sms' | 'email' | 'in_app';
 export type NotificationRecipientType = 'candidate' | 'staff' | 'admin' | 'system';
@@ -21,57 +22,193 @@ export interface NotificationResult {
   error?: string;
 }
 
+export interface SendEmailResult {
+  success: boolean;
+  providerId?: string;
+  simulated: boolean;
+  error?: string;
+}
+
+export interface SendEmailOptions {
+  html?: string;
+  senderName?: string;
+  from?: string;
+}
+
 export interface NotificationProvider {
   name: string;
   sendSms(to: string, message: string): Promise<{ success: boolean; providerId?: string; error?: string }>;
-  sendEmail(to: string, subject: string, body: string): Promise<{ success: boolean; providerId?: string; error?: string }>;
+  sendEmail(to: string, subject: string, body: string, options?: SendEmailOptions): Promise<SendEmailResult>;
+  setTransporter?(transporter: any): void;
 }
 
 /**
- * Default provider: Logs formatted notifications to console.
- * Automatically switches to Twilio / SendGrid if environment credentials are supplied in the future.
+ * Standard log-only simulation provider (Default: EMAIL_PROVIDER=log).
+ * Does not transmit network packets; logs to console and marks simulated=true.
  */
-class ProductionReadyNotificationProvider implements NotificationProvider {
-  name = 'PostEx-Omnichannel-Provider';
-
-  private twilioConfigured = Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER);
-  private sendgridConfigured = Boolean(process.env.SENDGRID_API_KEY);
+export class LogNotificationProvider implements NotificationProvider {
+  name = 'PostEx-Log-Simulation-Provider';
 
   async sendSms(to: string, message: string) {
-    if (this.twilioConfigured) {
-      // Future Twilio integration hook
-      console.log(`[NOTIFICATION SERVICE] [TWILIO OUTBOUND] To: ${to} | Content: ${message.slice(0, 80)}...`);
-      return { success: true, providerId: `tw_${Date.now()}` };
-    }
-    // Standard simulation logging
     console.log(`[NOTIFICATION SERVICE] [SMS SIMULATION] To: ${to} | Message: "${message}"`);
     return { success: true, providerId: `sms_sim_${Date.now()}` };
   }
 
-  async sendEmail(to: string, subject: string, body: string) {
-    if (this.sendgridConfigured) {
-      // Future SendGrid integration hook
-      console.log(`[NOTIFICATION SERVICE] [SENDGRID OUTBOUND] To: ${to} | Subject: ${subject}`);
-      return { success: true, providerId: `sg_${Date.now()}` };
-    }
-    // Standard simulation logging
-    console.log(`[NOTIFICATION SERVICE] [EMAIL SIMULATION] To: ${to} | Subject: "${subject}" | Body: "${body.slice(0, 100)}..."`);
-    return { success: true, providerId: `email_sim_${Date.now()}` };
+  async sendEmail(to: string, subject: string, body: string, _options?: SendEmailOptions): Promise<SendEmailResult> {
+    console.log(
+      `[NOTIFICATION SERVICE] [EMAIL SIMULATION] To: ${to} | Subject: "${subject}" | Content length: ${body.length} chars`
+    );
+    return {
+      success: true,
+      providerId: `email_log_${Date.now()}`,
+      simulated: true,
+    };
   }
+}
+
+/**
+ * Real SMTP email provider using nodemailer (Active when EMAIL_PROVIDER=smtp).
+ * Configured via SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, EMAIL_FROM.
+ * Never logs credentials or secrets.
+ */
+export class SmtpNotificationProvider implements NotificationProvider {
+  name = 'PostEx-SMTP-Provider';
+  private transporter: Transporter | null = null;
+
+  constructor(customTransporter?: any) {
+    if (customTransporter) {
+      this.transporter = customTransporter;
+    }
+  }
+
+  setTransporter(transporter: any) {
+    this.transporter = transporter;
+  }
+
+  private getTransporter(): Transporter {
+    if (this.transporter) return this.transporter;
+
+    if (process.env.SMTP_TRANSPORT === 'json') {
+      this.transporter = nodemailer.createTransport({ jsonTransport: true });
+      return this.transporter;
+    }
+
+    const host = process.env.SMTP_HOST || 'localhost';
+    const port = parseInt(process.env.SMTP_PORT || '587', 10);
+    const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+    const user = process.env.SMTP_USER || '';
+    const pass = process.env.SMTP_PASS || '';
+
+    const transportOpts: any = {
+      host,
+      port,
+      secure,
+    };
+
+    if (user && pass) {
+      transportOpts.auth = { user, pass };
+    }
+
+    this.transporter = nodemailer.createTransport(transportOpts);
+    return this.transporter;
+  }
+
+  async sendSms(to: string, message: string) {
+    console.log(`[NOTIFICATION SERVICE] [SMS via SMTP Provider] To: ${to} | Content: ${message.slice(0, 80)}...`);
+    return { success: true, providerId: `sms_${Date.now()}` };
+  }
+
+  async sendEmail(to: string, subject: string, body: string, options?: SendEmailOptions): Promise<SendEmailResult> {
+    try {
+      const transporter = this.getTransporter();
+
+      const defaultFrom = process.env.EMAIL_FROM || '"PostEx HR" <noreply@postex.pk>';
+      let fromHeader = options?.from || defaultFrom;
+
+      if (options?.senderName && !options?.from) {
+        // Extract email address part from defaultFrom if formatted like "Name" <email>
+        const emailMatch = defaultFrom.match(/<([^>]+)>/);
+        const emailAddress = emailMatch ? emailMatch[1] : defaultFrom.trim();
+        fromHeader = `"${options.senderName.replace(/"/g, '')}" <${emailAddress}>`;
+      }
+
+      const mailOptions: NodemailerSendMailOptions = {
+        from: fromHeader,
+        to,
+        subject,
+        text: body,
+      };
+
+      if (options?.html) {
+        mailOptions.html = options.html;
+      }
+
+      const info = await transporter.sendMail(mailOptions);
+
+      return {
+        success: true,
+        providerId: info.messageId || `smtp_${Date.now()}`,
+        simulated: false,
+      };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[NOTIFICATION SERVICE] [SMTP Delivery Error]:', msg);
+      return {
+        success: false,
+        error: msg,
+        simulated: false,
+      };
+    }
+  }
+}
+
+/**
+ * Factory to instantiate the configured notification provider.
+ */
+export function createConfiguredNotificationProvider(): NotificationProvider {
+  const providerType = (process.env.EMAIL_PROVIDER || 'log').toLowerCase().trim();
+  if (providerType === 'smtp') {
+    return new SmtpNotificationProvider();
+  }
+  return new LogNotificationProvider();
 }
 
 export class CentralizedNotificationService {
   private provider: NotificationProvider;
 
   constructor(provider?: NotificationProvider) {
-    this.provider = provider || new ProductionReadyNotificationProvider();
+    this.provider = provider || createConfiguredNotificationProvider();
   }
 
   /**
-   * Sets or swaps external notification delivery provider (e.g. Twilio, AWS SNS, SendGrid).
+   * Sets or swaps external notification delivery provider.
    */
   setProvider(provider: NotificationProvider) {
     this.provider = provider;
+  }
+
+  /**
+   * Directly sets the underlying nodemailer transporter on the SMTP provider or wraps it.
+   */
+  setTransporter(transporter: any) {
+    if (this.provider && typeof this.provider.setTransporter === 'function') {
+      this.provider.setTransporter(transporter);
+    } else {
+      const smtp = new SmtpNotificationProvider(transporter);
+      this.provider = smtp;
+    }
+  }
+
+  /**
+   * Directly sends an email via configured provider.
+   */
+  async sendEmail(
+    to: string,
+    subject: string,
+    body: string,
+    options?: SendEmailOptions
+  ): Promise<SendEmailResult> {
+    return this.provider.sendEmail(to, subject, body, options);
   }
 
   /**
@@ -353,3 +490,12 @@ export class CentralizedNotificationService {
 }
 
 export const notificationService = new CentralizedNotificationService();
+
+export async function sendEmail(
+  to: string,
+  subject: string,
+  body: string,
+  options?: SendEmailOptions
+): Promise<SendEmailResult> {
+  return notificationService.sendEmail(to, subject, body, options);
+}

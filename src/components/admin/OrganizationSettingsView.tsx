@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   History,
   Archive,
@@ -12,8 +12,14 @@ import {
   Sparkles,
   Info,
   Type,
+  FileText,
+  Trash2,
+  ExternalLink,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { OrgSettings, superAdminApi } from '../../lib/superAdminApi';
+import { ecfTemplateApi, EcfTemplateMetadata } from '../../lib/ecfTemplateApi';
+import { DeleteConfirmationModal } from '../common/DeleteConfirmationModal';
 import { useBranding, DEFAULT_LOGIN_TAGLINE } from '../../lib/branding';
 import { optimizeBackgroundImage, optimizeLogoImage } from '../../lib/imageOptimizer';
 import { Button, Card, PageHeader, Input, Badge } from '../ui';
@@ -48,6 +54,115 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
 
   const logoInputRef = useRef<HTMLInputElement>(null);
   const bgInputRef = useRef<HTMLInputElement>(null);
+  const templateInputRef = useRef<HTMLInputElement>(null);
+
+  // ECF Template State
+  const [ecfTemplate, setEcfTemplate] = useState<EcfTemplateMetadata | null>(null);
+  const [ecfSignedUrl, setEcfSignedUrl] = useState<string | null>(null);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
+  const [uploadingTemplate, setUploadingTemplate] = useState(false);
+  const [isRemoveTemplateModalOpen, setIsRemoveTemplateModalOpen] = useState(false);
+  const [isRemovingTemplate, setIsRemovingTemplate] = useState(false);
+
+  // Fetch active ECF template
+  const loadEcfTemplate = useCallback(async () => {
+    setLoadingTemplate(true);
+    try {
+      const res = await ecfTemplateApi.getActiveEcfTemplate();
+      if (res.success) {
+        setEcfTemplate(res.template);
+        setEcfSignedUrl(res.signed_url);
+      }
+    } catch (err: unknown) {
+      console.warn('Could not load active ECF template:', err);
+    } finally {
+      setLoadingTemplate(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadEcfTemplate();
+  }, [loadEcfTemplate]);
+
+  // Handle ECF template file upload
+  const handleTemplateFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input so re-selecting same file triggers onChange
+    if (templateInputRef.current) {
+      templateInputRef.current.value = '';
+    }
+
+    // Client-side validation: file size <= 5 MB
+    const maxSizeBytes = 5 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      setNotification({
+        type: 'error',
+        text: `File exceeds maximum allowed size of 5 MB (selected: ${(file.size / (1024 * 1024)).toFixed(2)} MB).`,
+      });
+      return;
+    }
+
+    // Client-side validation: format check
+    const allowedExtensions = ['.png', '.jpg', '.jpeg', '.pdf'];
+    const fileNameLower = file.name.toLowerCase();
+    const hasAllowedExt = allowedExtensions.some((ext) => fileNameLower.endsWith(ext));
+    const allowedMimes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+    const hasAllowedMime = allowedMimes.includes(file.type.toLowerCase()) || file.type === '';
+
+    if (!hasAllowedExt || (!hasAllowedMime && file.type)) {
+      setNotification({
+        type: 'error',
+        text: 'Invalid file type. Only PNG, JPG, or PDF files are accepted for ECF templates.',
+      });
+      return;
+    }
+
+    setUploadingTemplate(true);
+    try {
+      const res = await ecfTemplateApi.uploadEcfTemplate(file);
+      if (res.success && res.template) {
+        setNotification({
+          type: 'success',
+          text: `ECF template "${file.name}" uploaded and activated successfully.`,
+        });
+        await loadEcfTemplate();
+      } else {
+        throw new Error(res.error || 'Upload failed.');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setNotification({ type: 'error', text: `Failed to upload ECF template: ${msg}` });
+    } finally {
+      setUploadingTemplate(false);
+    }
+  };
+
+  // Handle remove ECF template
+  const handleConfirmRemoveTemplate = async () => {
+    if (!ecfTemplate) return;
+    setIsRemovingTemplate(true);
+    try {
+      const res = await ecfTemplateApi.deleteEcfTemplate(ecfTemplate.id);
+      if (res.success) {
+        setNotification({
+          type: 'success',
+          text: 'ECF template deactivated. Forms will now use standard PostEx letterhead.',
+        });
+        setEcfTemplate(null);
+        setEcfSignedUrl(null);
+        setIsRemoveTemplateModalOpen(false);
+      } else {
+        throw new Error(res.error || 'Failed to remove template.');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setNotification({ type: 'error', text: `Failed to remove template: ${msg}` });
+    } finally {
+      setIsRemovingTemplate(false);
+    }
+  };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -364,7 +479,183 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
             </div>
           </Card>
 
-          {/* Card 2: Support Email & Data Retention Settings */}
+          {/* Card 2: ECF Template Management (Step 10) */}
+          <Card className="p-6 space-y-5" id="ecf-template-card">
+            <div className="pb-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <FileSpreadsheet className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-card-heading text-slate-900">
+                    Employee Clearance Form (ECF) Template
+                  </h3>
+                  {ecfTemplate ? (
+                    <Badge variant="emerald" size="sm">Active Template</Badge>
+                  ) : (
+                    <Badge variant="slate" size="sm">Default System Header</Badge>
+                  )}
+                </div>
+                <p className="text-caption text-slate-500 mt-0.5">
+                  Official letterhead or full-page background applied when generating printable ECF PDFs. Accepts PNG, JPG (header banner), or PDF (embedded full-page background) up to 5 MB.
+                </p>
+              </div>
+
+              {/* Upload Input & Primary Action */}
+              <div className="flex items-center gap-2 shrink-0">
+                <input
+                  ref={templateInputRef}
+                  type="file"
+                  accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf"
+                  className="hidden"
+                  onChange={handleTemplateFileSelect}
+                />
+                <Button
+                  id="btn-upload-ecf-template"
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  disabled={uploadingTemplate}
+                  onClick={() => templateInputRef.current?.click()}
+                  leftIcon={<Upload className="w-3.5 h-3.5" />}
+                >
+                  {uploadingTemplate
+                    ? 'Uploading...'
+                    : ecfTemplate
+                    ? 'Replace Template'
+                    : 'Upload Template'}
+                </Button>
+                {ecfTemplate && (
+                  <Button
+                    id="btn-remove-ecf-template"
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={uploadingTemplate || isRemovingTemplate}
+                    onClick={() => setIsRemoveTemplateModalOpen(true)}
+                    leftIcon={<Trash2 className="w-3.5 h-3.5 text-rose-500" />}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Template Status / Preview Panel */}
+            {loadingTemplate ? (
+              <div className="p-8 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
+                <RefreshCw className="w-4 h-4 animate-spin text-indigo-600" />
+                <span>Loading active ECF template status...</span>
+              </div>
+            ) : ecfTemplate ? (
+              <div className="p-4.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <span className="text-slate-400 font-medium block">File Name</span>
+                    <span className="font-semibold text-slate-900 break-all font-mono">
+                      {ecfTemplate.file_name}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium block">Upload Date</span>
+                    <span className="font-medium text-slate-700">
+                      {new Date(ecfTemplate.uploaded_at).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-medium block">Uploaded By</span>
+                    <span className="font-medium text-slate-700">
+                      {ecfTemplate.uploaded_by_name || 'Super Admin'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Preview Box */}
+                <div className="pt-2 border-t border-slate-200/60">
+                  <span className="text-caption font-bold text-slate-800 block mb-2">
+                    Template Preview
+                  </span>
+                  {ecfTemplate.mime_type.includes('pdf') ? (
+                    <div className="p-4 bg-white border border-slate-200 rounded-xl flex items-center justify-between shadow-2xs">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <span className="font-semibold text-xs text-slate-900 block">
+                            PDF Letterhead / Background Active
+                          </span>
+                          <span className="text-[11px] text-slate-500">
+                            Embedded as full-page background for all generated Employee Clearance Forms.
+                          </span>
+                        </div>
+                      </div>
+                      {ecfSignedUrl && (
+                        <a
+                          href={ecfSignedUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                        >
+                          <span>Open PDF</span>
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-2 shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                          Header Image Banner Preview
+                        </span>
+                        {ecfSignedUrl && (
+                          <a
+                            href={ecfSignedUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-800 font-medium"
+                          >
+                            <span>Full Image</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                      <div className="w-full max-h-36 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center p-2 overflow-hidden">
+                        {ecfSignedUrl ? (
+                          <img
+                            src={ecfSignedUrl}
+                            alt="ECF Template Header Preview"
+                            className="max-h-32 max-w-full object-contain"
+                          />
+                        ) : (
+                          <span className="text-xs text-slate-400">Loading preview...</span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Rendered centered at the top of page 1 with height scaled up to 80 points.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center space-y-2">
+                <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div className="text-xs font-semibold text-slate-700">No Custom ECF Template Active</div>
+                <p className="text-[11px] text-slate-500 max-w-md mx-auto">
+                  When no custom template is uploaded, generated Employee Clearance Forms automatically render a clean PostEx typography header. Upload a PNG, JPG, or PDF file to customize the document letterhead.
+                </p>
+              </div>
+            )}
+          </Card>
+
+          {/* Card 3: Support Email & Data Retention Settings */}
           <Card className="p-6 space-y-5">
             <div className="pb-3 border-b border-slate-100">
               <h3 className="text-card-heading text-slate-900">Support &amp; Data Retention Policy</h3>
@@ -496,6 +787,19 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
           </div>
         )}
       </Card>
+
+      {/* Delete Confirmation Modal for ECF Template */}
+      <DeleteConfirmationModal
+        isOpen={isRemoveTemplateModalOpen}
+        title="Remove ECF Template"
+        itemName={ecfTemplate?.file_name || 'ECF Template'}
+        itemType="template"
+        warningMessage="Deactivating this template will cause future clearance form PDFs to use the default PostEx letterhead. The original file will remain archived in cloud storage."
+        confirmButtonLabel="Deactivate Template"
+        isDeleting={isRemovingTemplate}
+        onConfirm={handleConfirmRemoveTemplate}
+        onCancel={() => setIsRemoveTemplateModalOpen(false)}
+      />
     </div>
   );
 };

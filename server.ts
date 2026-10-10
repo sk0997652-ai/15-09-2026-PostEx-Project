@@ -10,6 +10,10 @@ import { createCentralHrRouter } from './src/server/centralHrRoutes';
 import { createBranchManagerRouter } from './src/server/branchManagerRoutes';
 import { createHeadcountRouter } from './src/server/headcountRoutes';
 import { createWorkflowTrackerRouter } from './src/server/workflowTrackerRoutes';
+import { createEmployeesRouter } from './src/server/employeesRoutes';
+import { createExitRouter } from './src/server/exitRoutes';
+import { createEcfTemplateRouter } from './src/server/ecfTemplateRoutes';
+import { createPerformanceRouter } from './src/server/performanceRoutes';
 import { formTemplatesService } from './src/server/formTemplatesDbService';
 import { validateStatusTransition } from './src/server/workflowStateMachine';
 import { notificationService } from './src/server/notificationService';
@@ -621,19 +625,30 @@ app.post('/api/applications/decide', async (req, res) => {
     }
 
     const newStatus = decision === 'approved' ? 'approved' : decision === 'rejected' ? 'rejected' : 'needs_correction';
-    await supabaseAdmin
-      .from('applications')
-      .update({
-        status: newStatus,
+    const transitionRes = await executeApplicationTransition({
+      supabaseAdmin,
+      applicationId: application_id,
+      targetStatus: newStatus,
+      actorId: ctx.userId,
+      actorType: 'staff',
+      actionName: `hr_decision_${decision}`,
+      reason: reason || 'HR review decision',
+      extraUpdates: {
         decided_at: new Date().toISOString(),
-        decision_reason: reason,
-      })
-      .eq('id', application_id);
+        decision_reason: reason || 'HR review decision',
+        locked: decision === 'approved',
+      },
+    });
+
+    if (!transitionRes.success) {
+      return res.status(400).json({ success: false, error: transitionRes.error });
+    }
 
     return res.json({
       success: true,
       decision: decData,
       status: newStatus,
+      employee: transitionRes.employee || null,
       message: `HR decision recorded: ${decision}`,
     });
   } catch (err: unknown) {
@@ -1821,12 +1836,16 @@ app.post('/api/rbac/verify-access', async (req, res) => {
 // 4. API: SUPER ADMIN (Step 5), ZONAL HR (Step 6), CENTRAL HR (Step 7), & BRANCH MANAGER (Step 8)
 // ==============================================================================
 
+app.use('/api/admin/ecf-template', createEcfTemplateRouter(supabaseAdmin));
 app.use('/api/admin', createSuperAdminRouter(supabaseAdmin));
 app.use('/api/zonal', createZonalHrRouter(supabaseAdmin));
 app.use('/api/central', createCentralHrRouter(supabaseAdmin));
 app.use('/api/branch', createBranchManagerRouter(supabaseAdmin));
 app.use('/api/headcount', createHeadcountRouter(supabaseAdmin));
 app.use('/api/workflow-tracker', createWorkflowTrackerRouter(supabaseAdmin));
+app.use('/api/employees', createEmployeesRouter(supabaseAdmin));
+app.use('/api/exits', createExitRouter(supabaseAdmin));
+app.use('/api/performance', createPerformanceRouter(supabaseAdmin));
 
 // ==============================================================================
 // 5. Vite Middleware Setup

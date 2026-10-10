@@ -713,12 +713,25 @@ export function ZonalHrDashboard({
               <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
               <span>{error}</span>
             </div>
-            <button
-              onClick={() => setError(null)}
-              className="text-rose-500 hover:text-rose-800 font-bold ml-4 cursor-pointer"
-            >
-              &times;
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  loadDashboardData();
+                }}
+                className="px-2.5 py-1 text-xs font-semibold bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-md cursor-pointer transition-colors"
+              >
+                Retry
+              </button>
+              <button
+                type="button"
+                onClick={() => setError(null)}
+                className="text-rose-500 hover:text-rose-800 font-bold ml-2 cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
           </div>
         )}
 
