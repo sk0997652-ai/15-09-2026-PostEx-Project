@@ -53,11 +53,11 @@ export const Badge: React.FC<BadgeProps> = ({
 
   return (
     <span
-      className={`rounded-full px-2.5 py-0.5 text-tag inline-flex items-center gap-1.5 whitespace-nowrap select-none ${variantClasses} ${className}`}
+      className={`rounded-full px-2 py-0.5 text-tag inline-flex items-center gap-1.5 whitespace-nowrap select-none ${variantClasses} ${className}`}
       {...props}
     >
       {dot && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClasses}`} />}
-      {icon && <span className="shrink-0 inline-flex items-center">{icon}</span>}
+      {icon && <span className="shrink-0 inline-flex items-center [&>svg]:w-3 [&>svg]:h-3">{icon}</span>}
       {children}
     </span>
   );

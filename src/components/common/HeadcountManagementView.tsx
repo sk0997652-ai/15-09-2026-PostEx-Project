@@ -550,26 +550,26 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
         <div className="pt-4 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="space-y-1">
             <span className="text-caption text-slate-500 block">Configured Designations</span>
-            <span id="headcount-metric-designations" className="text-kpi-number text-slate-900 font-mono tabular-nums">
+            <span id="headcount-metric-designations" className="text-kpi-number text-slate-900 tabular-nums">
               {effectiveSummary.totalDesignations}
             </span>
           </div>
           <div className="space-y-1">
             <span className="text-caption text-slate-500 block">Total Approved Headcount</span>
-            <span id="headcount-metric-approved" className="text-kpi-number text-indigo-700 font-mono tabular-nums">
+            <span id="headcount-metric-approved" className="text-kpi-number text-indigo-700 tabular-nums">
               {effectiveSummary.totalApproved}
             </span>
           </div>
           <div className="space-y-1">
             <span className="text-caption text-slate-500 block">Active Enrolled Count (Fill-Rate)</span>
-            <span id="headcount-metric-active" className="text-kpi-number text-emerald-700 font-mono tabular-nums">
+            <span id="headcount-metric-active" className="text-kpi-number text-emerald-700 tabular-nums">
               {effectiveSummary.totalActive}{' '}
               <span className="text-caption font-semibold text-slate-500">({fillRatePct}%)</span>
             </span>
           </div>
           <div className="space-y-1">
             <span className="text-caption text-slate-500 block">Open Vacancy (Approved − Active)</span>
-            <span id="headcount-metric-vacancy" className="text-kpi-number text-amber-700 font-mono tabular-nums">
+            <span id="headcount-metric-vacancy" className="text-kpi-number text-amber-700 tabular-nums">
               {effectiveSummary.totalVacancy}
             </span>
           </div>
@@ -675,7 +675,7 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
                     id={`headcount-approved-${entry.designation_id}`}
                     mobileRole="field"
                     mobileLabel="Approved Count"
-                    className="md:text-right font-mono tabular-nums font-semibold text-slate-900"
+                    className="md:text-right tabular-nums font-semibold text-slate-900"
                   >
                     {entry.approved_count}
                   </TableCell>
@@ -684,7 +684,7 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
                     id={`headcount-active-${entry.designation_id}`}
                     mobileRole="field"
                     mobileLabel="Active Count"
-                    className="md:text-right font-mono tabular-nums font-semibold text-emerald-700"
+                    className="md:text-right tabular-nums font-semibold text-emerald-700"
                   >
                     {entry.active_count}
                   </TableCell>
@@ -693,7 +693,7 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
                     id={`headcount-vacancy-${entry.designation_id}`}
                     mobileRole="field"
                     mobileLabel="Vacancy"
-                    className={`md:text-right font-mono tabular-nums font-semibold ${
+                    className={`md:text-right tabular-nums font-semibold ${
                       entry.vacancy > 0 ? 'text-amber-700' : 'text-slate-500'
                     }`}
                   >
@@ -709,7 +709,7 @@ export const HeadcountManagementView: React.FC<HeadcountManagementViewProps> = (
                           <span aria-hidden="true">·</span>
                         </>
                       )}
-                      <span className="font-mono">
+                      <span>
                         {entry.updated_at ? new Date(entry.updated_at).toLocaleString() : '—'}
                       </span>
                     </div>

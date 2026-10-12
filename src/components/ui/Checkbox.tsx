@@ -11,10 +11,10 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     const inputId = id || (typeof label === 'string' ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
 
     return (
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         <label
           htmlFor={inputId}
-          className={`flex items-start gap-3 select-none cursor-pointer ${
+          className={`flex items-start gap-2 select-none cursor-pointer ${
             disabled ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >
@@ -23,12 +23,12 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             type="checkbox"
             id={inputId}
             disabled={disabled}
-            className={`w-4 h-4 mt-0.5 rounded text-indigo-600 border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0 transition-colors cursor-pointer disabled:cursor-not-allowed ${className}`}
+            className={`w-3.5 h-3.5 mt-0.5 rounded-[3px] text-indigo-600 border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0 transition-colors cursor-pointer disabled:cursor-not-allowed ${className}`}
             {...props}
           />
           {(label || description) && (
             <div className="flex-1 text-body">
-              {label && <span className="font-medium text-slate-800 block">{label}</span>}
+              {label && <span className="font-medium text-slate-800 block text-body">{label}</span>}
               {description && <span className="text-slate-500 text-caption block mt-0.5">{description}</span>}
             </div>
           )}

@@ -71,19 +71,30 @@ const PortalInner: React.FC<CandidatePortalProps> = ({ session, onSignOut }) => 
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Top Application Navbar */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-card-heading text-slate-900 flex items-center gap-2">
-                {branding.companyName} <span className="text-slate-400 font-normal">| {toTitleCase(t('app.title'))}</span>
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
+          {/* Brand & Portal Title */}
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            {branding.logoUrl ? (
+              <img
+                src={branding.logoUrl}
+                alt={branding.companyName}
+                className="h-8 max-h-9 max-w-[110px] sm:max-w-[160px] object-contain shrink-0"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                <Sparkles className="w-5 h-5" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <span className="text-card-heading text-slate-900 flex items-center gap-1.5 min-w-0">
+                <span className="font-bold truncate sm:overflow-visible sm:whitespace-normal">{branding.companyName}</span>
+                <span className="text-slate-400 font-normal hidden sm:inline whitespace-nowrap">| {toTitleCase(t('app.title'))}</span>
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Action Controls & Navigation */}
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {currentView !== 'language' && currentView !== 'consent' && currentView !== 'welcome' && (
               <Button
                 type="button"
@@ -93,14 +104,15 @@ const PortalInner: React.FC<CandidatePortalProps> = ({ session, onSignOut }) => 
                 id="candidate-nav-welcome-btn"
                 leftIcon={<Sparkles className="w-3.5 h-3.5 text-indigo-600" />}
                 className="text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border-indigo-200"
+                title={t('welcome.portalHome', 'Welcome')}
               >
-                {t('welcome.portalHome', 'Welcome')}
+                <span className="hidden sm:inline">{t('welcome.portalHome', 'Welcome')}</span>
               </Button>
             )}
 
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-caption">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-caption">
               <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span className="font-bold text-slate-900">{toTitleCase(session.candidate.full_name)}</span>
+              <span className="font-bold text-slate-900 truncate max-w-[130px]">{toTitleCase(session.candidate.full_name)}</span>
               <span className="text-indigo-700 font-mono text-tag">({session.candidate.joining_id})</span>
             </div>
 
@@ -113,8 +125,9 @@ const PortalInner: React.FC<CandidatePortalProps> = ({ session, onSignOut }) => 
               id="candidate-portal-signout-btn"
               leftIcon={<LogOut className="w-3.5 h-3.5" />}
               className="bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900"
+              title={t('common.logout')}
             >
-              {t('common.logout')}
+              <span className="hidden sm:inline">{t('common.logout')}</span>
             </Button>
           </div>
         </div>
@@ -183,8 +196,10 @@ const PortalInner: React.FC<CandidatePortalProps> = ({ session, onSignOut }) => 
 
 export const CandidatePortal: React.FC<CandidatePortalProps> = (props) => {
   return (
-    <I18nProvider>
-      <PortalInner {...props} />
-    </I18nProvider>
+    <div data-portal="candidate" className="min-h-screen bg-slate-50 flex flex-col">
+      <I18nProvider>
+        <PortalInner {...props} />
+      </I18nProvider>
+    </div>
   );
 };

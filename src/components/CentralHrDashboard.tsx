@@ -22,6 +22,7 @@ import {
 import { HeadcountManagementView } from './common/HeadcountManagementView';
 import { WorkflowTrackerView } from './common/WorkflowTrackerView';
 import { DataImportView } from './common/DataImportView';
+import { PageContainer, PortalSidebar, PortalSidebarItem } from './ui';
 import {
   CentralOverviewView,
   CreateJoinerView,
@@ -609,320 +610,224 @@ export function CentralHrDashboard({
     setNavOpen(false);
   };
 
+  const sidebarItems: PortalSidebarItem[] = [
+    {
+      id: 'central-nav-overview',
+      label: 'Zone Overview',
+      title: 'Zone Overview',
+      icon: <Building2 className="w-3.5 h-3.5" />,
+      active: activeTab === 'overview',
+      onSelect: () => handleSelectTab('overview'),
+    },
+    {
+      id: 'central-nav-headcount',
+      label: 'Headcount Management',
+      title: 'Headcount Management',
+      icon: <Users className="w-3.5 h-3.5" />,
+      active: activeTab === 'headcount',
+      onSelect: () => handleSelectTab('headcount'),
+    },
+    {
+      id: 'central-nav-workflow-tracker',
+      label: 'Workflow Tracker',
+      title: 'Workflow Tracker',
+      icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+      active: activeTab === 'workflow_tracker',
+      onSelect: () => handleSelectTab('workflow_tracker'),
+    },
+    {
+      id: 'central-nav-data-import',
+      label: 'Data Import',
+      title: 'Data Import',
+      icon: <Upload className="w-3.5 h-3.5" />,
+      active: activeTab === 'data_import',
+      onSelect: () => handleSelectTab('data_import'),
+    },
+    {
+      id: 'central-nav-create-joiner',
+      label: 'Create New Joiner',
+      title: 'Create New Joiner',
+      icon: <UserPlus className="w-3.5 h-3.5" />,
+      active: activeTab === 'create_joiner',
+      onSelect: () => handleSelectTab('create_joiner'),
+      badge: (
+        <span className="text-tag bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-1.5 py-0.5 rounded font-mono">
+          PX-ID
+        </span>
+      ),
+    },
+    {
+      id: 'central-nav-review-queue',
+      label: 'Review Queue',
+      title: 'Review Queue',
+      icon: <ClipboardList className="w-3.5 h-3.5" />,
+      active: activeTab === 'review_queue',
+      onSelect: () => handleSelectTab('review_queue'),
+      badge:
+        metrics && metrics.pendingReviewCount > 0 ? (
+          <span className="bg-amber-500 text-slate-900 text-tag px-2 py-0.5 rounded-full font-bold">
+            {metrics.pendingReviewCount}
+          </span>
+        ) : undefined,
+    },
+    {
+      id: 'central-nav-enrolled-roster',
+      label: 'Enrolled Employees',
+      title: 'Enrolled Employees',
+      icon: <UserCheck className="w-3.5 h-3.5" />,
+      active: activeTab === 'enrolled_roster',
+      onSelect: () => handleSelectTab('enrolled_roster'),
+      badge:
+        metrics && metrics.enrolledCount > 0 ? (
+          <span className="bg-slate-800 text-emerald-300 text-tag px-2 py-0.5 rounded-full border border-emerald-500/30">
+            {metrics.enrolledCount}
+          </span>
+        ) : undefined,
+    },
+  ];
+
+  const zoneTitle = currentUser.zone_name || metrics?.zoneName || 'Assigned Zone';
+
   return (
     <div className="flex flex-col sm:flex-row min-h-[calc(100vh-4rem)] bg-slate-100 overflow-x-hidden">
-      {/* Mobile Slide-In Drawer Backdrop (<640px) */}
-      {isNavOpen && (
-        <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 sm:hidden"
-          onClick={() => setNavOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* ------------------------------------------------------------- */}
-      {/* 1. Dedicated Central HR Sidebar Navigation */}
-      {/* ------------------------------------------------------------- */}
-      <aside
-        className={`${
-          isNavOpen
-            ? 'fixed inset-y-0 left-0 z-50 w-64 flex shadow-2xl'
-            : 'hidden'
-        } sm:static sm:z-auto sm:flex sm:w-16 lg:w-60 bg-slate-900 text-white flex-shrink-0 flex-col justify-between border-r border-slate-800 transition-all duration-200`}
-      >
-        <div className="p-3 sm:p-2 lg:p-4 space-y-4 lg:space-y-6">
-          {/* User Badge / Role Context */}
-          <div className="bg-slate-800/80 rounded-xl p-2.5 sm:p-2 lg:p-3 border border-slate-700/60">
-            <div className="flex items-center justify-between sm:justify-center lg:justify-between gap-2">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 font-bold shrink-0">
-                  <IdCard className="w-4 h-4 lg:w-5 lg:h-5" />
-                </div>
-                <div className="overflow-hidden sm:hidden lg:block">
-                  <h3 className="text-card-heading text-slate-100 truncate">{currentUser.name ? toTitleCase(currentUser.name) : currentUser.email}</h3>
-                  <div className="flex items-center gap-1 text-tag text-indigo-400 uppercase tracking-wider">
-                    <span>Central HR</span>
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setNavOpen(false)}
-                aria-label="Close navigation drawer"
-                className="sm:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="mt-3 pt-2.5 border-t border-slate-700/50 sm:hidden lg:flex items-center justify-between text-caption text-slate-300 flex">
-              <span className="text-slate-400">Assigned Zone:</span>
-              <span className="font-semibold text-white bg-slate-700/60 px-2 py-0.5 rounded text-caption truncate max-w-[120px]">
-                {currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
-              </span>
-            </div>
+      {/* Shared Portal Sidebar */}
+      <PortalSidebar
+        brand={{
+          icon: <IdCard className="w-3.5 h-3.5" />,
+          title: 'Central HR',
+          subtitle: zoneTitle,
+        }}
+        headerExtra={
+          <div className="text-caption text-slate-400 flex items-center gap-1.5 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/60 mt-1">
+            <Shield className="w-3 h-3 text-emerald-400 shrink-0" />
+            <span className="text-tag">Zone-Scoped Access</span>
           </div>
-
-          {/* Navigation Links */}
-          <nav className="space-y-1">
-            <button
-              id="central-nav-overview"
-              title="Zone Overview"
-              onClick={() => handleSelectTab('overview')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
-                activeTab === 'overview'
-                  ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Building2 className="w-4 h-4 text-indigo-300 shrink-0" />
-                <span className="sm:hidden lg:inline truncate">Zone Overview</span>
-              </div>
-            </button>
-
-            <button
-              id="central-nav-headcount"
-              title="Headcount Management"
-              onClick={() => handleSelectTab('headcount')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
-                activeTab === 'headcount'
-                  ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Users className="w-4 h-4 text-indigo-300 shrink-0" />
-                <span className="sm:hidden lg:inline truncate">Headcount Management</span>
-              </div>
-            </button>
-
-            <button
-              id="central-nav-workflow-tracker"
-              title="Workflow Tracker"
-              onClick={() => handleSelectTab('workflow_tracker')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
-                activeTab === 'workflow_tracker'
-                  ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <CheckCircle2 className="w-4 h-4 text-indigo-300 shrink-0" />
-                <span className="sm:hidden lg:inline truncate">Workflow Tracker</span>
-              </div>
-            </button>
-
-            <button
-              id="central-nav-data-import"
-              title="Data Import"
-              onClick={() => handleSelectTab('data_import')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
-                activeTab === 'data_import'
-                  ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Upload className="w-4 h-4 text-indigo-300 shrink-0" />
-                <span className="sm:hidden lg:inline truncate">Data Import</span>
-              </div>
-            </button>
-
-            <button
-              id="central-nav-create-joiner"
-              title="Create New Joiner"
-              onClick={() => handleSelectTab('create_joiner')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
-                activeTab === 'create_joiner'
-                  ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <UserPlus className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span className="sm:hidden lg:inline truncate">Create New Joiner</span>
-              </div>
-              <span className="text-tag bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-1.5 py-0.5 rounded font-mono sm:hidden lg:inline">
-                PX-ID
-              </span>
-            </button>
-
-            <button
-              id="central-nav-review-queue"
-              title="Review Queue"
-              onClick={() => handleSelectTab('review_queue')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
-                activeTab === 'review_queue'
-                  ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <ClipboardList className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="sm:hidden lg:inline truncate">Review Queue</span>
-              </div>
-              {metrics && metrics.pendingReviewCount > 0 && (
-                <span className="bg-amber-500 text-slate-900 text-tag px-2 py-0.5 rounded-full sm:hidden lg:inline">
-                  {metrics.pendingReviewCount}
-                </span>
-              )}
-            </button>
-
-            <button
-              id="central-nav-enrolled-roster"
-              title="Enrolled Employees"
-              onClick={() => handleSelectTab('enrolled_roster')}
-              className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
-                activeTab === 'enrolled_roster'
-                  ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <UserCheck className="w-4 h-4 text-indigo-400 shrink-0" />
-                <span className="sm:hidden lg:inline truncate">Enrolled Employees</span>
-              </div>
-              {metrics && metrics.enrolledCount > 0 && (
-                <span className="bg-slate-800 text-emerald-300 text-tag px-2 py-0.5 rounded-full border border-emerald-500/30 sm:hidden lg:inline">
-                  {metrics.enrolledCount}
-                </span>
-              )}
-            </button>
-          </nav>
-        </div>
-
-        {/* Bottom Sidebar Action */}
-        <div className="p-2.5 sm:p-2 lg:p-4 border-t border-slate-800 space-y-2">
-          <div className="text-caption text-slate-400 px-1 sm:hidden lg:flex items-center justify-between flex">
-            <span className="flex items-center gap-1.5">
-              <Shield className="w-3 h-3 text-emerald-400 shrink-0" />
-              <span>Zone-Scoped Access</span>
-            </span>
-          </div>
-          <button
-            id="central-hr-signout-btn"
-            title="Sign Out Session"
-            onClick={onSignOut}
-            className="w-full flex items-center justify-center gap-2 px-3 sm:px-0 lg:px-3 py-2 rounded-lg text-caption font-semibold text-rose-300 bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/40 transition-colors cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5 shrink-0" />
-            <span className="sm:hidden lg:inline">Sign Out Session</span>
-          </button>
-        </div>
-      </aside>
+        }
+        items={sidebarItems}
+        isOpen={isNavOpen}
+        onClose={() => setNavOpen(false)}
+        onSignOut={onSignOut}
+        signOutBtnId="central-hr-signout-btn"
+        signOutLabel="Sign Out"
+        userContext={{
+          name: currentUser.name ? toTitleCase(currentUser.name) : currentUser.email,
+        }}
+      />
 
       {/* ------------------------------------------------------------- */}
       {/* 2. Main Workspace Content Area */}
       {/* ------------------------------------------------------------- */}
-      <div className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
-        {/* Global Notifications */}
-        {errorMessage && (
-          <div className="mb-6 p-4 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-caption font-medium flex items-start justify-between shadow-xs">
-            <div className="flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <span className="font-bold">Error:</span> {errorMessage}
+      <main className="flex-1 min-w-0 overflow-y-auto bg-slate-50">
+        <PageContainer width={activeTab === 'create_joiner' ? 'form' : 'full'}>
+          {/* Global Notifications */}
+          {errorMessage && (
+            <div className="mb-6 p-4 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-caption font-medium flex items-start justify-between shadow-xs">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-rose-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <span className="font-bold">Error:</span> {errorMessage}
+                </div>
               </div>
+              <button onClick={() => setErrorMessage(null)} className="text-rose-600 hover:text-rose-900 cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <button onClick={() => setErrorMessage(null)} className="text-rose-600 hover:text-rose-900 cursor-pointer">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+          )}
 
-        {successMessage && (
-          <div className="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-caption font-medium flex items-start justify-between shadow-xs">
-            <div className="flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <span className="font-bold">Success:</span> {successMessage}
+          {successMessage && (
+            <div className="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-caption font-medium flex items-start justify-between shadow-xs">
+              <div className="flex items-start gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <span className="font-bold">Success:</span> {successMessage}
+                </div>
               </div>
+              <button onClick={() => setSuccessMessage(null)} className="text-emerald-600 hover:text-emerald-900 cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <button onClick={() => setSuccessMessage(null)} className="text-emerald-600 hover:text-emerald-900 cursor-pointer">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+          )}
 
-        {/* VIEW 1: OVERVIEW & PIPELINE METRICS */}
-        {activeTab === 'overview' && (
-          <CentralOverviewView
-            metrics={metrics}
-            zoneName={currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
-            onNavigateToCreateJoiner={() => setActiveTab('create_joiner')}
-            onNavigateToReviewQueue={() => setActiveTab('review_queue')}
-            onNavigateToHeadcount={() => setActiveTab('headcount')}
-            onRefresh={fetchMetrics}
-          />
-        )}
+          {/* VIEW 1: OVERVIEW & PIPELINE METRICS */}
+          {activeTab === 'overview' && (
+            <CentralOverviewView
+              metrics={metrics}
+              zoneName={currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
+              onNavigateToCreateJoiner={() => setActiveTab('create_joiner')}
+              onNavigateToReviewQueue={() => setActiveTab('review_queue')}
+              onNavigateToHeadcount={() => setActiveTab('headcount')}
+              onRefresh={fetchMetrics}
+            />
+          )}
 
-        {/* VIEW 1B: HEADCOUNT MANAGEMENT */}
-        {activeTab === 'headcount' && <HeadcountManagementView />}
+          {/* VIEW 1B: HEADCOUNT MANAGEMENT */}
+          {activeTab === 'headcount' && <HeadcountManagementView />}
 
-        {/* VIEW 1C: WORKFLOW TRACKER */}
-        {activeTab === 'workflow_tracker' && (
-          <WorkflowTrackerView
-            role="central_hr"
-            zoneName={currentUser.zone_name || metrics?.zoneName}
-            assignedBranches={
-              metrics?.branches?.map((b) => b.name) ||
-              formOptions.branches.map((b) => b.name)
-            }
-          />
-        )}
+          {/* VIEW 1C: WORKFLOW TRACKER */}
+          {activeTab === 'workflow_tracker' && (
+            <WorkflowTrackerView
+              role="central_hr"
+              zoneName={currentUser.zone_name || metrics?.zoneName}
+              assignedBranches={
+                metrics?.branches?.map((b) => b.name) ||
+                formOptions.branches.map((b) => b.name)
+              }
+            />
+          )}
 
-        {/* VIEW 1D: DATA IMPORT */}
-        {activeTab === 'data_import' && <DataImportView onDataImported={fetchFormOptions} />}
+          {/* VIEW 1D: DATA IMPORT */}
+          {activeTab === 'data_import' && <DataImportView onDataImported={fetchFormOptions} />}
 
-        {/* VIEW 2: CREATE NEW JOINER FORM */}
-        {activeTab === 'create_joiner' && (
-          <CreateJoinerView
-            joinerForm={joinerForm}
-            setJoinerForm={setJoinerForm}
-            handleCreateJoiner={handleCreateJoiner}
-            handleCnicBlur={handleCnicBlur}
-            duplicateWarning={duplicateWarning}
-            createdJoinerResult={createdJoinerResult}
-            setCreatedJoinerResult={setCreatedJoinerResult}
-            formOptions={formOptions}
-            loading={loading}
-            zoneName={currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
-            onNavigateToReviewQueue={() => setActiveTab('review_queue')}
-          />
-        )}
+          {/* VIEW 2: CREATE NEW JOINER FORM */}
+          {activeTab === 'create_joiner' && (
+            <CreateJoinerView
+              joinerForm={joinerForm}
+              setJoinerForm={setJoinerForm}
+              handleCreateJoiner={handleCreateJoiner}
+              handleCnicBlur={handleCnicBlur}
+              duplicateWarning={duplicateWarning}
+              createdJoinerResult={createdJoinerResult}
+              setCreatedJoinerResult={setCreatedJoinerResult}
+              formOptions={formOptions}
+              loading={loading}
+              zoneName={currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
+              onNavigateToReviewQueue={() => setActiveTab('review_queue')}
+            />
+          )}
 
-        {/* VIEW 3: REVIEW QUEUE (Zone Scoped) */}
-        {activeTab === 'review_queue' && (
-          <ReviewQueueView
-            applications={applications}
-            loading={loading}
-            queueSearch={queueSearch}
-            setQueueSearch={setQueueSearch}
-            queueStatusFilter={queueStatusFilter}
-            setQueueStatusFilter={setQueueStatusFilter}
-            queueBranchFilter={queueBranchFilter}
-            setQueueBranchFilter={setQueueBranchFilter}
-            queuePagination={queuePagination}
-            fetchApplications={fetchApplications}
-            formOptions={formOptions}
-            zoneName={currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
-            onOpenDossier={handleOpenDossier}
-          />
-        )}
+          {/* VIEW 3: REVIEW QUEUE (Zone Scoped) */}
+          {activeTab === 'review_queue' && (
+            <ReviewQueueView
+              applications={applications}
+              loading={loading}
+              queueSearch={queueSearch}
+              setQueueSearch={setQueueSearch}
+              queueStatusFilter={queueStatusFilter}
+              setQueueStatusFilter={setQueueStatusFilter}
+              queueBranchFilter={queueBranchFilter}
+              setQueueBranchFilter={setQueueBranchFilter}
+              queuePagination={queuePagination}
+              fetchApplications={fetchApplications}
+              formOptions={formOptions}
+              zoneName={currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
+              onOpenDossier={handleOpenDossier}
+            />
+          )}
 
-        {/* VIEW 4: ENROLLED EMPLOYEES ROSTER */}
-        {activeTab === 'enrolled_roster' && (
-          <EnrolledRosterView
-            enrolledEmployees={enrolledEmployees}
-            loading={loading}
-            zoneName={currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
-            onRefresh={fetchEnrolledEmployees}
-            onOpenPdfDossier={handleOpenPdfDossier}
-            role="central_hr"
-            actorName={currentUser.name || currentUser.email || 'Central HR'}
-          />
-        )}
-      </div>
+          {/* VIEW 4: ENROLLED EMPLOYEES ROSTER */}
+          {activeTab === 'enrolled_roster' && (
+            <EnrolledRosterView
+              enrolledEmployees={enrolledEmployees}
+              loading={loading}
+              zoneName={currentUser.zone_name || metrics?.zoneName || 'Assigned Zone'}
+              onRefresh={fetchEnrolledEmployees}
+              onOpenPdfDossier={handleOpenPdfDossier}
+              role="central_hr"
+              actorName={currentUser.name || currentUser.email || 'Central HR'}
+            />
+          )}
+        </PageContainer>
+      </main>
 
       {/* 3. Full Dossier View Modal */}
       <DossierModal

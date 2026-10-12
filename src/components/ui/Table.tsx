@@ -4,65 +4,95 @@ import { Button } from './Button';
 
 export interface TableProps extends React.TableHTMLAttributes<HTMLTableElement> {
   wrapperClassName?: string;
+  /** When scroll="x", turns off mobile card stacking and uses native horizontal scrolling */
+  scroll?: 'x' | 'auto' | 'none';
 }
 
 export const Table = React.forwardRef<HTMLTableElement, TableProps>(
-  ({ className = '', wrapperClassName = '', children, ...props }, ref) => (
-    <div
-      className={`w-full overflow-x-hidden md:overflow-x-auto md:border md:border-slate-200/90 md:rounded-2xl md:bg-white md:shadow-xs ${wrapperClassName}`}
-    >
-      <table
-        ref={ref}
-        className={`w-full text-left border-collapse tabular-nums max-md:block ${className}`}
-        {...props}
+  ({ className = '', wrapperClassName = '', scroll, children, ...props }, ref) => {
+    const isScrollX = scroll === 'x';
+
+    return (
+      <div
+        className={`w-full overflow-x-auto border border-slate-200 rounded-[6px] bg-white shadow-xs ${wrapperClassName}`}
       >
-        {children}
-      </table>
-    </div>
-  )
+        <table
+          ref={ref}
+          className={`w-full text-left border-collapse tabular-nums ${
+            isScrollX ? '' : 'max-md:block'
+          } ${className}`}
+          data-scroll={scroll}
+          {...props}
+        >
+          {children}
+        </table>
+      </div>
+    );
+  }
 );
 Table.displayName = 'Table';
 
-export const TableHeader = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className = '', children, ...props }, ref) => (
-  <thead
-    ref={ref}
-    className={`hidden md:table-header-group bg-slate-50/90 border-b border-slate-200/90 ${className}`}
-    {...props}
-  >
-    {children}
-  </thead>
-));
+export interface TableHeaderProps extends React.HTMLAttributes<HTMLTableSectionElement> {
+  scroll?: 'x' | 'auto' | 'none';
+}
+
+export const TableHeader = React.forwardRef<HTMLTableSectionElement, TableHeaderProps>(
+  ({ className = '', scroll, children, ...props }, ref) => {
+    return (
+      <thead
+        ref={ref}
+        className={`bg-slate-50 border-b border-slate-200 ${
+          scroll === 'x' ? 'table-header-group' : 'hidden md:table-header-group'
+        } ${className}`}
+        {...props}
+      >
+        {children}
+      </thead>
+    );
+  }
+);
 TableHeader.displayName = 'TableHeader';
 
-export const TableBody = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className = '', children, ...props }, ref) => (
-  <tbody
-    ref={ref}
-    className={`max-md:block max-md:space-y-3 md:divide-y md:divide-slate-100 bg-white max-md:bg-transparent ${className}`}
-    {...props}
-  >
-    {children}
-  </tbody>
-));
+export interface TableBodyProps extends React.HTMLAttributes<HTMLTableSectionElement> {
+  scroll?: 'x' | 'auto' | 'none';
+}
+
+export const TableBody = React.forwardRef<HTMLTableSectionElement, TableBodyProps>(
+  ({ className = '', scroll, children, ...props }, ref) => (
+    <tbody
+      ref={ref}
+      className={`bg-white divide-y divide-slate-100 ${
+        scroll === 'x'
+          ? 'table-row-group'
+          : 'max-md:block max-md:space-y-3 max-md:bg-transparent md:divide-y md:divide-slate-100'
+      } ${className}`}
+      {...props}
+    >
+      {children}
+    </tbody>
+  )
+);
 TableBody.displayName = 'TableBody';
 
-export const TableRow = React.forwardRef<
-  HTMLTableRowElement,
-  React.HTMLAttributes<HTMLTableRowElement>
->(({ className = '', children, ...props }, ref) => (
-  <tr
-    ref={ref}
-    className={`max-md:grid max-md:grid-cols-2 max-md:gap-x-3 max-md:gap-y-2.5 max-md:p-4 max-md:rounded-2xl max-md:border max-md:border-slate-200/90 max-md:bg-white max-md:shadow-xs hover:bg-slate-50/80 transition-colors duration-150 group ${className}`}
-    {...props}
-  >
-    {children}
-  </tr>
-));
+export interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {
+  scroll?: 'x' | 'auto' | 'none';
+}
+
+export const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
+  ({ className = '', scroll, children, ...props }, ref) => (
+    <tr
+      ref={ref}
+      className={`hover:bg-slate-50/80 transition-colors duration-150 group ${
+        scroll === 'x'
+          ? 'table-row'
+          : 'max-md:grid max-md:grid-cols-2 max-md:gap-x-3 max-md:gap-y-2.5 max-md:p-3 max-md:rounded-[6px] max-md:border max-md:border-slate-200 max-md:bg-white max-md:shadow-xs'
+      } ${className}`}
+      {...props}
+    >
+      {children}
+    </tr>
+  )
+);
 TableRow.displayName = 'TableRow';
 
 export interface TableHeadProps extends React.ThHTMLAttributes<HTMLTableCellElement> {
@@ -74,7 +104,7 @@ export const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
   ({ className = '', hideOnTablet = false, children, ...props }, ref) => (
     <th
       ref={ref}
-      className={`px-4 py-2.5 text-table-header text-slate-500 whitespace-nowrap select-none ${
+      className={`px-3 py-2 text-table-header font-semibold text-slate-500 whitespace-nowrap select-none bg-slate-50 ${
         hideOnTablet ? 'hidden lg:table-cell' : ''
       } ${className}`}
       {...props}
@@ -133,7 +163,7 @@ export const TableCell = React.forwardRef<HTMLTableCellElement, TableCellProps>(
           responsiveClasses = `max-md:col-span-1 max-md:order-2 max-md:flex max-md:justify-end max-md:items-start max-md:p-0 ${tabletVisibility}`;
           break;
         case 'actions':
-          responsiveClasses = `max-md:col-span-2 max-md:order-4 max-md:pt-2.5 max-md:mt-0.5 max-md:border-t max-md:border-slate-100 max-md:flex max-md:flex-wrap max-md:items-center max-md:justify-end max-md:gap-2 max-md:p-0 ${tabletVisibility}`;
+          responsiveClasses = `max-md:col-span-2 max-md:order-4 max-md:pt-2 max-md:mt-0.5 max-md:border-t max-md:border-slate-100 max-md:flex max-md:flex-wrap max-md:items-center max-md:justify-end max-md:gap-2 max-md:p-0 ${tabletVisibility}`;
           break;
         case 'field':
         default:
@@ -146,7 +176,7 @@ export const TableCell = React.forwardRef<HTMLTableCellElement, TableCellProps>(
       <td
         ref={ref}
         colSpan={colSpan}
-        className={`md:px-4 md:py-2.5 text-body text-slate-800 align-middle ${responsiveClasses} ${className}`}
+        className={`px-3 py-1.5 text-body text-slate-800 align-middle ${responsiveClasses} ${className}`}
         {...props}
       >
         {mobileLabel ? (
@@ -197,7 +227,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
 
   return (
     <div
-      className={`px-4 py-2.5 bg-slate-50 border border-slate-200/90 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-caption text-slate-500 select-none ${className}`}
+      className={`px-3 py-2 bg-slate-50 border border-slate-200 rounded-[6px] flex flex-col sm:flex-row items-center justify-between gap-3 text-caption text-slate-500 select-none ${className}`}
     >
       <div className="flex flex-wrap items-center gap-4">
         <span>
@@ -217,7 +247,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="px-2 py-1 bg-white border border-slate-200 rounded-md text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-600 cursor-pointer"
+              className="px-2 py-0.5 bg-white border border-slate-200 rounded-[6px] text-slate-900 text-caption focus:outline-none focus:ring-1 focus:ring-indigo-600 cursor-pointer"
             >
               {pageSizeOptions.map((opt) => (
                 <option key={opt} value={opt}>
@@ -232,7 +262,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
       <div className="flex items-center gap-2">
         <Button
           variant="secondary"
-          size="small"
+          size="sm"
           disabled={safePage <= 1}
           onClick={() => onPageChange(safePage - 1)}
           leftIcon={<ChevronLeft className="w-3.5 h-3.5" />}
@@ -244,7 +274,7 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
         </span>
         <Button
           variant="secondary"
-          size="small"
+          size="sm"
           disabled={safePage >= safeTotalPages}
           onClick={() => onPageChange(safePage + 1)}
           rightIcon={<ChevronRight className="w-3.5 h-3.5" />}

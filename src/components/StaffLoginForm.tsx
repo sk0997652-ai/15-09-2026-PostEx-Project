@@ -271,7 +271,7 @@ export const StaffLoginForm: React.FC<StaffLoginFormProps> = ({ onLoginSuccess }
             </div>
             <div>
               <h3 className="text-card-heading text-slate-900">Staff Authenticated</h3>
-              <span className="text-caption text-slate-500 font-mono">Active Corporate Session</span>
+              <span className="text-caption text-slate-500">Active Corporate Session</span>
             </div>
           </div>
           <Button

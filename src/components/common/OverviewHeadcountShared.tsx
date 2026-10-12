@@ -75,18 +75,18 @@ export const TrendIndicator: React.FC<{
     if (pill) {
       return (
         <span
-          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-tag bg-slate-100 text-slate-500 border border-slate-200/80 font-mono tabular-nums"
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-tag bg-slate-100 text-slate-500 border border-slate-200/80 tabular-nums"
           title="No prior-month historical data exists yet"
           data-testid="trend-indicator-empty"
         >
           <span>—</span>
-          <span className="font-sans text-tag text-slate-500">Current baseline</span>
+          <span className="text-tag text-slate-500">Current baseline</span>
         </span>
       );
     }
     return (
       <span
-        className="inline-flex items-center gap-1 text-caption font-mono font-semibold text-slate-400 tabular-nums"
+        className="inline-flex items-center gap-1 text-caption font-semibold text-slate-400 tabular-nums"
         title="No prior-month historical data exists yet"
         data-testid="trend-indicator-empty"
       >
@@ -99,19 +99,19 @@ export const TrendIndicator: React.FC<{
     if (pill) {
       return (
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-tag bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-mono tabular-nums"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-tag bg-emerald-50 text-emerald-700 border border-emerald-200/80 tabular-nums"
           title={`Current Active (${trend.current_active}) vs Last Month (${trend.last_month_active})`}
           data-testid="trend-indicator-up"
         >
           <span>▲</span>
           {typeof trend.delta === 'number' && <span>+{trend.delta}</span>}
-          <span className="font-sans text-tag text-emerald-600 ml-0.5">vs last mo</span>
+          <span className="text-tag text-emerald-600 ml-0.5">vs last mo</span>
         </span>
       );
     }
     return (
       <span
-        className="inline-flex items-center gap-1 text-caption font-mono font-bold text-emerald-600 tabular-nums"
+        className="inline-flex items-center gap-1 text-caption font-bold text-emerald-600 tabular-nums"
         title={`Current Active (${trend.current_active}) vs Last Month (${trend.last_month_active})`}
         data-testid="trend-indicator-up"
       >
@@ -125,19 +125,19 @@ export const TrendIndicator: React.FC<{
     if (pill) {
       return (
         <span
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-tag bg-rose-50 text-rose-700 border border-rose-200/80 font-mono tabular-nums"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-tag bg-rose-50 text-rose-700 border border-rose-200/80 tabular-nums"
           title={`Current Active (${trend.current_active}) vs Last Month (${trend.last_month_active})`}
           data-testid="trend-indicator-down"
         >
           <span>▼</span>
           {typeof trend.delta === 'number' && <span>{trend.delta}</span>}
-          <span className="font-sans text-tag text-rose-600 ml-0.5">vs last mo</span>
+          <span className="text-tag text-rose-600 ml-0.5">vs last mo</span>
         </span>
       );
     }
     return (
       <span
-        className="inline-flex items-center gap-1 text-caption font-mono font-bold text-rose-600 tabular-nums"
+        className="inline-flex items-center gap-1 text-caption font-bold text-rose-600 tabular-nums"
         title={`Current Active (${trend.current_active}) vs Last Month (${trend.last_month_active})`}
         data-testid="trend-indicator-down"
       >
@@ -150,19 +150,19 @@ export const TrendIndicator: React.FC<{
   if (pill) {
     return (
       <span
-        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-tag bg-slate-100 text-slate-600 border border-slate-200/80 font-mono tabular-nums"
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-tag bg-slate-100 text-slate-600 border border-slate-200/80 tabular-nums"
         title={`Unchanged vs Last Month (${trend.last_month_active})`}
         data-testid="trend-indicator-flat"
       >
         <span>— 0</span>
-        <span className="font-sans text-tag text-slate-500 ml-0.5">vs last mo</span>
+        <span className="text-tag text-slate-500 ml-0.5">vs last mo</span>
       </span>
     );
   }
 
   return (
     <span
-      className="inline-flex items-center gap-1 text-caption font-mono font-semibold text-slate-500 tabular-nums"
+      className="inline-flex items-center gap-1 text-caption font-semibold text-slate-500 tabular-nums"
       title={`Unchanged vs Last Month (${trend.last_month_active})`}
       data-testid="trend-indicator-flat"
     >
@@ -220,17 +220,17 @@ export const HeadcountCategoryRollupCards: React.FC<{
             </div>
 
             <div className="flex items-baseline gap-2.5 mt-1">
-              <span className="text-kpi-number text-slate-900 font-mono tabular-nums">
+              <span className="text-kpi-number text-slate-900 tabular-nums">
                 {total.active}
               </span>
-              <span className="text-caption font-medium text-slate-400 font-mono tabular-nums">
+              <span className="text-caption font-medium text-slate-400 tabular-nums">
                 / {total.approved} Approved
               </span>
             </div>
 
             <div className="mt-3 flex items-center justify-between gap-2">
               <TrendIndicator trend={total.trend} pill />
-              <span className="text-caption text-slate-500 font-mono tabular-nums">
+              <span className="text-caption text-slate-500 tabular-nums">
                 Fill: <strong className="text-indigo-600">{total.fill_rate_pct}%</strong>
               </span>
             </div>
@@ -246,7 +246,7 @@ export const HeadcountCategoryRollupCards: React.FC<{
             <div className="flex items-center justify-between gap-2 text-caption">
               <span className="text-slate-500 font-medium">
                 Open Vacancy:{' '}
-                <strong className="text-slate-900 font-mono tabular-nums">{total.vacancy}</strong>
+                <strong className="text-slate-900 tabular-nums">{total.vacancy}</strong>
               </span>
               <FillRateStatusBadge
                 status={total.fill_rate_status}
@@ -272,17 +272,17 @@ export const HeadcountCategoryRollupCards: React.FC<{
             </div>
 
             <div className="flex items-baseline gap-2.5 mt-1">
-              <span className="text-kpi-number text-sky-700 font-mono tabular-nums">
+              <span className="text-kpi-number text-sky-700 tabular-nums">
                 {rider.active}
               </span>
-              <span className="text-caption font-medium text-slate-400 font-mono tabular-nums">
+              <span className="text-caption font-medium text-slate-400 tabular-nums">
                 / {rider.approved} Approved
               </span>
             </div>
 
             <div className="mt-3 flex items-center justify-between gap-2">
               <TrendIndicator trend={rider.trend} pill />
-              <span className="text-caption text-slate-500 font-mono tabular-nums">
+              <span className="text-caption text-slate-500 tabular-nums">
                 Fill: <strong className="text-sky-600">{rider.fill_rate_pct}%</strong>
               </span>
             </div>
@@ -298,7 +298,7 @@ export const HeadcountCategoryRollupCards: React.FC<{
             <div className="flex items-center justify-between gap-2 text-caption">
               <span className="text-slate-500 font-medium">
                 Rider Vacancy:{' '}
-                <strong className="text-slate-900 font-mono tabular-nums">{rider.vacancy}</strong>
+                <strong className="text-slate-900 tabular-nums">{rider.vacancy}</strong>
               </span>
               <FillRateStatusBadge
                 status={rider.fill_rate_status}
@@ -324,17 +324,17 @@ export const HeadcountCategoryRollupCards: React.FC<{
             </div>
 
             <div className="flex items-baseline gap-2.5 mt-1">
-              <span className="text-kpi-number text-emerald-700 font-mono tabular-nums">
+              <span className="text-kpi-number text-emerald-700 tabular-nums">
                 {inHouse.active}
               </span>
-              <span className="text-caption font-medium text-slate-400 font-mono tabular-nums">
+              <span className="text-caption font-medium text-slate-400 tabular-nums">
                 / {inHouse.approved} Approved
               </span>
             </div>
 
             <div className="mt-3 flex items-center justify-between gap-2">
               <TrendIndicator trend={inHouse.trend} pill />
-              <span className="text-caption text-slate-500 font-mono tabular-nums">
+              <span className="text-caption text-slate-500 tabular-nums">
                 Fill: <strong className="text-emerald-600">{inHouse.fill_rate_pct}%</strong>
               </span>
             </div>
@@ -350,7 +350,7 @@ export const HeadcountCategoryRollupCards: React.FC<{
             <div className="flex items-center justify-between gap-2 text-caption">
               <span className="text-slate-500 font-medium">
                 In-House Vacancy:{' '}
-                <strong className="text-slate-900 font-mono tabular-nums">{inHouse.vacancy}</strong>
+                <strong className="text-slate-900 tabular-nums">{inHouse.vacancy}</strong>
               </span>
               <FillRateStatusBadge
                 status={inHouse.fill_rate_status}
@@ -490,7 +490,7 @@ export const ZoneBranchFlashcardsSection: React.FC<{
                       <span className="text-table-header text-sky-700 block">
                         Riders (Act / Appr)
                       </span>
-                      <div className="mt-1 flex items-baseline gap-1 font-mono tabular-nums">
+                      <div className="mt-1 flex items-baseline gap-1 tabular-nums">
                         <span className="text-card-heading text-sky-700">
                           {z.rider.active}
                         </span>
@@ -504,7 +504,7 @@ export const ZoneBranchFlashcardsSection: React.FC<{
                       <span className="text-table-header text-emerald-700 block">
                         In-House (Act / Appr)
                       </span>
-                      <div className="mt-1 flex items-baseline gap-1 font-mono tabular-nums">
+                      <div className="mt-1 flex items-baseline gap-1 tabular-nums">
                         <span className="text-card-heading text-emerald-700">
                           {z.in_house.active}
                         </span>
@@ -601,7 +601,7 @@ export const ZoneBranchFlashcardsSection: React.FC<{
                 Zone Total (Act / Appr)
               </span>
               <div className="mt-1 flex items-baseline justify-between">
-                <span className="text-card-heading text-slate-900 font-mono tabular-nums">
+                <span className="text-card-heading text-slate-900 tabular-nums">
                   {summaryTotal.active} / {summaryTotal.approved}
                 </span>
                 <TrendIndicator trend={summaryTotal.trend} />
@@ -613,7 +613,7 @@ export const ZoneBranchFlashcardsSection: React.FC<{
                 Riders (Act / Appr)
               </span>
               <div className="mt-1 flex items-baseline justify-between">
-                <span className="text-card-heading text-sky-700 font-mono tabular-nums">
+                <span className="text-card-heading text-sky-700 tabular-nums">
                   {summaryRider.active} / {summaryRider.approved}
                 </span>
                 <TrendIndicator trend={summaryRider.trend} />
@@ -625,7 +625,7 @@ export const ZoneBranchFlashcardsSection: React.FC<{
                 In-House (Act / Appr)
               </span>
               <div className="mt-1 flex items-baseline justify-between">
-                <span className="text-card-heading text-emerald-700 font-mono tabular-nums">
+                <span className="text-card-heading text-emerald-700 tabular-nums">
                   {summaryInHouse.active} / {summaryInHouse.approved}
                 </span>
                 <TrendIndicator trend={summaryInHouse.trend} />
@@ -637,10 +637,10 @@ export const ZoneBranchFlashcardsSection: React.FC<{
                 Open Zone Vacancy
               </span>
               <div className="mt-1 flex items-baseline justify-between">
-                <span className="text-card-heading text-amber-700 font-mono tabular-nums">
+                <span className="text-card-heading text-amber-700 tabular-nums">
                   {summaryTotal.vacancy}
                 </span>
-                <span className="text-caption text-slate-500 font-mono">
+                <span className="text-caption text-slate-500 tabular-nums">
                   {summaryTotal.fill_rate_pct}% Filled
                 </span>
               </div>
@@ -685,7 +685,7 @@ export const ZoneBranchFlashcardsSection: React.FC<{
                     <span className="text-table-header text-sky-700 block">
                       Riders (Act / Appr)
                     </span>
-                    <span className="text-card-heading text-sky-700 font-mono tabular-nums mt-0.5 block">
+                    <span className="text-card-heading text-sky-700 tabular-nums mt-0.5 block">
                       {b.rider.active} / {b.rider.approved}
                     </span>
                   </div>
@@ -693,7 +693,7 @@ export const ZoneBranchFlashcardsSection: React.FC<{
                     <span className="text-table-header text-emerald-700 block">
                       In-House (Act / Appr)
                     </span>
-                    <span className="text-card-heading text-emerald-700 font-mono tabular-nums mt-0.5 block">
+                    <span className="text-card-heading text-emerald-700 tabular-nums mt-0.5 block">
                       {b.in_house.active} / {b.in_house.approved}
                     </span>
                   </div>
@@ -705,7 +705,7 @@ export const ZoneBranchFlashcardsSection: React.FC<{
                   status={b.total.fill_rate_status}
                   fillRatePct={b.total.fill_rate_pct}
                 />
-                <span className="text-slate-500 font-mono text-caption">
+                <span className="text-slate-500 tabular-nums text-caption">
                   Vacancy: <strong className="text-slate-900">{b.total.vacancy}</strong>
                 </span>
               </div>
@@ -762,7 +762,7 @@ export const ZoneBranchFlashcardsSection: React.FC<{
               <span className="text-table-header text-sky-700 block">
                 Branch Riders (Active / Approved)
               </span>
-              <span className="text-card-heading text-sky-700 font-mono tabular-nums mt-1 block">
+              <span className="text-card-heading text-sky-700 tabular-nums mt-1 block">
                 {summaryRider.active} / {summaryRider.approved}
               </span>
             </div>
@@ -770,7 +770,7 @@ export const ZoneBranchFlashcardsSection: React.FC<{
               <span className="text-table-header text-emerald-700 block">
                 Branch In-House Staff (Active / Approved)
               </span>
-              <span className="text-card-heading text-emerald-700 font-mono tabular-nums mt-1 block">
+              <span className="text-card-heading text-emerald-700 tabular-nums mt-1 block">
                 {summaryInHouse.active} / {summaryInHouse.approved}
               </span>
             </div>
@@ -778,7 +778,7 @@ export const ZoneBranchFlashcardsSection: React.FC<{
               <span className="text-table-header text-slate-500 block">
                 Open Branch Vacancy
               </span>
-              <span className="text-card-heading text-slate-900 font-mono tabular-nums mt-1 block">
+              <span className="text-card-heading text-slate-900 tabular-nums mt-1 block">
                 {summaryTotal.vacancy}
               </span>
             </div>
@@ -795,10 +795,10 @@ export const ZoneBranchFlashcardsSection: React.FC<{
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-sky-400" />
             <span className="text-slate-300">Approved Riders:</span>
-            <strong className="font-mono text-body font-bold text-white tabular-nums">
+            <strong className="text-body font-bold text-white tabular-nums">
               {summaryRider.approved}
             </strong>
-            <span className="text-slate-400 font-mono text-caption">
+            <span className="text-slate-400 text-caption">
               ({summaryRider.active} active)
             </span>
           </div>
@@ -806,10 +806,10 @@ export const ZoneBranchFlashcardsSection: React.FC<{
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span className="text-slate-300">Approved In-House Staff:</span>
-            <strong className="font-mono text-body font-bold text-white tabular-nums">
+            <strong className="text-body font-bold text-white tabular-nums">
               {summaryInHouse.approved}
             </strong>
-            <span className="text-slate-400 font-mono text-caption">
+            <span className="text-slate-400 text-caption">
               ({summaryInHouse.active} active)
             </span>
           </div>
@@ -817,7 +817,7 @@ export const ZoneBranchFlashcardsSection: React.FC<{
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-indigo-400" />
             <span className="text-slate-300">Total Approved Budget:</span>
-            <strong className="font-mono text-body font-bold text-white tabular-nums">
+            <strong className="text-body font-bold text-white tabular-nums">
               {summaryTotal.approved}
             </strong>
           </div>
@@ -1072,21 +1072,21 @@ export const UnifiedBranchHeadcountTable: React.FC<{
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell hideOnTablet hideOnMobile className="text-right font-mono text-body font-semibold text-slate-700 tabular-nums">
+                  <TableCell hideOnTablet hideOnMobile className="text-right text-body font-semibold text-slate-700 tabular-nums">
                     {b.rider.approved}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Riders (Act / Appr)" className="md:text-right font-mono text-body font-bold text-sky-700 tabular-nums">
+                  <TableCell mobileRole="field" mobileLabel="Riders (Act / Appr)" className="md:text-right text-body font-bold text-sky-700 tabular-nums">
                     <span>{b.rider.active}</span>
                     <span className="md:hidden text-slate-400 font-normal"> / {b.rider.approved}</span>
                   </TableCell>
-                  <TableCell hideOnTablet hideOnMobile className="text-right font-mono text-body font-semibold text-slate-700 tabular-nums">
+                  <TableCell hideOnTablet hideOnMobile className="text-right text-body font-semibold text-slate-700 tabular-nums">
                     {b.in_house.approved}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="In-House (Act / Appr)" className="md:text-right font-mono text-body font-bold text-emerald-700 tabular-nums">
+                  <TableCell mobileRole="field" mobileLabel="In-House (Act / Appr)" className="md:text-right text-body font-bold text-emerald-700 tabular-nums">
                     <span>{b.in_house.active}</span>
                     <span className="md:hidden text-slate-400 font-normal"> / {b.in_house.approved}</span>
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Open Vacancy" className="md:text-right font-mono text-body font-bold text-amber-700 tabular-nums">
+                  <TableCell mobileRole="field" mobileLabel="Open Vacancy" className="md:text-right text-body font-bold text-amber-700 tabular-nums">
                     {b.total.vacancy}
                   </TableCell>
                   <TableCell mobileRole="status">
@@ -1235,14 +1235,14 @@ export const OverviewRowDetailModal: React.FC<{
               Total Employees
             </div>
             <div className="mt-1.5 flex items-baseline justify-between">
-              <span className="text-kpi-number text-slate-900 font-mono tabular-nums">
+              <span className="text-kpi-number text-slate-900 tabular-nums">
                 {totalBlock.active} / {totalBlock.approved}
               </span>
               <TrendIndicator trend={totalBlock.trend} />
             </div>
             <div className="mt-2.5 flex items-center justify-between text-caption">
               <span className="text-slate-600">
-                Vacancy: <strong className="font-mono">{totalBlock.vacancy}</strong>
+                Vacancy: <strong>{totalBlock.vacancy}</strong>
               </span>
               <FillRateStatusBadge
                 status={totalBlock.fill_rate_status}
@@ -1257,14 +1257,14 @@ export const OverviewRowDetailModal: React.FC<{
                 Rider Category
               </div>
               <div className="mt-1.5 flex items-baseline justify-between">
-                <span className="text-kpi-number text-sky-700 font-mono tabular-nums">
+                <span className="text-kpi-number text-sky-700 tabular-nums">
                   {riderBlock.active} / {riderBlock.approved}
                 </span>
                 <TrendIndicator trend={riderBlock.trend} />
               </div>
               <div className="mt-2.5 flex items-center justify-between text-caption">
                 <span className="text-slate-600">
-                  Vacancy: <strong className="font-mono">{riderBlock.vacancy}</strong>
+                  Vacancy: <strong>{riderBlock.vacancy}</strong>
                 </span>
                 <FillRateStatusBadge
                   status={riderBlock.fill_rate_status}
@@ -1280,14 +1280,14 @@ export const OverviewRowDetailModal: React.FC<{
                 In-House Staff Category
               </div>
               <div className="mt-1.5 flex items-baseline justify-between">
-                <span className="text-kpi-number text-emerald-700 font-mono tabular-nums">
+                <span className="text-kpi-number text-emerald-700 tabular-nums">
                   {inHouseBlock.active} / {inHouseBlock.approved}
                 </span>
                 <TrendIndicator trend={inHouseBlock.trend} />
               </div>
               <div className="mt-2.5 flex items-center justify-between text-caption">
                 <span className="text-slate-600">
-                  Vacancy: <strong className="font-mono">{inHouseBlock.vacancy}</strong>
+                  Vacancy: <strong>{inHouseBlock.vacancy}</strong>
                 </span>
                 <FillRateStatusBadge
                   status={inHouseBlock.fill_rate_status}
@@ -1352,7 +1352,7 @@ export const OverviewRowDetailModal: React.FC<{
               className="py-10 text-center text-caption text-slate-500 border border-dashed border-slate-200 rounded-xl"
             >
               0 active employees enrolled in this scope so far. Approved target:{' '}
-              <strong className="font-mono text-slate-800">{totalBlock.approved}</strong>.
+              <strong className="text-slate-800">{totalBlock.approved}</strong>.
             </div>
           ) : (
             <div id="overview-historical-chart" className="space-y-4">
@@ -1369,7 +1369,7 @@ export const OverviewRowDetailModal: React.FC<{
                       <span>In-House Staff Active</span>
                     </span>
                   </div>
-                  <span className="font-mono">
+                  <span>
                     Approved Target: <strong>{totalBlock.approved}</strong>
                   </span>
                 </div>
@@ -1390,7 +1390,7 @@ export const OverviewRowDetailModal: React.FC<{
                         key={pt.month_key}
                         className="flex flex-col items-center gap-1.5"
                       >
-                        <div className="text-tag font-mono text-slate-800 tabular-nums">
+                        <div className="text-tag text-slate-800 tabular-nums">
                           {pt.total_active}
                         </div>
                         <div className="w-full max-w-[48px] h-28 bg-slate-200/70 rounded-t-lg flex flex-col justify-end overflow-hidden p-0.5">
@@ -1413,7 +1413,7 @@ export const OverviewRowDetailModal: React.FC<{
                         <div className="text-table-header text-slate-700">
                           {pt.month_label}
                         </div>
-                        <div className="text-caption text-slate-500 font-mono">
+                        <div className="text-caption text-slate-500">
                           +{pt.new_enrollments} joined
                         </div>
                       </div>
@@ -1438,19 +1438,19 @@ export const OverviewRowDetailModal: React.FC<{
                   {historicalSeries.map((pt) => (
                     <TableRow key={pt.month_key}>
                       <TableCell mobileRole="primary" className="font-semibold text-body">{pt.month_label}</TableCell>
-                      <TableCell mobileRole="field" mobileLabel="Rider Active" className="md:text-right font-mono text-body text-sky-700">
+                      <TableCell mobileRole="field" mobileLabel="Rider Active" className="md:text-right text-body text-sky-700">
                         {pt.rider_active}
                       </TableCell>
-                      <TableCell mobileRole="field" mobileLabel="In-House Active" className="md:text-right font-mono text-body text-emerald-700">
+                      <TableCell mobileRole="field" mobileLabel="In-House Active" className="md:text-right text-body text-emerald-700">
                         {pt.in_house_active}
                       </TableCell>
-                      <TableCell mobileRole="status" className="md:text-right font-mono text-body font-bold">
+                      <TableCell mobileRole="status" className="md:text-right text-body font-bold">
                         {pt.total_active}
                       </TableCell>
-                      <TableCell hideOnTablet mobileRole="field" mobileLabel="New Joiners" className="md:text-right font-mono text-body text-slate-600">
+                      <TableCell hideOnTablet mobileRole="field" mobileLabel="New Joiners" className="md:text-right text-body text-slate-600">
                         +{pt.new_enrollments}
                       </TableCell>
-                      <TableCell hideOnTablet mobileRole="field" mobileLabel="Approved Target" className="md:text-right font-mono text-body text-slate-600">
+                      <TableCell hideOnTablet mobileRole="field" mobileLabel="Approved Target" className="md:text-right text-body text-slate-600">
                         {pt.approved_target}
                       </TableCell>
                     </TableRow>
@@ -1490,13 +1490,13 @@ export const OverviewRowDetailModal: React.FC<{
                         {b.branch_code || 'No Code'} · {b.branch_type}
                       </div>
                     </TableCell>
-                    <TableCell mobileRole="field" mobileLabel="Riders (Appr/Act/Vac)" className="md:text-right font-mono text-body">
+                    <TableCell mobileRole="field" mobileLabel="Riders (Appr/Act/Vac)" className="md:text-right text-body">
                       {b.rider.approved} / <strong className="text-sky-700">{b.rider.active}</strong> / {b.rider.vacancy}
                     </TableCell>
-                    <TableCell mobileRole="field" mobileLabel="In-House (Appr/Act/Vac)" className="md:text-right font-mono text-body">
+                    <TableCell mobileRole="field" mobileLabel="In-House (Appr/Act/Vac)" className="md:text-right text-body">
                       {b.in_house.approved} / <strong className="text-emerald-700">{b.in_house.active}</strong> / {b.in_house.vacancy}
                     </TableCell>
-                    <TableCell hideOnTablet mobileRole="field" mobileLabel="Total (Appr/Act/Vac)" className="md:text-right font-mono text-body font-semibold">
+                    <TableCell hideOnTablet mobileRole="field" mobileLabel="Total (Appr/Act/Vac)" className="md:text-right text-body font-semibold">
                       {b.total.approved} / {b.total.active} / {b.total.vacancy}
                     </TableCell>
                     <TableCell mobileRole="status">
@@ -1551,11 +1551,11 @@ export const OverviewRowDetailModal: React.FC<{
                       <TableCell mobileRole="field" mobileLabel="Category">
                         <EmploymentCategoryBadge category={d.employment_category} />
                       </TableCell>
-                      <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right font-mono text-body">{d.approved}</TableCell>
-                      <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right font-mono text-body font-bold text-indigo-700">
+                      <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right text-body">{d.approved}</TableCell>
+                      <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right text-body font-bold text-indigo-700">
                         {d.active}
                       </TableCell>
-                      <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right font-mono text-body font-bold text-amber-700">
+                      <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right text-body font-bold text-amber-700">
                         {d.vacancy}
                       </TableCell>
                       <TableCell mobileRole="status">

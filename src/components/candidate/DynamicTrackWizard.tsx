@@ -359,7 +359,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
 
   if (loadingTemplate || !template) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
+      <div className="max-w-6xl mx-auto px-4 py-16 text-center">
         <div className="w-10 h-10 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
         <h3 className="text-card-heading text-slate-900">Loading Joining Dossier...</h3>
         <p className="text-caption text-slate-500 mt-1">
@@ -374,7 +374,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
   const progressPercent = Math.round(((currentSectionIndex + 1) / totalWizardSteps) * 100);
 
   return (
-    <div id="dynamic-candidate-wizard" className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+    <div id="dynamic-candidate-wizard" className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       {/* Needs Correction Attention Banner */}
       {isNeedsCorrection && (
         <div
@@ -447,7 +447,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
           </Button>
 
           {!isLocked && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-mono font-medium border bg-slate-50 border-slate-200">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-medium border bg-slate-50 border-slate-200">
               {saveStatus === 'saving' && (
                 <>
                   <Clock className="w-3.5 h-3.5 text-indigo-600 animate-spin" />
@@ -493,7 +493,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                 : currentSection ? toTitleCase(currentSection.title) : ''}
             </strong>
           </span>
-          <span className="text-indigo-600 font-mono font-bold">{progressPercent}% Completed</span>
+          <span className="text-indigo-600 font-bold">{progressPercent}% Completed</span>
         </div>
 
         <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -593,7 +593,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
           />
 
           {/* Bottom Step Actions for Document Upload */}
-          <Card className="p-5 flex items-center justify-between">
+          <Card className="p-5 flex items-center justify-between gap-3">
             <Button
               type="button"
               variant="outline"
@@ -601,7 +601,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
               onClick={handlePrevSection}
               leftIcon={<ChevronLeft className="w-4 h-4" />}
             >
-              Previous Section
+              <span>Previous<span className="hidden sm:inline"> Section</span></span>
             </Button>
 
             <Button
@@ -612,7 +612,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
               onClick={handleNextSection}
               rightIcon={<ChevronRight className="w-4 h-4" />}
             >
-              Next: Review &amp; Sign
+              <span>Next: Review &amp; Sign</span>
             </Button>
           </Card>
         </div>
@@ -884,7 +884,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
                             {Array.isArray(fieldValue) && fieldValue.length > 0 ? (
                               fieldValue.map((row: any, rIdx: number) => (
                                 <tr key={rIdx} className="hover:bg-slate-50/50">
-                                  <td className="p-3 text-center text-slate-400 font-mono text-caption">
+                                  <td className="p-3 text-center text-slate-400 text-caption">
                                     {rIdx + 1}
                                   </td>
                                   {field.table_columns?.map((col) => (
@@ -996,7 +996,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
           </div>
 
           {/* Navigation Buttons for Dynamic Form Section */}
-          <div className="pt-6 border-t border-slate-100 flex items-center justify-between gap-4">
+          <div className="pt-6 border-t border-slate-100 flex items-center justify-between gap-3">
             <Button
               type="button"
               variant="outline"
@@ -1005,7 +1005,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
               onClick={handlePrevSection}
               leftIcon={<ChevronLeft className="w-4 h-4" />}
             >
-              Previous Section
+              <span>Previous<span className="hidden sm:inline"> Section</span></span>
             </Button>
 
             <Button
@@ -1016,7 +1016,7 @@ export const DynamicTrackWizard: React.FC<DynamicTrackWizardProps> = ({
               onClick={handleNextSection}
               rightIcon={<ChevronRight className="w-4 h-4" />}
             >
-              Next Section
+              <span>Next<span className="hidden sm:inline"> Section</span></span>
             </Button>
           </div>
         </Card>

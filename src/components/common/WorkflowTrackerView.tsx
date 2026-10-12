@@ -823,7 +823,7 @@ export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
             id="task-settings-gear-link"
             data-w="t"
             onClick={() => setWview('t')}
-            className={`pb-3 transition-colors cursor-pointer flex items-center gap-1.5 text-xs whitespace-nowrap shrink-0 ${
+            className={`pb-3 transition-colors cursor-pointer flex items-center gap-1.5 text-caption whitespace-nowrap shrink-0 ${
               activeSubTab === 't'
                 ? 'text-indigo-700 border-b-2 border-indigo-600 font-bold'
                 : 'text-slate-400 hover:text-slate-700'
@@ -896,7 +896,7 @@ export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
                           <TableCell mobileRole="primary" className="font-semibold text-slate-900">
                             {t[0]}
                           </TableCell>
-                          <TableCell mobileRole="field" mobileLabel="Target Day" className="font-mono text-slate-700">
+                          <TableCell mobileRole="field" mobileLabel="Target Day" className="text-slate-700">
                             Day {t[1]}
                           </TableCell>
                           <TableCell mobileRole="field" mobileLabel="Label">
@@ -1080,20 +1080,20 @@ export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
                       <span className="text-slate-500">Verified Progress: </span>
                       <span
                         data-testid="drawer-joiner-progress"
-                        className="font-mono font-bold text-slate-900"
+                        className="font-bold text-slate-900"
                       >
                         {st.dn}/{st.a}
                       </span>
                     </div>
                     <div>
                       <span className="text-slate-500">Submitted: </span>
-                      <span className="font-mono font-semibold text-indigo-700">
+                      <span className="font-semibold text-indigo-700">
                         {st.submittedCount}
                       </span>
                     </div>
                     <div>
                       <span className="text-slate-500">Overdue: </span>
-                      <span className="font-mono font-semibold text-rose-600">{st.ov}</span>
+                      <span className="font-semibold text-rose-600">{st.ov}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 text-caption text-slate-600">
@@ -1473,7 +1473,7 @@ export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
                                       </span>
                                     )}
                                   </div>
-                                  <span className="font-mono text-tag text-slate-400 whitespace-nowrap">
+                                  <span className="text-tag text-slate-400 whitespace-nowrap">
                                     {new Date(h.timestamp).toLocaleDateString()}
                                   </span>
                                 </div>

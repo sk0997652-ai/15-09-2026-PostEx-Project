@@ -252,7 +252,7 @@ export const SignaturePadInput: React.FC<SignaturePadInputProps> = ({
     <div id={id} className="space-y-2.5">
       {/* Mode Switcher */}
       {!disabled && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
             <button
               type="button"

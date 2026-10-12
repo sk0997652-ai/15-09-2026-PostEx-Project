@@ -143,7 +143,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({ candidate, onConse
             label={t('consent.check3')}
           />
 
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <span className="text-caption text-slate-500">
               Candidate: <strong className="text-slate-800">{toTitleCase(candidate.full_name)}</strong>
             </span>
@@ -155,6 +155,7 @@ export const ConsentScreen: React.FC<ConsentScreenProps> = ({ candidate, onConse
               disabled={!canProceed || isSubmitting}
               isLoading={isSubmitting}
               leftIcon={<ShieldCheck className="w-4 h-4" />}
+              className="w-full sm:w-auto"
             >
               {t('consent.acceptButton')}
             </Button>

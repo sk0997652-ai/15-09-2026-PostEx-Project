@@ -81,7 +81,6 @@ export const WizardStep2: React.FC<WizardStep2Props> = ({ data, onChange, disabl
             value={data.graduation_year || ''}
             onChange={(e) => onChange('graduation_year', e.target.value)}
             placeholder="e.g. 2023"
-            className="font-mono"
             leftIcon={<Calendar className="w-4 h-4 text-slate-400" />}
           />
         </div>
@@ -171,7 +170,6 @@ export const WizardStep2: React.FC<WizardStep2Props> = ({ data, onChange, disabl
                 value={data.last_salary || ''}
                 onChange={(e) => onChange('last_salary', e.target.value)}
                 placeholder="e.g. 45000"
-                className="font-mono"
                 leftIcon={<DollarSign className="w-4 h-4 text-slate-400" />}
               />
             </div>

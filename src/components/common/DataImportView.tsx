@@ -1162,7 +1162,7 @@ export const DataImportView: React.FC<{
                 <TableBody>
                   {preview.rows.map((r) => (
                     <TableRow key={r.rowIndex}>
-                      <TableCell mobileRole="primary" className="font-mono text-slate-700">
+                      <TableCell mobileRole="primary" className="text-slate-700">
                         {r.rowIndex}
                       </TableCell>
                       {preview.columns.map((col) => (

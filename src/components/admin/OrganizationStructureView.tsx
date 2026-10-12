@@ -957,11 +957,11 @@ export function OrganizationStructureView({
         >
           <CardContent>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500">{toTitleCase('Zones')}</span>
+              <span className="text-caption font-medium text-slate-500">{toTitleCase('Zones')}</span>
               <MapPin className={`w-4 h-4 ${subTab === 'zones' ? 'text-emerald-600' : 'text-slate-400'}`} />
             </div>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{zonesList.length}</p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-kpi-number font-bold text-slate-900 mt-1">{zonesList.length}</p>
+            <p className="text-caption text-slate-500 mt-0.5">
               {zonesList.filter((z) => z.is_active !== false).length} {toTitleCase('active')}
             </p>
           </CardContent>
@@ -982,11 +982,11 @@ export function OrganizationStructureView({
         >
           <CardContent>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500">{toTitleCase('Cities')}</span>
+              <span className="text-caption font-medium text-slate-500">{toTitleCase('Cities')}</span>
               <Globe className={`w-4 h-4 ${subTab === 'cities' ? 'text-emerald-600' : 'text-slate-400'}`} />
             </div>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{citiesList.length}</p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-kpi-number font-bold text-slate-900 mt-1">{citiesList.length}</p>
+            <p className="text-caption text-slate-500 mt-0.5">
               {citiesList.filter((c) => c.is_active !== false).length} {toTitleCase('active')}
             </p>
           </CardContent>
@@ -1007,11 +1007,11 @@ export function OrganizationStructureView({
         >
           <CardContent>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500">{toTitleCase('Branches')}</span>
+              <span className="text-caption font-medium text-slate-500">{toTitleCase('Branches')}</span>
               <Building2 className={`w-4 h-4 ${subTab === 'branches' ? 'text-emerald-600' : 'text-slate-400'}`} />
             </div>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{branchesList.length}</p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-kpi-number font-bold text-slate-900 mt-1">{branchesList.length}</p>
+            <p className="text-caption text-slate-500 mt-0.5">
               {branchesList.filter((b) => b.is_active !== false).length} {toTitleCase('active')}
             </p>
           </CardContent>
@@ -1032,11 +1032,11 @@ export function OrganizationStructureView({
         >
           <CardContent>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500">{toTitleCase('Departments')}</span>
+              <span className="text-caption font-medium text-slate-500">{toTitleCase('Departments')}</span>
               <Briefcase className={`w-4 h-4 ${subTab === 'departments' ? 'text-emerald-600' : 'text-slate-400'}`} />
             </div>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{departmentsList.length}</p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-kpi-number font-bold text-slate-900 mt-1">{departmentsList.length}</p>
+            <p className="text-caption text-slate-500 mt-0.5">
               {departmentsList.filter((d) => d.is_active !== false).length} {toTitleCase('active')}
             </p>
           </CardContent>
@@ -1057,11 +1057,11 @@ export function OrganizationStructureView({
         >
           <CardContent>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500">{toTitleCase('Designations')}</span>
+              <span className="text-caption font-medium text-slate-500">{toTitleCase('Designations')}</span>
               <Award className={`w-4 h-4 ${subTab === 'designations' ? 'text-emerald-600' : 'text-slate-400'}`} />
             </div>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{designationsList.length}</p>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-kpi-number font-bold text-slate-900 mt-1">{designationsList.length}</p>
+            <p className="text-caption text-slate-500 mt-0.5">
               {designationsList.filter((d) => d.is_active !== false).length} {toTitleCase('active')}
             </p>
           </CardContent>
@@ -1365,7 +1365,7 @@ export function OrganizationStructureView({
                             {formatEntityName(b.name)}
                           </div>
                           {b.contact_number && (
-                            <div className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                            <div className="text-caption text-slate-400 flex items-center gap-1 mt-0.5">
                               <Phone className="w-3 h-3" />
                               {b.contact_number}
                             </div>
@@ -1380,7 +1380,7 @@ export function OrganizationStructureView({
                           {c ? (
                             <Badge variant="neutral">{formatEntityName(c.name)}</Badge>
                           ) : (
-                            <span className="text-xs text-slate-400">—</span>
+                            <span className="text-caption text-slate-400">—</span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -1828,8 +1828,8 @@ export function OrganizationStructureView({
           {/* Active Status Toggle */}
           <div className="flex items-center justify-between pt-2 border-t border-slate-100">
             <div>
-              <p className="text-xs font-semibold text-slate-700">{toTitleCase('Active Status')}</p>
-              <p className="text-xs text-slate-500">{toTitleCase('Inactive items are hidden from new onboarding selections')}</p>
+              <p className="text-caption font-semibold text-slate-700">{toTitleCase('Active Status')}</p>
+              <p className="text-caption text-slate-500">{toTitleCase('Inactive items are hidden from new onboarding selections')}</p>
             </div>
             <button
               id="org-toggle-active-status"
@@ -1879,10 +1879,10 @@ export function OrganizationStructureView({
           {/* Enforced Step Order Bar: Zones -> Cities -> Departments -> Designations -> Branches */}
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-700">
+              <span className="text-caption font-semibold text-slate-700">
                 Enforced Import Sequence (Parents Must Exist First)
               </span>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-body text-slate-500">
                 All codes are stored as text with leading zeros preserved
               </span>
             </div>
@@ -1898,7 +1898,7 @@ export function OrganizationStructureView({
                       disabled={lockInfo.locked}
                       title={lockInfo.locked ? lockInfo.reason : `Step ${step.stepNum}: ${step.label}`}
                       onClick={() => handleSelectBulkStep(step.entity)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-caption font-semibold transition-all ${
                         isSelected
                           ? 'bg-emerald-600 text-white shadow-xs'
                           : lockInfo.locked
@@ -1910,7 +1910,7 @@ export function OrganizationStructureView({
                         <Lock className="w-3.5 h-3.5 text-slate-400" />
                       ) : (
                         <span
-                          className={`w-4 h-4 rounded-full text-[10px] inline-flex items-center justify-center font-bold ${
+                          className={`w-4 h-4 rounded-full text-caption inline-flex items-center justify-center font-bold ${
                             isSelected ? 'bg-emerald-800 text-white' : 'bg-emerald-100 text-emerald-800'
                           }`}
                         >
@@ -1933,11 +1933,11 @@ export function OrganizationStructureView({
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Badge variant="info">Step {currentBulkStepMeta.stepNum} of 5</Badge>
-                <h4 className="text-sm font-bold text-slate-900">
+                <h4 className="text-card-heading font-bold text-slate-900">
                   Import {currentBulkStepMeta.label}
                 </h4>
               </div>
-              <p className="text-xs text-slate-600">
+              <p className="text-caption text-slate-600">
                 Template Columns:{' '}
                 <span className="font-mono font-medium text-slate-800">
                   {currentBulkStepMeta.requiredColumns.join(' | ')}
@@ -1974,7 +1974,7 @@ export function OrganizationStructureView({
                 </Button>
               </div>
               {importFileName && (
-                <p className="text-xs text-emerald-700 font-medium">
+                <p className="text-caption text-emerald-700 font-medium">
                   Loaded file: <span className="font-mono">{importFileName}</span> ({importParsedRows.length} rows)
                 </p>
               )}
@@ -1982,7 +1982,7 @@ export function OrganizationStructureView({
 
             {/* Duplicate Handling Toggle */}
             <div className="space-y-2 md:border-l md:border-slate-100 md:pl-4">
-              <label className="block text-xs font-semibold text-slate-700">
+              <label className="block text-caption font-semibold text-slate-700">
                 Duplicate Code Handling
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -1996,8 +1996,8 @@ export function OrganizationStructureView({
                       : 'border-slate-200 hover:bg-slate-50'
                   }`}
                 >
-                  <div className="text-xs font-bold text-slate-900">Skip Duplicates</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">
+                  <div className="text-caption font-bold text-slate-900">Skip Duplicates</div>
+                  <div className="text-body text-slate-500 mt-0.5">
                     Existing codes are left untouched
                   </div>
                 </button>
@@ -2011,8 +2011,8 @@ export function OrganizationStructureView({
                       : 'border-slate-200 hover:bg-slate-50'
                   }`}
                 >
-                  <div className="text-xs font-bold text-slate-900">Update In-Place</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">
+                  <div className="text-caption font-bold text-slate-900">Update In-Place</div>
+                  <div className="text-body text-slate-500 mt-0.5">
                     Updates name/fields while keeping UUIDs
                   </div>
                 </button>
@@ -2021,7 +2021,7 @@ export function OrganizationStructureView({
           </div>
 
           {importError && (
-            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium flex items-center gap-2">
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-caption text-rose-700 font-medium flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
               <span>{importError}</span>
             </div>
@@ -2034,7 +2034,7 @@ export function OrganizationStructureView({
               className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
+                <div className="flex items-center gap-2 text-emerald-900 font-bold text-card-heading">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>Import Completed for {currentBulkStepMeta.label}</span>
                 </div>
@@ -2053,26 +2053,26 @@ export function OrganizationStructureView({
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                 <div className="p-2 rounded-lg bg-white border border-emerald-200">
-                  <div className="text-[11px] text-slate-500">Added</div>
-                  <div className="text-base font-bold text-emerald-700">
+                  <div className="text-body text-slate-500">Added</div>
+                  <div className="text-card-heading font-bold text-emerald-700">
                     {importCommitResult.summary.added ?? importCommitResult.summary.created}
                   </div>
                 </div>
                 <div className="p-2 rounded-lg bg-white border border-emerald-200">
-                  <div className="text-[11px] text-slate-500">Updated (UUID Kept)</div>
-                  <div className="text-base font-bold text-blue-700">
+                  <div className="text-body text-slate-500">Updated (UUID Kept)</div>
+                  <div className="text-card-heading font-bold text-blue-700">
                     {importCommitResult.summary.updated}
                   </div>
                 </div>
                 <div className="p-2 rounded-lg bg-white border border-emerald-200">
-                  <div className="text-[11px] text-slate-500">Skipped</div>
-                  <div className="text-base font-bold text-slate-700">
+                  <div className="text-body text-slate-500">Skipped</div>
+                  <div className="text-card-heading font-bold text-slate-700">
                     {importCommitResult.summary.skipped}
                   </div>
                 </div>
                 <div className="p-2 rounded-lg bg-white border border-emerald-200">
-                  <div className="text-[11px] text-slate-500">Failed</div>
-                  <div className="text-base font-bold text-rose-700">
+                  <div className="text-body text-slate-500">Failed</div>
+                  <div className="text-card-heading font-bold text-rose-700">
                     {importCommitResult.summary.failed ?? importCommitResult.summary.errors}
                   </div>
                 </div>
@@ -2084,10 +2084,10 @@ export function OrganizationStructureView({
           {importPreview && (
             <div className="border border-slate-200 rounded-xl overflow-hidden">
               <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-bold text-slate-800">
+                <span className="text-caption font-bold text-slate-800">
                   Validation Preview ({importPreview.summary.total} rows)
                 </span>
-                <div className="flex flex-wrap items-center gap-2 text-xs">
+                <div className="flex flex-wrap items-center gap-2 text-caption">
                   <Badge variant="success">
                     Valid: {importPreview.summary.valid ?? importPreview.summary.created}
                   </Badge>
@@ -2101,7 +2101,7 @@ export function OrganizationStructureView({
                     <button
                       type="button"
                       onClick={handleDownloadErrorReport}
-                      className="text-xs font-semibold text-rose-600 hover:underline inline-flex items-center gap-1 ml-1"
+                      className="text-caption font-semibold text-rose-600 hover:underline inline-flex items-center gap-1 ml-1"
                     >
                       <Download className="w-3 h-3" />
                       Error Report
@@ -2124,16 +2124,16 @@ export function OrganizationStructureView({
                   <TableBody>
                     {importPreview.rows.map((r) => (
                       <TableRow key={r.rowNumber}>
-                        <TableCell className="font-mono text-xs text-slate-400">
+                        <TableCell className="font-mono text-body text-slate-400">
                           {r.rowNumber}
                         </TableCell>
-                        <TableCell className="font-mono text-xs font-semibold text-slate-800">
+                        <TableCell className="font-mono text-body font-semibold text-slate-800">
                           {r.code || '—'}
                         </TableCell>
-                        <TableCell className="text-xs text-slate-800">
+                        <TableCell className="text-body text-slate-800">
                           {r.name || '—'}
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-slate-600">
+                        <TableCell className="font-mono text-body text-slate-600">
                           {r.parentCodes || '—'}
                         </TableCell>
                         <TableCell>
@@ -2141,7 +2141,7 @@ export function OrganizationStructureView({
                           {r.status === 'Duplicate' && <Badge variant="info">Duplicate</Badge>}
                           {r.status === 'Error' && <Badge variant="error">Error</Badge>}
                         </TableCell>
-                        <TableCell className="text-xs text-slate-600">
+                        <TableCell className="text-body text-slate-600">
                           {r.error ? (
                             <span className="text-rose-600 font-medium">{r.error}</span>
                           ) : (
@@ -2157,7 +2157,7 @@ export function OrganizationStructureView({
           )}
 
           <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-            <span className="text-xs text-slate-500">
+            <span className="text-caption text-slate-500">
               {importPreview
                 ? `${savableCount} row(s) will be saved (${importMode === 'update' ? 'Valid + Duplicate updates' : 'Valid only; Duplicates skipped'}).`
                 : 'Upload a template file (.xlsx or .csv) to preview validation status per row.'}
@@ -2193,7 +2193,7 @@ export function OrganizationStructureView({
         size="small"
       >
         <div className="space-y-4">
-          <p className="text-sm text-slate-600">
+          <p className="text-body text-slate-600">
             Are you sure you want to delete{' '}
             <span className="font-semibold text-slate-900">"{deleteTarget?.name}"</span>?
           </p>

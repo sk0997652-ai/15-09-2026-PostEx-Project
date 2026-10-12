@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, RefreshCw, AlertCircle, LogOut } from 'lucide-react';
-import { Button, Badge } from '../ui';
+import { Button, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../ui';
 import { employeesApi, EmployeeListItem } from '../../lib/employeesApi';
 import { PortalEmployee } from '../../lib/hrPortalStore';
 import { MarkExitModal } from './MarkExitModal';
@@ -92,29 +92,29 @@ export const EmployeesTableView: React.FC<EmployeesTableViewProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Top Filter and Search Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white p-2.5 rounded-[6px] border border-slate-200">
         {/* Status Filter Bar with 3 Options and live counts */}
         <div
           role="tablist"
           aria-label="Filter employees by status"
-          className="inline-flex items-center p-1 bg-slate-100 rounded-lg border border-slate-200 gap-1 overflow-x-auto"
+          className="inline-flex items-center p-0.5 bg-slate-100 rounded-[6px] border border-slate-200 gap-1 overflow-x-auto"
         >
           <button
             type="button"
             role="tab"
             aria-selected={statusFilter === 'all'}
             onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+            className={`px-2.5 py-1 text-body font-semibold rounded-[4px] transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               statusFilter === 'all'
-                ? 'bg-white text-slate-900 shadow-xs font-bold'
+                ? 'bg-white text-slate-900 shadow-2xs font-bold'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
             <span>All Employees</span>
             <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+              className={`px-1.5 py-0.2 rounded-full text-caption ${
                 statusFilter === 'all'
                   ? 'bg-slate-200 text-slate-800 font-bold'
                   : 'bg-slate-200/80 text-slate-600'
@@ -129,16 +129,16 @@ export const EmployeesTableView: React.FC<EmployeesTableViewProps> = ({
             role="tab"
             aria-selected={statusFilter === 'active'}
             onClick={() => setStatusFilter('active')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+            className={`px-2.5 py-1 text-body font-semibold rounded-[4px] transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               statusFilter === 'active'
-                ? 'bg-white text-emerald-800 shadow-xs font-bold'
+                ? 'bg-white text-emerald-800 shadow-2xs font-bold'
                 : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-200/60'
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             <span>Active</span>
             <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+              className={`px-1.5 py-0.2 rounded-full text-caption ${
                 statusFilter === 'active'
                   ? 'bg-emerald-100 text-emerald-800 font-bold'
                   : 'bg-slate-200/80 text-slate-600'
@@ -153,16 +153,16 @@ export const EmployeesTableView: React.FC<EmployeesTableViewProps> = ({
             role="tab"
             aria-selected={statusFilter === 'exit_in_progress'}
             onClick={() => setStatusFilter('exit_in_progress')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+            className={`px-2.5 py-1 text-body font-semibold rounded-[4px] transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               statusFilter === 'exit_in_progress'
-                ? 'bg-white text-amber-800 shadow-xs font-bold'
+                ? 'bg-white text-amber-800 shadow-2xs font-bold'
                 : 'text-slate-600 hover:text-amber-700 hover:bg-slate-200/60'
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
             <span>Exit In Progress</span>
             <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+              className={`px-1.5 py-0.2 rounded-full text-caption ${
                 statusFilter === 'exit_in_progress'
                   ? 'bg-amber-100 text-amber-800 font-bold'
                   : 'bg-slate-200/80 text-slate-600'
@@ -175,21 +175,21 @@ export const EmployeesTableView: React.FC<EmployeesTableViewProps> = ({
 
         {/* Search by Name or Code */}
         <div className="flex items-center gap-2">
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <div className="relative w-full sm:w-64">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               id="employees-table-search-input"
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by name or code..."
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all"
+              className="w-full pl-8 pr-2.5 h-7 text-body bg-slate-50 border border-slate-300 rounded-[6px] text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white transition-all"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-caption text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 &times;
               </button>
@@ -209,125 +209,120 @@ export const EmployeesTableView: React.FC<EmployeesTableViewProps> = ({
       </div>
 
       {/* Main Table Content */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-        {error ? (
-          <div className="p-8 text-center bg-rose-50/70 border-b border-rose-200">
-            <AlertCircle className="w-8 h-8 text-rose-500 mx-auto mb-2" />
-            <p className="text-sm font-semibold text-rose-900 mb-1">Failed to load employees</p>
-            <p className="text-xs text-rose-700 max-w-md mx-auto mb-4">{error}</p>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={loadEmployees}
-              leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
-            >
-              Retry
-            </Button>
-          </div>
-        ) : loading ? (
-          <div className="py-20 text-center text-slate-500 flex flex-col items-center justify-center gap-2">
-            <RefreshCw className="w-6 h-6 animate-spin text-teal-600" />
-            <span className="text-xs font-medium">Loading employee records...</span>
-          </div>
-        ) : employees.length === 0 ? (
-          <div className="py-16 text-center text-slate-500">
-            <p className="text-sm font-semibold text-slate-700">No employees found</p>
-            <p className="text-xs text-slate-400 mt-1">
-              {debouncedSearch
-                ? `No employee records match "${debouncedSearch}".`
-                : 'There are currently no employees in this view.'}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[11px]">
-                  <th scope="col" className="px-4 py-3">Employee Code</th>
-                  <th scope="col" className="px-4 py-3">Name</th>
-                  <th scope="col" className="px-4 py-3">Designation</th>
-                  <th scope="col" className="px-4 py-3">Branch</th>
-                  <th scope="col" className="px-4 py-3">Joining Date</th>
-                  <th scope="col" className="px-4 py-3">Status</th>
-                  <th scope="col" className="px-4 py-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {employees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors">
-                    {/* 1. Employee code */}
-                    <td className="px-4 py-3 font-mono font-bold text-slate-900 whitespace-nowrap">
-                      {emp.employee_id}
-                    </td>
+      {error ? (
+        <div className="p-6 text-center bg-rose-50/70 border border-rose-200 rounded-[6px]">
+          <AlertCircle className="w-6 h-6 text-rose-500 mx-auto mb-1.5" />
+          <p className="text-card-heading font-semibold text-rose-900 mb-0.5">Failed to load employees</p>
+          <p className="text-caption text-rose-700 max-w-md mx-auto mb-3">{error}</p>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={loadEmployees}
+            leftIcon={<RefreshCw className="w-3.5 h-3.5" />}
+          >
+            Retry
+          </Button>
+        </div>
+      ) : loading ? (
+        <div className="py-16 text-center text-slate-500 flex flex-col items-center justify-center gap-2 bg-white border border-slate-200 rounded-[6px]">
+          <RefreshCw className="w-5 h-5 animate-spin text-indigo-600" />
+          <span className="text-caption font-medium">Loading employee records...</span>
+        </div>
+      ) : employees.length === 0 ? (
+        <div className="py-12 text-center text-slate-500 bg-white border border-slate-200 rounded-[6px]">
+          <p className="text-card-heading font-semibold text-slate-700">No employees found</p>
+          <p className="text-caption text-slate-400 mt-0.5">
+            {debouncedSearch
+              ? `No employee records match "${debouncedSearch}".`
+              : 'There are currently no employees in this view.'}
+          </p>
+        </div>
+      ) : (
+        <Table scroll="x">
+          <TableHeader scroll="x">
+            <TableRow scroll="x">
+              <TableHead>Employee Code</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Designation</TableHead>
+              <TableHead>Branch</TableHead>
+              <TableHead>Joining Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody scroll="x">
+            {employees.map((emp) => (
+              <TableRow key={emp.id} scroll="x">
+                {/* 1. Employee code */}
+                <TableCell className="font-mono font-bold text-slate-900 whitespace-nowrap">
+                  {emp.employee_id}
+                </TableCell>
 
-                    {/* 2. Name */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="font-semibold text-slate-900">{toTitleCase(emp.full_name)}</div>
-                      {emp.cnic && (
-                        <div className="text-[11px] text-slate-400 font-mono">{emp.cnic}</div>
-                      )}
-                    </td>
+                {/* 2. Name */}
+                <TableCell className="whitespace-nowrap">
+                  <div className="font-semibold text-slate-900">{toTitleCase(emp.full_name)}</div>
+                  {emp.cnic && (
+                    <div className="text-caption text-slate-400 font-mono">{emp.cnic}</div>
+                  )}
+                </TableCell>
 
-                    {/* 3. Designation */}
-                    <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
-                      {emp.designation_name || '—'}
-                    </td>
+                {/* 3. Designation */}
+                <TableCell className="text-slate-700 whitespace-nowrap">
+                  {emp.designation_name || '—'}
+                </TableCell>
 
-                    {/* 4. Branch */}
-                    <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
-                      {emp.branches?.name || '—'}
-                    </td>
+                {/* 4. Branch */}
+                <TableCell className="text-slate-700 whitespace-nowrap">
+                  {emp.branches?.name || '—'}
+                </TableCell>
 
-                    {/* 5. Joining date */}
-                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
-                      {emp.joining_date || '—'}
-                    </td>
+                {/* 5. Joining date */}
+                <TableCell className="text-slate-600 whitespace-nowrap">
+                  {emp.joining_date || '—'}
+                </TableCell>
 
-                    {/* 6. Status: Green for Active, Amber for Exit In Progress */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {emp.status === 'active' ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                          Exit In Progress
-                        </span>
-                      )}
-                    </td>
+                {/* 6. Status */}
+                <TableCell className="whitespace-nowrap">
+                  {emp.status === 'active' ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-tag font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-tag font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                      Exit In Progress
+                    </span>
+                  )}
+                </TableCell>
 
-                    {/* 7. Action */}
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
-                      {emp.status === 'active' ? (
-                        canMarkExit ? (
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            id={`exit-btn-${emp.employee_id}`}
-                            onClick={() => handleOpenExitModal(emp)}
-                            leftIcon={<LogOut className="w-3 h-3" />}
-                            className="text-xs py-1 px-2.5"
-                          >
-                            Exit
-                          </Button>
-                        ) : (
-                          <span className="text-slate-400 text-xs">—</span>
-                        )
-                      ) : (
-                        <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200/60">
-                          In Exit Tracker
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                {/* 7. Action */}
+                <TableCell className="text-right whitespace-nowrap">
+                  {emp.status === 'active' ? (
+                    canMarkExit ? (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        id={`exit-btn-${emp.employee_id}`}
+                        onClick={() => handleOpenExitModal(emp)}
+                        leftIcon={<LogOut className="w-3.5 h-3.5" />}
+                      >
+                        Exit
+                      </Button>
+                    ) : (
+                      <span className="text-slate-400 text-caption">—</span>
+                    )
+                  ) : (
+                    <span className="text-tag font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-[4px] border border-amber-200/60">
+                      In Exit Tracker
+                    </span>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
 
-      {/* Mark Exit Modal (Step 5 will enhance what it saves) */}
+      {/* Mark Exit Modal */}
       <MarkExitModal
         isOpen={Boolean(exitTarget)}
         employee={exitTarget}

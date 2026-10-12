@@ -524,7 +524,7 @@ export const SignatureStep: React.FC<SignatureStepProps> = ({
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
               <span className="text-slate-600 font-medium">Date Of Signing:</span>
-              <strong className="text-slate-900 font-mono font-bold">{signingDate}</strong>
+              <strong className="text-slate-900 font-bold">{signingDate}</strong>
             </div>
           </div>
           {declarationSection && (

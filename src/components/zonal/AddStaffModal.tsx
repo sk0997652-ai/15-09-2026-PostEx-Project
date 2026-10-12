@@ -428,7 +428,7 @@ export function AddStaffModal({
                           {formatCodeName(br.branch_code, br.name)}
                         </span>
                         {br.branch_type && (
-                          <span className="text-caption text-slate-500 font-mono">
+                          <span className="text-caption text-slate-500">
                             {br.branch_type}
                           </span>
                         )}

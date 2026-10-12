@@ -25,6 +25,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  KpiGrid,
+  KpiCard,
 } from '../ui';
 import {
   FillRateStatusBadge,
@@ -239,7 +241,7 @@ export function ZoneOverviewView({
                     <TableCell mobileRole="field" mobileLabel="Category">
                       <EmploymentCategoryBadge category={d.employment_category} />
                     </TableCell>
-                    <TableCell mobileRole="field" mobileLabel="Appr / Act / Vac" className="md:text-right font-mono text-body tabular-nums">
+                    <TableCell mobileRole="field" mobileLabel="Appr / Act / Vac" className="md:text-right text-body tabular-nums">
                       <span className="font-semibold">{d.approved}</span> /{' '}
                       <span className="font-bold text-indigo-700">{d.active}</span> /{' '}
                       <span className="font-bold text-amber-700">{d.vacancy}</span>
@@ -285,7 +287,7 @@ export function ZoneOverviewView({
                   <div className="text-caption text-indigo-700">Audit &amp; approve dossiers</div>
                 </div>
               </div>
-              <span className="text-card-heading text-indigo-900 font-mono tabular-nums">
+              <span className="text-card-heading text-indigo-900 tabular-nums">
                 {staffList.filter((s) => s.roles?.name === 'central_hr').length}
               </span>
             </div>
@@ -300,7 +302,7 @@ export function ZoneOverviewView({
                   <div className="text-caption text-slate-500">In-person physical checks</div>
                 </div>
               </div>
-              <span className="text-card-heading text-slate-900 font-mono tabular-nums">
+              <span className="text-card-heading text-slate-900 tabular-nums">
                 {staffList.filter((s) => s.roles?.name === 'branch_manager').length}
               </span>
             </div>
@@ -316,63 +318,32 @@ export function ZoneOverviewView({
       </div>
 
       {/* Secondary Zone Pipeline Strip (2-col on mobile, 4-col on desktop) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-table-header uppercase text-slate-500">
-              Total Zone Candidates
-            </span>
-            <span className="text-kpi-number text-slate-900 font-mono tabular-nums block mt-0.5">
-              {metrics?.totalCandidates ?? 0}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <Users className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-table-header uppercase text-slate-500">
-              Pending Review
-            </span>
-            <span className="text-kpi-number text-amber-600 font-mono tabular-nums block mt-0.5">
-              {metrics?.pendingApplications ?? 0}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-            <Clock className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-table-header uppercase text-slate-500">
-              Approved &amp; Onboarded
-            </span>
-            <span className="text-kpi-number text-emerald-600 font-mono tabular-nums block mt-0.5">
-              {metrics?.approvedApplications ?? 0}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <CheckCircle2 className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-table-header uppercase text-slate-500">
-              Zone Pipeline &amp; SLA
-            </span>
-            <span className="text-kpi-number text-indigo-700 font-mono tabular-nums block mt-0.5">
-              {metrics?.avgTurnaroundHours ?? 'N/A'}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <BarChart3 className="w-4 h-4" />
-          </div>
-        </Card>
-      </div>
+      <KpiGrid columns={4}>
+        <KpiCard
+          label="Total Zone Candidates"
+          value={metrics?.totalCandidates ?? 0}
+          icon={<Users className="w-4 h-4" />}
+          tone="default"
+        />
+        <KpiCard
+          label="Pending Review"
+          value={metrics?.pendingApplications ?? 0}
+          icon={<Clock className="w-4 h-4" />}
+          tone="warning"
+        />
+        <KpiCard
+          label="Approved & Onboarded"
+          value={metrics?.approvedApplications ?? 0}
+          icon={<CheckCircle2 className="w-4 h-4" />}
+          tone="success"
+        />
+        <KpiCard
+          label="Zone Pipeline & SLA"
+          value={metrics?.avgTurnaroundHours ?? 'N/A'}
+          icon={<BarChart3 className="w-4 h-4" />}
+          tone="primary"
+        />
+      </KpiGrid>
 
       {/* Row Click Detail Modal with Full Historical Chart */}
       <OverviewRowDetailModal

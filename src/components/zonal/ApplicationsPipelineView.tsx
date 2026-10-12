@@ -234,7 +234,7 @@ export function ApplicationsPipelineView({
                     mobileRole="field"
                     mobileLabel="Stage"
                     hideOnTablet
-                    className="text-slate-600 font-mono"
+                    className="text-slate-600"
                   >
                     Step {app.current_step}/4
                   </TableCell>

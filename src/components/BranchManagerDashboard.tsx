@@ -42,6 +42,7 @@ import {
   ReturnToCandidateModal,
 } from './branch';
 import { toTitleCase } from '../lib/formatText';
+import { PageContainer, PortalSidebar, PortalSidebarItem, KpiGrid, KpiCard } from './ui';
 
 interface BranchManagerDashboardProps {
   currentUser: {
@@ -370,201 +371,117 @@ export function BranchManagerDashboard({
     setNavOpen(false);
   };
 
+  const sidebarItems: PortalSidebarItem[] = [
+    {
+      id: 'bm-nav-pending',
+      label: 'Pending Verification',
+      title: 'Pending Verification',
+      icon: <Clock className="w-3.5 h-3.5" />,
+      active: activeTab === 'pending_queue',
+      onSelect: () => handleSelectTab('pending_queue'),
+      badge:
+        metrics?.pendingVerification !== undefined && metrics.pendingVerification > 0 ? (
+          <span
+            className={`px-1.5 py-0.5 rounded-full text-tag ${
+              activeTab === 'pending_queue' ? 'bg-slate-950 text-indigo-200' : 'bg-indigo-500/20 text-indigo-300'
+            }`}
+          >
+            {metrics.pendingVerification}
+          </span>
+        ) : undefined,
+    },
+    {
+      id: 'bm-nav-corrections',
+      label: 'Corrections & Resubmissions',
+      title: 'Corrections & Resubmissions',
+      icon: <RotateCcw className="w-3.5 h-3.5" />,
+      active: activeTab === 'corrections_queue',
+      onSelect: () => handleSelectTab('corrections_queue'),
+      badge:
+        metrics?.needsCorrection !== undefined && metrics.needsCorrection > 0 ? (
+          <span
+            className={`px-1.5 py-0.5 rounded-full text-tag ${
+              activeTab === 'corrections_queue' ? 'bg-slate-950 text-rose-400' : 'bg-rose-500/20 text-rose-400'
+            }`}
+          >
+            {metrics.needsCorrection}
+          </span>
+        ) : undefined,
+    },
+    {
+      id: 'bm-nav-forwarded',
+      label: 'Forwarded to Central HR',
+      title: 'Forwarded to Central HR',
+      icon: <Send className="w-3.5 h-3.5" />,
+      active: activeTab === 'forwarded_queue',
+      onSelect: () => handleSelectTab('forwarded_queue'),
+      badge:
+        metrics?.forwardedToCentral !== undefined && metrics.forwardedToCentral > 0 ? (
+          <span
+            className={`px-1.5 py-0.5 rounded-full text-tag ${
+              activeTab === 'forwarded_queue' ? 'bg-slate-950 text-indigo-200' : 'bg-indigo-500/20 text-indigo-300'
+            }`}
+          >
+            {metrics.forwardedToCentral}
+          </span>
+        ) : undefined,
+    },
+    {
+      id: 'bm-nav-overview',
+      label: 'Branch Overview & Stats',
+      title: 'Branch Overview & Stats',
+      icon: <Shield className="w-3.5 h-3.5" />,
+      active: activeTab === 'branch_overview',
+      onSelect: () => handleSelectTab('branch_overview'),
+    },
+    {
+      id: 'bm-nav-headcount',
+      label: 'Headcount Management',
+      title: 'Headcount Management',
+      icon: <Users className="w-3.5 h-3.5" />,
+      active: activeTab === 'headcount',
+      onSelect: () => handleSelectTab('headcount'),
+    },
+    {
+      id: 'bm-nav-workflow-tracker',
+      label: 'Workflow Tracker',
+      title: 'Workflow Tracker',
+      icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+      active: activeTab === 'workflow_tracker',
+      onSelect: () => handleSelectTab('workflow_tracker'),
+    },
+  ];
+
   return (
     <div className="flex flex-col sm:flex-row min-h-[calc(100vh-4rem)] bg-slate-100 overflow-x-hidden">
-      {/* Mobile Slide-In Drawer Backdrop (<640px) */}
-      {isNavOpen && (
-        <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 sm:hidden"
-          onClick={() => setNavOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* ---------------------------------------------------------------------- */}
-      {/* DEDICATED SIDEBAR NAVIGATION */}
-      {/* ---------------------------------------------------------------------- */}
-      <aside
-        className={`${
-          isNavOpen
-            ? 'fixed inset-y-0 left-0 z-50 w-64 flex shadow-2xl'
-            : 'hidden'
-        } sm:static sm:z-auto sm:flex sm:w-16 lg:w-64 bg-slate-900 text-slate-200 flex-col border-r border-slate-800 shrink-0 transition-all duration-200`}
-      >
-        {/* Branch Context Header */}
-        <div className="p-4 sm:p-3 lg:p-5 border-b border-slate-800 bg-slate-950/50">
-          <div className="flex items-center justify-between sm:justify-center lg:justify-between">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
-                <Building2 className="w-4 h-4" />
-              </div>
-              <div className="min-w-0 sm:hidden lg:block">
-                <span className="text-tag uppercase tracking-wider text-indigo-400">Branch Portal</span>
-                <h2 className="text-card-heading text-white leading-snug truncate max-w-[160px]">
-                  {currentUser.branch_name || 'Assigned Branch'}
-                </h2>
-                <span className="text-caption text-slate-400 flex items-center gap-1 truncate">
-                  Zone: {currentUser.zone_name || 'Assigned Zone'}
-                </span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setNavOpen(false)}
-              aria-label="Close navigation drawer"
-              className="sm:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+      {/* Shared Portal Sidebar */}
+      <PortalSidebar
+        brand={{
+          icon: <Building2 className="w-3.5 h-3.5" />,
+          title: currentUser.branch_name || 'Assigned Branch',
+          subtitle: `Zone: ${currentUser.zone_name || 'Assigned Zone'}`,
+        }}
+        headerExtra={
+          <div className="text-tag uppercase tracking-wider text-indigo-400 font-semibold mt-0.5">
+            Branch Portal
           </div>
-        </div>
-
-        {/* Navigation Items */}
-        <nav className="flex-1 p-2.5 sm:p-2 lg:p-3 space-y-1.5 overflow-y-auto">
-          <button
-            id="bm-nav-pending"
-            title="Pending Verification"
-            onClick={() => handleSelectTab('pending_queue')}
-            className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'pending_queue'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Clock className="w-4 h-4 shrink-0" />
-              <span className="sm:hidden lg:inline truncate">Pending Verification</span>
-            </div>
-            {metrics?.pendingVerification !== undefined && metrics.pendingVerification > 0 && (
-              <span
-                className={`px-2 py-0.5 rounded-full text-tag sm:hidden lg:inline ${
-                  activeTab === 'pending_queue' ? 'bg-slate-950 text-indigo-200' : 'bg-indigo-500/20 text-indigo-300'
-                }`}
-              >
-                {metrics.pendingVerification}
-              </span>
-            )}
-          </button>
-
-          <button
-            id="bm-nav-corrections"
-            title="Corrections & Resubmissions"
-            onClick={() => handleSelectTab('corrections_queue')}
-            className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'corrections_queue'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <RotateCcw className="w-4 h-4 shrink-0" />
-              <span className="sm:hidden lg:inline truncate">Corrections &amp; Resubmissions</span>
-            </div>
-            {metrics?.needsCorrection !== undefined && metrics.needsCorrection > 0 && (
-              <span
-                className={`px-2 py-0.5 rounded-full text-tag sm:hidden lg:inline ${
-                  activeTab === 'corrections_queue' ? 'bg-slate-950 text-rose-400' : 'bg-rose-500/20 text-rose-400'
-                }`}
-              >
-                {metrics.needsCorrection}
-              </span>
-            )}
-          </button>
-
-          <button
-            id="bm-nav-forwarded"
-            title="Forwarded to Central HR"
-            onClick={() => handleSelectTab('forwarded_queue')}
-            className={`w-full flex items-center justify-between sm:justify-center lg:justify-between px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'forwarded_queue'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Send className="w-4 h-4 shrink-0" />
-              <span className="sm:hidden lg:inline truncate">Forwarded to Central HR</span>
-            </div>
-            {metrics?.forwardedToCentral !== undefined && metrics.forwardedToCentral > 0 && (
-              <span
-                className={`px-2 py-0.5 rounded-full text-tag sm:hidden lg:inline ${
-                  activeTab === 'forwarded_queue' ? 'bg-slate-950 text-indigo-200' : 'bg-indigo-500/20 text-indigo-300'
-                }`}
-              >
-                {metrics.forwardedToCentral}
-              </span>
-            )}
-          </button>
-
-          <button
-            id="bm-nav-overview"
-            title="Branch Overview & Stats"
-            onClick={() => handleSelectTab('branch_overview')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-2.5 px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'branch_overview'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <Shield className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Branch Overview &amp; Stats</span>
-          </button>
-
-          <button
-            id="bm-nav-headcount"
-            title="Headcount Management"
-            onClick={() => handleSelectTab('headcount')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-2.5 px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'headcount'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <Users className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Headcount Management</span>
-          </button>
-
-          <button
-            id="bm-nav-workflow-tracker"
-            title="Workflow Tracker"
-            onClick={() => handleSelectTab('workflow_tracker')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-2.5 px-3.5 sm:px-0 lg:px-3.5 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'workflow_tracker'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Workflow Tracker</span>
-          </button>
-        </nav>
-
-        {/* User Profile Footer */}
-        <div className="p-3 sm:p-2 lg:p-4 border-t border-slate-800 bg-slate-950 flex items-center justify-between sm:justify-center lg:justify-between">
-          <div className="flex items-center gap-2.5 min-w-0 sm:hidden lg:flex">
-            <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300 text-tag shrink-0">
-              {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'B'}
-            </div>
-            <div className="min-w-0">
-              <p className="text-caption font-semibold text-white truncate">{toTitleCase(currentUser.name || 'Branch Manager')}</p>
-              <p className="text-caption text-slate-400 truncate">{currentUser.email}</p>
-            </div>
-          </div>
-          <button
-            id="bm-signout-btn"
-            onClick={onSignOut}
-            title="Sign Out"
-            className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
-      </aside>
+        }
+        items={sidebarItems}
+        isOpen={isNavOpen}
+        onClose={() => setNavOpen(false)}
+        onSignOut={onSignOut}
+        signOutBtnId="bm-signout-btn"
+        signOutLabel="Sign Out"
+        userContext={{
+          name: toTitleCase(currentUser.name || 'Branch Manager'),
+          email: currentUser.email,
+        }}
+      />
 
       {/* ---------------------------------------------------------------------- */}
       {/* MAIN CONTENT WORKSPACE */}
       {/* ---------------------------------------------------------------------- */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <main className="flex-1 min-w-0 overflow-y-auto bg-slate-50">
         {/* Notification Toast */}
         {notificationMsg && (
           <div
@@ -592,7 +509,7 @@ export function BranchManagerDashboard({
         )}
 
         {/* Top Role & Section Banner */}
-        <div className="bg-white border-b border-slate-200 px-6 py-4">
+        <div className="bg-white border-b border-slate-200 px-4 py-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-tag uppercase tracking-wider mb-1">
@@ -635,99 +552,101 @@ export function BranchManagerDashboard({
           </div>
 
           {/* Quick Metrics Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-              <span className="text-table-header text-slate-500">Pending Verification</span>
-              <p className="text-kpi-number text-amber-600 mt-1">{metrics?.pendingVerification ?? 0}</p>
-            </div>
-            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-              <span className="text-table-header text-slate-500">Needs Correction</span>
-              <p className="text-kpi-number text-rose-600 mt-1">{metrics?.needsCorrection ?? 0}</p>
-            </div>
-            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-              <span className="text-table-header text-slate-500">Forwarded to Central HR</span>
-              <p className="text-kpi-number text-indigo-600 mt-1">{metrics?.forwardedToCentral ?? 0}</p>
-            </div>
-            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-              <span className="text-table-header text-slate-500">Enrolled / Approved</span>
-              <p className="text-kpi-number text-emerald-600 mt-1">{metrics?.approved ?? 0}</p>
-            </div>
-          </div>
+          <KpiGrid columns={4} className="mt-4">
+            <KpiCard
+              label="Pending Verification"
+              value={metrics?.pendingVerification ?? 0}
+              tone="warning"
+            />
+            <KpiCard
+              label="Needs Correction"
+              value={metrics?.needsCorrection ?? 0}
+              tone="danger"
+            />
+            <KpiCard
+              label="Forwarded to Central HR"
+              value={metrics?.forwardedToCentral ?? 0}
+              tone="info"
+            />
+            <KpiCard
+              label="Enrolled / Approved"
+              value={metrics?.approved ?? 0}
+              tone="success"
+            />
+          </KpiGrid>
         </div>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* VIEW 1: APPLICATION DETAIL & DOCUMENT REVIEW WORKSPACE */}
-        {/* ------------------------------------------------------------------ */}
-        {selectedAppId ? (
-          <DocumentReviewWorkspaceView
-            appDetail={appDetail}
-            loading={detailLoading}
-            actionLoading={actionLoading}
-            currentUser={currentUser}
-            onBack={() => setSelectedAppId(null)}
-            correctionForms={correctionForms}
-            onOpenCorrectionForm={handleOpenCorrectionForm}
-            onCloseCorrectionForm={handleCloseCorrectionForm}
-            onReasonChange={handleReasonChange}
-            onSubmitCorrection={handleSubmitCorrection}
-            onVerifyDoc={handleVerifyDoc}
-            onSimulateResubmit={handleSimulateResubmit}
-            onPreviewDoc={(doc) => setPreviewDoc(doc)}
-            signerName={signerName}
-            signatureConfirm={signatureConfirm}
-            setSignatureConfirm={setSignatureConfirm}
-            onApplySignature={handleApplySignature}
-            onOpenReturnModal={() => setShowReturnModal(true)}
-            onForwardToCentral={handleForwardToCentral}
-          />
-        ) : activeTab === 'branch_overview' ? (
-          <BranchOverviewView
-            currentUser={{
-              branch_name: currentUser.branch_name || 'Assigned Branch',
-              branch_id: currentUser.branch_id || 'N/A',
-              zone_name: currentUser.zone_name || 'Assigned Zone',
-              zone_id: currentUser.zone_id || 'N/A',
-            }}
-            onNavigateToHeadcount={() => {
-              setActiveTab('headcount');
-              setSelectedAppId(null);
-            }}
-          />
-        ) : activeTab === 'headcount' ? (
-          <div className="p-6">
+        <PageContainer width="full">
+          {/* ------------------------------------------------------------------ */}
+          {/* VIEW 1: APPLICATION DETAIL & DOCUMENT REVIEW WORKSPACE */}
+          {/* ------------------------------------------------------------------ */}
+          {selectedAppId ? (
+            <DocumentReviewWorkspaceView
+              appDetail={appDetail}
+              loading={detailLoading}
+              actionLoading={actionLoading}
+              currentUser={currentUser}
+              onBack={() => setSelectedAppId(null)}
+              correctionForms={correctionForms}
+              onOpenCorrectionForm={handleOpenCorrectionForm}
+              onCloseCorrectionForm={handleCloseCorrectionForm}
+              onReasonChange={handleReasonChange}
+              onSubmitCorrection={handleSubmitCorrection}
+              onVerifyDoc={handleVerifyDoc}
+              onSimulateResubmit={handleSimulateResubmit}
+              onPreviewDoc={(doc) => setPreviewDoc(doc)}
+              signerName={signerName}
+              signatureConfirm={signatureConfirm}
+              setSignatureConfirm={setSignatureConfirm}
+              onApplySignature={handleApplySignature}
+              onOpenReturnModal={() => setShowReturnModal(true)}
+              onForwardToCentral={handleForwardToCentral}
+            />
+          ) : activeTab === 'branch_overview' ? (
+            <BranchOverviewView
+              currentUser={{
+                branch_name: currentUser.branch_name || 'Assigned Branch',
+                branch_id: currentUser.branch_id || 'N/A',
+                zone_name: currentUser.zone_name || 'Assigned Zone',
+                zone_id: currentUser.zone_id || 'N/A',
+              }}
+              onNavigateToHeadcount={() => {
+                setActiveTab('headcount');
+                setSelectedAppId(null);
+              }}
+            />
+          ) : activeTab === 'headcount' ? (
             <HeadcountManagementView />
-          </div>
-        ) : activeTab === 'workflow_tracker' ? (
-          <div className="p-4 sm:p-6">
+          ) : activeTab === 'workflow_tracker' ? (
             <WorkflowTrackerView
               role="branch_manager"
               branchName={currentUser.branch_name}
               zoneName={currentUser.zone_name}
             />
-          </div>
-        ) : (
-          <ApplicationsQueueView
-            applications={uniqueApplications}
-            totalApps={totalApps}
-            loading={loading}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            onSearch={handleSearch}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={(p) => loadApplications(p)}
-            onSelectApp={(id) => setSelectedAppId(id)}
-            onSeedSample={handleSeedSample}
-            actionLoading={actionLoading}
-            activeTabTitle={
-              activeTab === 'pending_queue'
-                ? 'Branch Manager — Pending Verification Queue'
-                : activeTab === 'corrections_queue'
-                ? 'Branch Manager — Corrections & Resubmissions Queue'
-                : 'Branch Manager — Forwarded Applications'
-            }
-          />
-        )}
+          ) : (
+            <ApplicationsQueueView
+              applications={uniqueApplications}
+              totalApps={totalApps}
+              loading={loading}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onSearch={handleSearch}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(p) => loadApplications(p)}
+              onSelectApp={(id) => setSelectedAppId(id)}
+              onSeedSample={handleSeedSample}
+              actionLoading={actionLoading}
+              activeTabTitle={
+                activeTab === 'pending_queue'
+                  ? 'Branch Manager — Pending Verification Queue'
+                  : activeTab === 'corrections_queue'
+                  ? 'Branch Manager — Corrections & Resubmissions Queue'
+                  : 'Branch Manager — Forwarded Applications'
+              }
+            />
+          )}
+        </PageContainer>
 
         {/* DOCUMENT PREVIEW LIGHTBOX MODAL */}
         <DocumentPreviewModal

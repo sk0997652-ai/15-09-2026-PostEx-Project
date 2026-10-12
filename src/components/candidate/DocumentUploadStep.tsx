@@ -453,7 +453,7 @@ export const DocumentUploadStep: React.FC<DocumentUploadStepProps> = ({
                               {fileName}
                             </p>
                             <div className="flex items-center gap-2 text-caption text-slate-500 mt-0.5">
-                              <Badge variant="outline" size="sm" className="font-mono text-tag py-0 px-1.5 uppercase">
+                              <Badge variant="outline" size="sm" className="text-tag py-0 px-1.5 uppercase">
                                 {isPdf ? 'PDF' : 'IMAGE'}
                               </Badge>
                               <span>&bull;</span>

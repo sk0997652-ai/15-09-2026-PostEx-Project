@@ -196,7 +196,7 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
               type="button"
               id="subtab-active-employees"
               onClick={() => setEmployeeSubTab('active_and_exiting')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer ${
                 employeeSubTab === 'active_and_exiting'
                   ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                   : 'text-slate-600 hover:bg-slate-100'
@@ -208,7 +208,7 @@ export const RecordBrowserView: React.FC<RecordBrowserViewProps> = ({
               type="button"
               id="subtab-exited-archive"
               onClick={() => setEmployeeSubTab('exited_archive')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg text-caption font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
                 employeeSubTab === 'exited_archive'
                   ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
                   : 'text-slate-600 hover:bg-slate-100'

@@ -27,10 +27,10 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 
     const borderFocusClasses = error
       ? 'border-rose-300 focus:border-rose-600 focus:ring-rose-600'
-      : 'border-slate-200 focus:border-indigo-600 focus:ring-indigo-600';
+      : 'border-slate-300 focus:border-indigo-600 focus:ring-indigo-600';
 
     return (
-      <div className="w-full space-y-1.5">
+      <div className="w-full space-y-1">
         {label && (
           <label htmlFor={textareaId} className="block text-body font-medium text-slate-900">
             {label}
@@ -41,7 +41,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           id={textareaId}
           rows={rows}
           disabled={disabled}
-          className={`w-full px-4 py-2.5 text-body text-slate-900 bg-white border ${borderFocusClasses} rounded-lg shadow-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-colors disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed resize-y ${className}`}
+          className={`w-full px-2.5 py-1.5 text-field text-slate-900 bg-white border ${borderFocusClasses} rounded-[6px] shadow-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-colors disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed resize-y ${className}`}
           {...props}
         />
         {error ? (

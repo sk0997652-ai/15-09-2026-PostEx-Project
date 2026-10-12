@@ -63,12 +63,12 @@ export const SubmissionConfirmationModal: React.FC<SubmissionConfirmationModalPr
         {/* Dossier Routing Summary Card */}
         <div className="p-6 space-y-4">
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-caption">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 flex-wrap gap-1">
               <span className="text-slate-500 font-medium">Joining Reference ID</span>
               <span className="font-mono font-bold text-indigo-700 text-body">{candidate.joining_id}</span>
             </div>
 
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 flex-wrap gap-1">
               <span className="text-slate-500 font-medium flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5 text-slate-400" />
                 <span>Assigned Verification Branch</span>
@@ -76,12 +76,12 @@ export const SubmissionConfirmationModal: React.FC<SubmissionConfirmationModalPr
               <span className="font-bold text-slate-800">{candidate.branches?.name || 'Assigned Branch Hub'}</span>
             </div>
 
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 flex-wrap gap-1">
               <span className="text-slate-500 font-medium flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
                 <span>Submission Timestamp</span>
               </span>
-              <span className="font-mono text-slate-700">
+              <span className="text-slate-700">
                 {new Date(submittedAt).toLocaleString(undefined, {
                   dateStyle: 'medium',
                   timeStyle: 'short',
@@ -89,7 +89,7 @@ export const SubmissionConfirmationModal: React.FC<SubmissionConfirmationModalPr
               </span>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-1">
               <span className="text-slate-500 font-medium flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
                 <span>Current Status</span>

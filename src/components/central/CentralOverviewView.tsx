@@ -25,6 +25,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  KpiGrid,
+  KpiCard,
 } from '../ui';
 import {
   FillRateStatusBadge,
@@ -244,13 +246,13 @@ export function CentralOverviewView({
                   <TableCell mobileRole="field" mobileLabel="Category">
                     <EmploymentCategoryBadge category={d.employment_category} />
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right font-mono text-body font-semibold">
+                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right text-body font-semibold">
                     {d.approved}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right font-mono text-body font-bold text-indigo-700">
+                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right text-body font-bold text-indigo-700">
                     {d.active}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right font-mono text-body font-bold text-amber-700">
+                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right text-body font-bold text-amber-700">
                     {d.vacancy}
                   </TableCell>
                   <TableCell mobileRole="status">
@@ -270,63 +272,32 @@ export function CentralOverviewView({
       </Card>
 
       {/* Secondary Pipeline Metric Strip (2-col on mobile, 4-col on desktop) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-table-header uppercase text-slate-500">
-              Dossier Review Queue
-            </span>
-            <span className="text-kpi-number text-amber-600 font-mono tabular-nums block mt-0.5">
-              {metrics?.pendingReviewCount ?? 0}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-            <Clock className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-table-header uppercase text-slate-500">
-              Returned For Correction
-            </span>
-            <span className="text-kpi-number text-rose-600 font-mono tabular-nums block mt-0.5">
-              {metrics?.needsCorrectionCount ?? 0}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-            <RotateCcw className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-table-header uppercase text-slate-500">
-              Enrolled Employees
-            </span>
-            <span className="text-kpi-number text-emerald-600 font-mono tabular-nums block mt-0.5">
-              {metrics?.enrolledCount ?? summaryTotal.active}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <UserCheck className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-table-header uppercase text-slate-500">
-              Scoped Operational Branches
-            </span>
-            <span className="text-kpi-number text-indigo-700 font-mono tabular-nums block mt-0.5">
-              {branchRows.length || (metrics?.branchesCount ?? 0)}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <Building2 className="w-4 h-4" />
-          </div>
-        </Card>
-      </div>
+      <KpiGrid columns={4}>
+        <KpiCard
+          label="Dossier Review Queue"
+          value={metrics?.pendingReviewCount ?? 0}
+          icon={<Clock className="w-4 h-4" />}
+          tone="warning"
+        />
+        <KpiCard
+          label="Returned For Correction"
+          value={metrics?.needsCorrectionCount ?? 0}
+          icon={<RotateCcw className="w-4 h-4" />}
+          tone="danger"
+        />
+        <KpiCard
+          label="Enrolled Employees"
+          value={metrics?.enrolledCount ?? summaryTotal.active}
+          icon={<UserCheck className="w-4 h-4" />}
+          tone="success"
+        />
+        <KpiCard
+          label="Scoped Operational Branches"
+          value={branchRows.length || (metrics?.branchesCount ?? 0)}
+          icon={<Building2 className="w-4 h-4" />}
+          tone="primary"
+        />
+      </KpiGrid>
 
       {/* Quick Action Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

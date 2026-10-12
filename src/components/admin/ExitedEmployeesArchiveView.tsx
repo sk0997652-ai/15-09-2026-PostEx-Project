@@ -1,5 +1,5 @@
 // ==============================================================================
-// PostEx HR Onboarding Portal — Exited Employees Archive (Step 11A)
+// PostEx HR Onboarding Portal — Exited Employees Archive (Step 11A & Step 14D)
 // Read-only company-wide exit archive restricted to Super Admin
 // ==============================================================================
 
@@ -105,17 +105,17 @@ export const ExitedEmployeesArchiveView: React.FC<ExitedEmployeesArchiveViewProp
   };
 
   return (
-    <div id="exited-employees-archive-view" className="space-y-4">
+    <div id="exited-employees-archive-view" className="space-y-3">
       {/* Header & Controls Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-white p-2.5 rounded-[6px] border border-slate-200">
         <div>
-          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+          <h3 className="text-card-heading font-bold text-slate-900 flex items-center gap-2">
             <span>Exited Employees Archive</span>
-            <Badge variant="neutral" size="sm">
+            <Badge variant="neutral">
               {pagination.total} records
             </Badge>
           </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-caption text-slate-500 mt-0.5">
             Permanent, read-only lifecycle record of all fully cleared and completed employee exits.
           </p>
         </div>
@@ -135,16 +135,16 @@ export const ExitedEmployeesArchiveView: React.FC<ExitedEmployeesArchiveViewProp
       </div>
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-3 text-rose-800 text-sm">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-[6px] flex items-center gap-2 text-rose-800 text-body">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Table */}
-      <Table>
-        <TableHeader>
-          <TableRow>
+      <Table scroll="x">
+        <TableHeader scroll="x">
+          <TableRow scroll="x">
             <TableHead>Employee</TableHead>
             <TableHead>Branch / Zone</TableHead>
             <TableHead>Exit Type</TableHead>
@@ -155,34 +155,34 @@ export const ExitedEmployeesArchiveView: React.FC<ExitedEmployeesArchiveViewProp
             <TableHead className="text-right">Action</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody scroll="x">
           {loading && exits.length === 0 ? (
-            <TableRow>
+            <TableRow scroll="x">
               <TableCell colSpan={8} className="py-12 text-center text-slate-400">
-                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-500" />
+                <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-1.5 text-indigo-500" />
                 <span>Loading exited records...</span>
               </TableCell>
             </TableRow>
           ) : exits.length === 0 ? (
-            <TableRow>
+            <TableRow scroll="x">
               <TableCell colSpan={8} className="py-12 text-center text-slate-400">
-                <FileText className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                <FileText className="w-6 h-6 mx-auto mb-1.5 text-slate-300" />
                 <p className="font-medium text-slate-600">No completed exit records found.</p>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-caption text-slate-400 mt-0.5">
                   Employees with fully completed clearance will be permanently archived here.
                 </p>
               </TableCell>
             </TableRow>
           ) : (
             exits.map((exit) => (
-              <TableRow key={exit.id} id={`exited-row-${exit.employee_code}`}>
+              <TableRow key={exit.id} id={`exited-row-${exit.employee_code}`} scroll="x">
                 {/* Employee Code & Name */}
-                <TableCell mobileRole="primary">
+                <TableCell className="whitespace-nowrap">
                   <div>
-                    <span className="font-bold text-slate-900 block text-sm">
+                    <span className="font-bold text-slate-900 block text-body">
                       {toTitleCase(exit.name || exit.employee_name || '—')}
                     </span>
-                    <span className="font-mono text-xs font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 inline-block mt-0.5">
+                    <span className="font-mono text-caption font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded-[4px] border border-indigo-100 inline-block mt-0.5">
                       {exit.employee_code}
                     </span>
                     {exit.designation && (
@@ -194,39 +194,39 @@ export const ExitedEmployeesArchiveView: React.FC<ExitedEmployeesArchiveViewProp
                 </TableCell>
 
                 {/* Branch / Zone */}
-                <TableCell mobileRole="field" mobileLabel="Branch / Zone">
+                <TableCell className="whitespace-nowrap">
                   <div>
-                    <span className="font-medium text-slate-800 block text-xs">
+                    <span className="font-medium text-slate-800 block text-body">
                       {exit.branch || 'Head Office'}
                     </span>
-                    <span className="text-caption text-slate-400 block text-[11px]">
+                    <span className="text-caption text-slate-400 block">
                       {exit.zone || '—'}
                     </span>
                   </div>
                 </TableCell>
 
                 {/* Exit Type */}
-                <TableCell mobileRole="field" mobileLabel="Exit Type">
+                <TableCell className="whitespace-nowrap">
                   {getExitTypeBadge(exit.exit_type)}
                 </TableCell>
 
                 {/* Last Working Date */}
-                <TableCell mobileRole="field" mobileLabel="Last Working Date" className="font-mono text-xs text-slate-700">
+                <TableCell className="text-body text-slate-700 whitespace-nowrap">
                   {exit.last_working_date || '—'}
                 </TableCell>
 
                 {/* Completed At */}
-                <TableCell mobileRole="field" mobileLabel="Completed At" className="text-xs text-slate-600">
+                <TableCell className="text-body text-slate-600 whitespace-nowrap">
                   {exit.completed_at ? (
                     <div>
-                      <span className="font-mono font-medium block">
+                      <span className="font-medium block">
                         {new Date(exit.completed_at).toLocaleDateString('en-GB', {
                           day: '2-digit',
                           month: 'short',
                           year: 'numeric',
                         })}
                       </span>
-                      <span className="text-caption text-slate-400 block text-[11px]">
+                      <span className="text-caption text-slate-400 block">
                         {new Date(exit.completed_at).toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit',
@@ -239,19 +239,19 @@ export const ExitedEmployeesArchiveView: React.FC<ExitedEmployeesArchiveViewProp
                 </TableCell>
 
                 {/* Completed By */}
-                <TableCell mobileRole="field" mobileLabel="Completed By" className="text-xs text-slate-700 font-medium">
+                <TableCell className="text-body text-slate-700 font-medium whitespace-nowrap">
                   {exit.completed_by || 'Staff User'}
                 </TableCell>
 
                 {/* ECF PDF Status */}
-                <TableCell mobileRole="field" mobileLabel="ECF PDF">
+                <TableCell className="whitespace-nowrap">
                   {exit.pdf_generated_at ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-tag font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                       <span>Downloaded</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-50 text-slate-500 border border-slate-200">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-tag font-medium bg-slate-50 text-slate-500 border border-slate-200">
                       <Clock className="w-3 h-3 text-slate-400" />
                       <span>Not downloaded</span>
                     </span>
@@ -259,7 +259,7 @@ export const ExitedEmployeesArchiveView: React.FC<ExitedEmployeesArchiveViewProp
                 </TableCell>
 
                 {/* Action: Download ECF PDF */}
-                <TableCell className="text-right">
+                <TableCell className="text-right whitespace-nowrap">
                   <Button
                     id={`download-ecf-btn-${exit.employee_code}`}
                     type="button"

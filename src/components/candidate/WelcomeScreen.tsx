@@ -62,7 +62,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     (isExecutive ? 'Operations Executive' : 'Courier & Logistics Associate');
 
   return (
-    <div id="candidate-welcome-screen" className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 animate-in fade-in-50 duration-300">
+    <div id="candidate-welcome-screen" className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 animate-in fade-in-50 duration-300">
       {/* Top Header Card */}
       <Card className="rounded-2xl border-slate-200/80 p-6 sm:p-8 mb-6 relative overflow-hidden">
         {/* Subtle decorative background glow */}
@@ -88,24 +88,24 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/80 text-caption">
-            <div className="p-2">
+            <div className="p-2 min-w-0">
               <span className="text-slate-500 font-medium block">{t('welcome.joiningId')}</span>
-              <p className="font-mono font-bold text-indigo-700 text-body mt-0.5">{candidate.joining_id}</p>
+              <p className="font-mono font-bold text-indigo-700 text-body mt-0.5 whitespace-nowrap">{candidate.joining_id}</p>
             </div>
 
-            <div className="p-2">
+            <div className="p-2 min-w-0">
               <span className="text-slate-500 font-medium flex items-center gap-1">
-                <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+                <Briefcase className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span>Assigned Role</span>
               </span>
-              <p className="font-bold text-slate-800 text-body mt-0.5 truncate" title={roleTitle}>
+              <p className="font-bold text-slate-800 text-body mt-0.5 break-words" title={roleTitle}>
                 {roleTitle}
               </p>
             </div>
 
-            <div className="p-2">
+            <div className="p-2 min-w-0">
               <span className="text-slate-500 font-medium flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-slate-400" />
+                <Layers className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span>Track</span>
               </span>
               <span id="candidate-welcome-track-badge">
@@ -119,22 +119,22 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               </span>
             </div>
 
-            <div className="p-2">
+            <div className="p-2 min-w-0">
               <span className="text-slate-500 font-medium flex items-center gap-1">
-                <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span>Assigned Hub</span>
               </span>
-              <p className="font-bold text-slate-800 text-body mt-0.5 truncate" title={candidate.branches?.name}>
+              <p className="font-bold text-slate-800 text-body mt-0.5 break-words" title={candidate.branches?.name}>
                 {candidate.branches?.name || 'Assigned Branch Hub'}
               </p>
             </div>
 
-            <div className="p-2">
+            <div className="p-2 min-w-0">
               <span className="text-slate-500 font-medium flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span>Region / Zone</span>
               </span>
-              <p className="font-bold text-slate-800 text-body mt-0.5 truncate" title={candidate.zones?.name}>
+              <p className="font-bold text-slate-800 text-body mt-0.5 break-words" title={candidate.zones?.name}>
                 {candidate.zones?.name || 'Assigned Zone'}
               </p>
             </div>
@@ -288,7 +288,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
               </p>
             </div>
 
-            <div className="flex items-center gap-4 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
               {application && hasStarted && (
                 <Button
                   type="button"
@@ -296,7 +296,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                   size="small"
                   onClick={onViewStatusTracker}
                   id="candidate-check-status-btn"
-                  className="text-tag text-indigo-700 hover:text-indigo-900 p-0 h-auto"
+                  className="text-tag text-indigo-700 hover:text-indigo-900 p-0 h-auto self-start sm:self-auto"
                 >
                   View Status
                 </Button>

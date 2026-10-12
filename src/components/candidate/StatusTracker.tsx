@@ -95,7 +95,7 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
   ];
 
   return (
-    <div id="candidate-status-tracker-card" className="max-w-3xl mx-auto px-4 py-8">
+    <div id="candidate-status-tracker-card" className="max-w-6xl mx-auto px-4 py-8">
       {/* Top Bar with Language Selector and Navigation */}
       <PageHeader
         title={t('tracker.title')}
@@ -260,7 +260,7 @@ export const StatusTracker: React.FC<StatusTrackerProps> = ({
               </p>
             </div>
           </div>
-          <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-caption text-slate-600">
+          <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-caption text-slate-600">
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>Working Hours: Mon–Sat, 9:00 AM – 6:00 PM</span>

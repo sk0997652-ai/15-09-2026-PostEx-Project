@@ -30,10 +30,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     const borderFocusClasses = error
       ? 'border-rose-300 focus:border-rose-600 focus:ring-rose-600'
-      : 'border-slate-200 focus:border-indigo-600 focus:ring-indigo-600';
+      : 'border-slate-300 focus:border-indigo-600 focus:ring-indigo-600';
 
     return (
-      <div className="w-full space-y-1.5">
+      <div className="w-full space-y-1">
         {label && (
           <label htmlFor={inputId} className="block text-body font-medium text-slate-900">
             {label}
@@ -41,7 +41,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative">
           {leftIcon && (
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 [&>svg]:w-3.5 [&>svg]:h-3.5">
               {leftIcon}
             </div>
           )}
@@ -49,13 +49,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             disabled={disabled}
-            className={`w-full h-10 px-4 py-2.5 text-body text-slate-900 bg-white border ${borderFocusClasses} rounded-lg shadow-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-colors disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed ${
-              leftIcon ? 'pl-10' : ''
-            } ${rightIcon ? 'pr-10' : ''} ${className}`}
+            className={`w-full h-7 sm:h-7 min-h-[40px] sm:min-h-0 px-2.5 py-1 text-field text-slate-900 bg-white border ${borderFocusClasses} rounded-[6px] shadow-xs placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-colors disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed ${
+              leftIcon ? 'pl-8' : ''
+            } ${rightIcon ? 'pr-8' : ''} ${className}`}
             {...props}
           />
           {rightIcon && (
-            <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+            <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400 [&>svg]:w-3.5 [&>svg]:h-3.5">
               {rightIcon}
             </div>
           )}

@@ -10,3 +10,6 @@ export * from './TableToolbar';
 export * from './PageHeader';
 export * from './Modal';
 export * from './Checkbox';
+export * from './KpiCard';
+export * from './PageContainer';
+export * from './PortalSidebar';

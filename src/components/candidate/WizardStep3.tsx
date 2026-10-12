@@ -80,7 +80,6 @@ export const WizardStep3: React.FC<WizardStep3Props> = ({ data, onChange, disabl
                 disabled={disabled}
                 value={data.dependents_count || '0'}
                 onChange={(e) => onChange('dependents_count', e.target.value)}
-                className="font-mono"
               />
             </div>
           </div>

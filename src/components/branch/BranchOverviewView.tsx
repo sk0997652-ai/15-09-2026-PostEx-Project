@@ -120,7 +120,7 @@ export function BranchOverviewView({
   }, [designationRows, categoryFilter, statusFilter, searchQuery]);
 
   return (
-    <div id="branch-manager-overview-view" className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
+    <div id="branch-manager-overview-view" className="space-y-6 w-full">
       <PageHeader
         title="Branch Overview — Headcount & Governance"
         description="Branch-scoped Rider vs. In-House Staff headcount rollups, branch hub flashcard, per-designation fill-rate status, month-over-month trends, and physical verification governance."
@@ -268,13 +268,13 @@ export function BranchOverviewView({
                   <TableCell mobileRole="field" mobileLabel="Category">
                     <EmploymentCategoryBadge category={d.employment_category} />
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right font-mono text-body font-semibold tabular-nums">
+                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right text-body font-semibold tabular-nums">
                     {d.approved}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right font-mono text-body font-bold text-indigo-700 tabular-nums">
+                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right text-body font-bold text-indigo-700 tabular-nums">
                     {d.active}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right font-mono text-body font-bold text-amber-700 tabular-nums">
+                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right text-body font-bold text-amber-700 tabular-nums">
                     {d.vacancy}
                   </TableCell>
                   <TableCell mobileRole="status">

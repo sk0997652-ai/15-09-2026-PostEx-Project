@@ -1,5 +1,5 @@
 // ==============================================================================
-// PostEx HR Onboarding Portal — User Performance Tracker Sub-View (Step 11B)
+// PostEx HR Onboarding Portal — User Performance Tracker Sub-View (Step 11B & Step 14D)
 // Replaces demo seed data with live computations from GET /api/performance/hr
 // ==============================================================================
 
@@ -8,16 +8,22 @@ import {
   Download,
   RefreshCw,
   AlertCircle,
-  Users,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  ChevronDown,
-  ChevronUp,
   FileText,
   Filter,
 } from 'lucide-react';
-import { Card, Button, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../ui';
+import {
+  Card,
+  Button,
+  Badge,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  KpiCard,
+  KpiGrid,
+} from '../ui';
 import { toTitleCase } from '../../lib/formatText';
 import { exportRowsToExcel } from '../../lib/hrPortalStore';
 import {
@@ -125,7 +131,7 @@ export const UserPerformanceSubView: React.FC<UserPerformanceSubViewProps> = ({
   };
 
   const renderProgressBar = (pct: number, colorClass?: string) => (
-    <div className="w-20 bg-slate-100 rounded-full h-2 overflow-hidden flex">
+    <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden flex">
       <div
         className={`h-full transition-all duration-300 ${
           colorClass || (pct >= 85 ? 'bg-emerald-500' : pct >= 65 ? 'bg-amber-500' : 'bg-rose-500')
@@ -136,30 +142,30 @@ export const UserPerformanceSubView: React.FC<UserPerformanceSubViewProps> = ({
   );
 
   return (
-    <div id="user-performance-subview" className="space-y-6">
+    <div id="user-performance-subview" className="space-y-3">
       {/* Top Filter and Date Range Toolbar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold uppercase tracking-wider">
+      <div className="bg-white p-2.5 rounded-[6px] border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-1.5 text-caption text-slate-500 font-semibold">
             <Filter className="w-3.5 h-3.5" />
             <span>Joining Date Filter:</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <input
               type="date"
               id="performance-start-date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="px-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-slate-50 text-slate-700 focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-indigo-600 font-mono"
+              className="px-2 h-7 text-caption border border-slate-300 rounded-[6px] bg-slate-50 text-slate-700 focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-indigo-600"
               placeholder="From"
             />
-            <span className="text-xs text-slate-400">to</span>
+            <span className="text-caption text-slate-400">to</span>
             <input
               type="date"
               id="performance-end-date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="px-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-slate-50 text-slate-700 focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-indigo-600 font-mono"
+              className="px-2 h-7 text-caption border border-slate-300 rounded-[6px] bg-slate-50 text-slate-700 focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-indigo-600"
               placeholder="To"
             />
             {(startDate || endDate) && (
@@ -193,9 +199,9 @@ export const UserPerformanceSubView: React.FC<UserPerformanceSubViewProps> = ({
 
       {/* Error state with Retry */}
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between gap-3 text-rose-800 text-sm">
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-[6px] flex items-center justify-between gap-3 text-rose-800 text-body">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{error}</span>
           </div>
           <Button variant="secondary" size="sm" onClick={fetchPerformance}>
@@ -204,66 +210,43 @@ export const UserPerformanceSubView: React.FC<UserPerformanceSubViewProps> = ({
         </div>
       )}
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* 1. Joiners Handled */}
-        <Card className="p-5">
-          <div className="text-table-header uppercase text-slate-500">Joiners Handled</div>
-          <div className="text-kpi-number font-mono tabular-nums mt-1 text-slate-900">
-            {kpi.joiners_handled}
-          </div>
-          <div className="text-caption text-slate-500 mt-0.5">
-            {kpi.items_provided}/{kpi.total_items} items provided
-          </div>
-        </Card>
-
-        {/* 2. On-Time Task Rate */}
-        <Card className="p-5">
-          <div className="text-table-header uppercase text-slate-500">On-Time Rate</div>
-          <div
-            className={`text-kpi-number font-mono tabular-nums mt-1 ${
-              kpi.on_time_rate >= 85
-                ? 'text-emerald-600'
-                : kpi.on_time_rate >= 65
-                ? 'text-amber-600'
-                : 'text-rose-600'
-            }`}
-          >
-            {kpi.on_time_rate}%
-          </div>
-          <div className="text-caption text-slate-500 mt-0.5">
-            {kpi.on_time_items} on-time out of {kpi.total_items}
-          </div>
-        </Card>
-
-        {/* 3. Overdue Items */}
-        <Card className="p-5">
-          <div className="text-table-header uppercase text-slate-500">Overdue Items</div>
-          <div className="text-kpi-number text-rose-600 font-mono tabular-nums mt-1">
-            {kpi.overdue_items}
-          </div>
-          <div className="text-caption text-slate-500 mt-0.5">past SLA target day</div>
-        </Card>
-
-        {/* 4. Open Clearance Forms */}
-        <Card className="p-5">
-          <div className="text-table-header uppercase text-slate-500">Open Clearance Forms</div>
-          <div className="text-kpi-number text-slate-900 font-mono tabular-nums mt-1">
-            {kpi.open_clearance_forms}
-          </div>
-          <div className="text-caption text-slate-500 mt-0.5">in-progress exits</div>
-        </Card>
-      </div>
+      {/* KPI Cards using KpiGrid and KpiCard */}
+      <KpiGrid columns={4}>
+        <KpiCard
+          label="Joiners Handled"
+          value={kpi.joiners_handled}
+          hint={`${kpi.items_provided}/${kpi.total_items} items provided`}
+          tone="default"
+        />
+        <KpiCard
+          label="On-Time Rate"
+          value={`${kpi.on_time_rate}%`}
+          hint={`${kpi.on_time_items} on-time out of ${kpi.total_items}`}
+          tone={kpi.on_time_rate >= 85 ? 'success' : kpi.on_time_rate >= 65 ? 'warning' : 'danger'}
+        />
+        <KpiCard
+          label="Overdue Items"
+          value={kpi.overdue_items}
+          hint="past SLA target day"
+          tone={kpi.overdue_items > 0 ? 'danger' : 'default'}
+        />
+        <KpiCard
+          label="Open Clearance Forms"
+          value={kpi.open_clearance_forms}
+          hint="in-progress exits"
+          tone="default"
+        />
+      </KpiGrid>
 
       {/* Main Scorecard Table & Drilldown */}
       <Card
         title={toTitleCase(`Scorecard by ${lvl === 'HR' ? 'HR Officer' : lvl}`)}
         description="Performance scorecard showing items provided on or before target day (Code D0, Machine D1, Login D1, SIM D2, ID D3, Docs D5)."
         action={
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <div
               id="lv"
-              className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-xl p-1 gap-1"
+              className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-[6px] p-0.5 gap-1"
             >
               {(['HR officer', 'Zone', 'Branch'] as const).map((l) => {
                 const dataKey = l === 'HR officer' ? 'HR' : l;
@@ -277,9 +260,9 @@ export const UserPerformanceSubView: React.FC<UserPerformanceSubViewProps> = ({
                       setLvl(dataKey);
                       setSelectedRowId(null);
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-caption font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-2.5 py-1 rounded-[4px] text-caption font-semibold transition-all cursor-pointer whitespace-nowrap ${
                       isOn
-                        ? 'bg-white text-indigo-700 shadow-xs'
+                        ? 'bg-white text-indigo-700 shadow-2xs'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
@@ -294,23 +277,23 @@ export const UserPerformanceSubView: React.FC<UserPerformanceSubViewProps> = ({
               variant="secondary"
               size="sm"
               onClick={handleExportExcel}
-              leftIcon={<Download className="w-4 h-4" />}
+              leftIcon={<Download className="w-3.5 h-3.5" />}
             >
               Export To Excel
             </Button>
           </div>
         }
       >
-        <div className="space-y-4">
-          <div className="rounded-xl bg-indigo-50/80 border border-indigo-200/80 px-4 py-2.5 text-caption text-indigo-900">
+        <div className="space-y-3">
+          <div className="rounded-[6px] bg-indigo-50/80 border border-indigo-200/80 px-3 py-2 text-caption text-indigo-900">
             Threshold flags: <strong>On track</strong> (85%+), <strong>Watch</strong> (65%-84%),{' '}
             <strong>Needs action</strong> (&lt;65%). Fewer than 4 joiners is marked{' '}
             <strong>Low volume</strong>.
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
+          <Table scroll="x">
+            <TableHeader scroll="x">
+              <TableRow scroll="x">
                 <TableHead>{lvl === 'HR' ? 'HR Officer' : lvl}</TableHead>
                 <TableHead>Joiners</TableHead>
                 <TableHead>Asset Items Provided</TableHead>
@@ -323,20 +306,20 @@ export const UserPerformanceSubView: React.FC<UserPerformanceSubViewProps> = ({
                 <TableHead className="text-right">Drill-Down</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody scroll="x">
               {loading && rows.length === 0 ? (
-                <TableRow>
+                <TableRow scroll="x">
                   <TableCell colSpan={10} className="py-12 text-center text-slate-400">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-500" />
+                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-1.5 text-indigo-500" />
                     <span>Loading performance metrics...</span>
                   </TableCell>
                 </TableRow>
               ) : rows.length === 0 ? (
-                <TableRow>
+                <TableRow scroll="x">
                   <TableCell colSpan={10} className="py-12 text-center text-slate-400">
-                    <FileText className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                    <FileText className="w-6 h-6 mx-auto mb-1.5 text-slate-300" />
                     <p className="font-medium text-slate-600">No performance records found.</p>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-caption text-slate-400 mt-0.5">
                       No employees or tasks matched the selected scope and date range.
                     </p>
                   </TableCell>
@@ -347,11 +330,12 @@ export const UserPerformanceSubView: React.FC<UserPerformanceSubViewProps> = ({
                   return (
                     <React.Fragment key={r.id}>
                       <TableRow
+                        scroll="x"
                         onClick={() => setSelectedRowId(isSelected ? null : r.id)}
                         className={`cursor-pointer ${isSelected ? 'bg-indigo-50/50' : ''}`}
                       >
                         {/* Name & Scope */}
-                        <TableCell mobileRole="primary">
+                        <TableCell className="whitespace-nowrap">
                           <div className="font-semibold text-slate-900">
                             {lvl === 'HR' ? toTitleCase(r.name) : r.name}
                           </div>
@@ -361,112 +345,111 @@ export const UserPerformanceSubView: React.FC<UserPerformanceSubViewProps> = ({
                         </TableCell>
 
                         {/* Joiners */}
-                        <TableCell mobileRole="field" mobileLabel="Joiners" className="font-mono text-slate-700">
+                        <TableCell className="text-slate-700 whitespace-nowrap">
                           {r.joiners_count}
                         </TableCell>
 
                         {/* Asset Items Provided */}
-                        <TableCell mobileRole="field" mobileLabel="Provided">
-                          <Badge variant="neutral" className="font-mono">
+                        <TableCell className="whitespace-nowrap">
+                          <Badge variant="neutral" className="text-tag">
                             {r.items_provided}/{r.total_items}
                           </Badge>
                         </TableCell>
 
                         {/* On-Time Rate */}
-                        <TableCell mobileRole="field" mobileLabel="On-Time Rate">
-                          <div className="flex items-center gap-2 min-w-[120px]">
+                        <TableCell className="whitespace-nowrap">
+                          <div className="flex items-center gap-2 min-w-[100px]">
                             {renderProgressBar(r.on_time_rate, r.flag_color)}
-                            <span className="text-caption font-bold font-mono text-slate-700 w-10 text-right">
+                            <span className="text-caption font-bold text-slate-700 w-8 text-right">
                               {r.on_time_rate}%
                             </span>
                           </div>
                         </TableCell>
 
                         {/* Avg Days */}
-                        <TableCell mobileRole="field" mobileLabel="Avg Days" className="font-mono text-slate-700">
-                          {r.avg_days !== null ? r.avg_days : '—'}
+                        <TableCell className="text-slate-700 whitespace-nowrap">
+                          {r.avg_days !== null ? `${r.avg_days}d` : '—'}
                         </TableCell>
 
-                        {/* Overdue */}
-                        <TableCell mobileRole="field" mobileLabel="Overdue" className="font-mono text-slate-700">
-                          <span className={r.overdue_items > 0 ? 'text-rose-600 font-bold' : ''}>
-                            {r.overdue_items}
-                          </span>
+                        {/* Overdue Items */}
+                        <TableCell className="whitespace-nowrap">
+                          {r.overdue_items > 0 ? (
+                            <span className="font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-[4px] border border-rose-200 text-tag">
+                              {r.overdue_items}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">0</span>
+                          )}
                         </TableCell>
 
                         {/* Emails Sent */}
-                        <TableCell mobileRole="field" mobileLabel="Emails" className="font-mono text-slate-700">
+                        <TableCell className="text-slate-700 whitespace-nowrap">
                           {r.emails_sent}/{r.emails_total}
                         </TableCell>
 
                         {/* Open ECFs */}
-                        <TableCell mobileRole="field" mobileLabel="Open ECFs" className="font-mono text-slate-700">
+                        <TableCell className="text-slate-700 whitespace-nowrap">
                           {r.open_clearance_forms}
                         </TableCell>
 
                         {/* Flag Badge */}
-                        <TableCell mobileRole="status">
-                          <Badge variant={r.flag_variant}>{r.flag}</Badge>
+                        <TableCell className="whitespace-nowrap">
+                          <Badge
+                            variant={
+                              r.flag === 'On track'
+                                ? 'success'
+                                : r.flag === 'Watch'
+                                ? 'warning'
+                                : r.flag === 'Needs action'
+                                ? 'error'
+                                : 'neutral'
+                            }
+                            className="text-tag"
+                          >
+                            {r.flag}
+                          </Badge>
                         </TableCell>
 
-                        {/* Drill-Down Action Button */}
-                        <TableCell className="text-right">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedRowId(isSelected ? null : r.id);
-                            }}
-                            className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                          >
-                            {isSelected ? (
-                              <ChevronUp className="w-4 h-4 text-indigo-600" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4" />
-                            )}
-                          </button>
+                        {/* Drill-down Toggle */}
+                        <TableCell className="text-right whitespace-nowrap">
+                          <span className="text-caption font-semibold text-indigo-600 hover:text-indigo-800">
+                            {isSelected ? 'Hide breakdown' : 'View breakdown'}
+                          </span>
                         </TableCell>
                       </TableRow>
 
-                      {/* Drill-Down Expansion Row */}
+                      {/* Drill-down Row */}
                       {isSelected && (
-                        <TableRow className="bg-slate-50/70 hover:bg-slate-50/70">
-                          <TableCell colSpan={10} className="p-4">
-                            <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
-                              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                                  Scope Breakdown: {r.name}
-                                </h4>
-                                <span className="text-caption text-slate-500 font-mono">
-                                  {r.joiners_count} total joiners • {r.open_clearance_forms} open clearance exits
-                                </span>
+                        <TableRow scroll="x" className="bg-slate-50/70 border-y border-slate-200">
+                          <TableCell colSpan={10} className="p-3">
+                            <div className="space-y-2">
+                              <div className="font-semibold text-body text-slate-900">
+                                Item-level breakdown for {lvl === 'HR' ? toTitleCase(r.name) : r.name}:
                               </div>
-
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                                <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-                                  <span className="text-slate-500 block">Total Items Target</span>
-                                  <span className="font-mono font-bold text-slate-800 text-sm">
-                                    {r.total_items}
-                                  </span>
-                                </div>
-                                <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-                                  <span className="text-slate-500 block">Items On-Time</span>
-                                  <span className="font-mono font-bold text-emerald-700 text-sm">
-                                    {r.on_time_items}
-                                  </span>
-                                </div>
-                                <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-                                  <span className="text-slate-500 block">Overdue Items</span>
-                                  <span className="font-mono font-bold text-rose-700 text-sm">
-                                    {r.overdue_items}
-                                  </span>
-                                </div>
-                                <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-                                  <span className="text-slate-500 block">Avg Completion Days</span>
-                                  <span className="font-mono font-bold text-indigo-700 text-sm">
-                                    {r.avg_days !== null ? `${r.avg_days} days` : 'In progress'}
-                                  </span>
-                                </div>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                                {Object.entries(r.item_breakdown || {}).map(([key, item]) => (
+                                  <div
+                                    key={key}
+                                    className="p-2 bg-white rounded-[6px] border border-slate-200 space-y-1"
+                                  >
+                                    <div className="text-caption font-medium text-slate-500 uppercase tracking-wide truncate">
+                                      {key.replace(/_/g, ' ')}
+                                    </div>
+                                    <div className="text-body font-bold text-slate-900">
+                                      {item.provided}/{item.total}
+                                    </div>
+                                    <div className="text-caption text-slate-400 flex items-center justify-between">
+                                      <span>On-time:</span>
+                                      <span className="font-semibold text-slate-700">{item.on_time}</span>
+                                    </div>
+                                    {item.overdue > 0 && (
+                                      <div className="text-caption text-rose-600 font-semibold flex items-center justify-between">
+                                        <span>Overdue:</span>
+                                        <span>{item.overdue}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
                             </div>
                           </TableCell>

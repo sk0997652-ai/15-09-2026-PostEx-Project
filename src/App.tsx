@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { ConnectivityStatus } from './components/ConnectivityStatus';
 import { StaffLoginForm } from './components/StaffLoginForm';
 import { CandidateLoginForm } from './components/CandidateLoginForm';
@@ -16,6 +16,12 @@ import { checkStaffSession, signOutStaff } from './lib/staffAuth';
 import { supabase } from './lib/supabase';
 import { Building2, Shield, Users, Smartphone, Activity, Lock, Wrench, ChevronDown, UserCheck, LogOut, Sparkles, Menu, Bell } from 'lucide-react';
 import { ComponentLibraryShowcase } from './components/ui/ComponentLibraryShowcase';
+import { CandidatePortal } from './components/candidate/CandidatePortal';
+import {
+  getCandidateSession,
+  clearCandidateSession,
+  CandidateSessionState,
+} from './lib/candidateAuth';
 import { Button } from './components/ui';
 import { useBranding } from './lib/branding';
 import { toTitleCase } from './lib/formatText';
@@ -44,6 +50,9 @@ export default function App() {
     return 'none';
   });
   const [authPortalType, setAuthPortalType] = useState<'staff' | 'candidate'>('staff');
+  const [candidateSession, setCandidateSession] = useState<CandidateSessionState | null>(() => {
+    return getCandidateSession();
+  });
   const [showDevMenu, setShowDevMenu] = useState(false);
 
   const [isDevToolsEnabled, setIsDevToolsEnabled] = useState(
@@ -92,11 +101,37 @@ export default function App() {
     await signOutStaff();
   };
 
+  const handleCandidateSignOut = () => {
+    clearCandidateSession();
+    setCandidateSession(null);
+  };
+
+  // Single effect managing the data-portal attribute for candidate vs staff scale before paint
+  useLayoutEffect(() => {
+    if (typeof document === 'undefined') return;
+    const isCandidateScale = Boolean(candidateSession || (!currentUser && authPortalType === 'candidate'));
+    if (isCandidateScale) {
+      document.documentElement.setAttribute('data-portal', 'candidate');
+    } else {
+      document.documentElement.removeAttribute('data-portal');
+    }
+  }, [candidateSession, currentUser, authPortalType]);
+
+  // 1. Authenticated Candidate Experience: Render full viewport directly outside login container & background
+  if (candidateSession) {
+    return (
+      <CandidatePortal
+        session={candidateSession}
+        onSignOut={handleCandidateSignOut}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col overflow-x-hidden">
       {/* Top Application Header */}
       <header className="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+        <div className="px-4 h-12 sm:h-14 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {currentUser && activeDevTab === 'none' && (
               <button
@@ -149,7 +184,7 @@ export default function App() {
                   <span className="font-semibold text-slate-200 truncate hidden sm:inline">
                     {currentUser.name ? toTitleCase(currentUser.name) : currentUser.email}
                   </span>
-                  <span className="text-indigo-400 font-mono text-tag uppercase truncate">
+                  <span className="text-indigo-400 text-tag uppercase truncate">
                     {currentUser.role?.replace(/_/g, ' ')}
                   </span>
                   {currentUser.zone_name && (
@@ -325,7 +360,7 @@ export default function App() {
               {authPortalType === 'staff' ? (
                 <StaffLoginForm onLoginSuccess={refreshSession} />
               ) : (
-                <CandidateLoginForm />
+                <CandidateLoginForm onCandidateLoginSuccess={setCandidateSession} />
               )}
             </div>
           </div>
@@ -438,7 +473,7 @@ export default function App() {
                 {/* Form Card */}
                 <div className="w-full">
                   {authPortalType === 'candidate' ? (
-                    <CandidateLoginForm />
+                    <CandidateLoginForm onCandidateLoginSuccess={setCandidateSession} />
                   ) : (
                     <StaffLoginForm onLoginSuccess={refreshSession} />
                   )}

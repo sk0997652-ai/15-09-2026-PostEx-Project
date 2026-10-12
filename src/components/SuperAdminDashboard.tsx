@@ -31,7 +31,7 @@ import { OrganizationSettingsView } from './admin/OrganizationSettingsView';
 import { HeadcountManagementView } from './common/HeadcountManagementView';
 import { WorkflowTrackerView } from './common/WorkflowTrackerView';
 import { DataImportView } from './common/DataImportView';
-import { Badge, Button } from './ui';
+import { Badge, Button, PageContainer, PortalSidebar, PortalSidebarItem } from './ui';
 import { Upload } from 'lucide-react';
 import { toTitleCase } from '../lib/formatText';
 
@@ -152,321 +152,216 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     setNavOpen(false);
   };
 
+  const sidebarItems: PortalSidebarItem[] = [
+    {
+      id: 'nav-btn-overview',
+      label: 'Overview',
+      title: 'Overview',
+      icon: <TrendingUp className="w-3.5 h-3.5" />,
+      active: activeTab === 'overview',
+      onSelect: () => handleSelectTab('overview'),
+    },
+    {
+      id: 'nav-btn-org',
+      label: 'Organization Structure',
+      title: 'Organization Structure',
+      icon: <Building2 className="w-3.5 h-3.5" />,
+      active: activeTab === 'org',
+      onSelect: () => handleSelectTab('org'),
+    },
+    {
+      id: 'nav-btn-headcount',
+      label: 'Headcount Management',
+      title: 'Headcount Management',
+      icon: <Users className="w-3.5 h-3.5" />,
+      active: activeTab === 'headcount',
+      onSelect: () => handleSelectTab('headcount'),
+    },
+    {
+      id: 'nav-btn-workflow-tracker',
+      label: 'Workflow Tracker',
+      title: 'Workflow Tracker',
+      icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+      active: activeTab === 'workflow_tracker',
+      onSelect: () => handleSelectTab('workflow_tracker'),
+    },
+    {
+      id: 'nav-btn-data-import',
+      label: 'Data Import',
+      title: 'Data Import',
+      icon: <Upload className="w-3.5 h-3.5" />,
+      active: activeTab === 'data_import',
+      onSelect: () => handleSelectTab('data_import'),
+    },
+    {
+      id: 'nav-btn-staff',
+      label: 'Staff & User Management',
+      title: 'Staff & User Management',
+      icon: <Users className="w-3.5 h-3.5" />,
+      active: activeTab === 'staff',
+      onSelect: () => handleSelectTab('staff'),
+    },
+    {
+      id: 'nav-btn-overrides',
+      label: 'User Permissions',
+      title: 'User Permissions',
+      icon: <ShieldCheck className="w-3.5 h-3.5" />,
+      active: activeTab === 'overrides',
+      onSelect: () => handleSelectTab('overrides'),
+    },
+    {
+      id: 'nav-btn-records',
+      label: 'Company Record Browser',
+      title: 'Company Record Browser',
+      icon: <Search className="w-3.5 h-3.5" />,
+      active: activeTab === 'records',
+      onSelect: () => handleSelectTab('records'),
+    },
+    {
+      id: 'nav-btn-audit',
+      label: 'Audit Trail Logs',
+      title: 'Audit Trail Logs',
+      icon: <History className="w-3.5 h-3.5" />,
+      active: activeTab === 'audit',
+      onSelect: () => handleSelectTab('audit'),
+    },
+    {
+      id: 'nav-btn-form-builder',
+      label: 'Form Builder',
+      title: 'Form Builder',
+      icon: <Sliders className="w-3.5 h-3.5" />,
+      active: activeTab === 'form_builder',
+      onSelect: () => handleSelectTab('form_builder'),
+    },
+    {
+      id: 'nav-btn-settings',
+      label: 'Organization Settings',
+      title: 'Organization Settings',
+      icon: <Settings className="w-3.5 h-3.5" />,
+      active: activeTab === 'settings',
+      onSelect: () => handleSelectTab('settings'),
+    },
+  ];
+
   return (
-    <div id="super-admin-dashboard-container" className="min-h-screen bg-slate-50 flex flex-col sm:flex-row font-sans antialiased text-slate-800 overflow-x-hidden">
-      {/* Mobile Slide-In Drawer Backdrop (<640px) */}
-      {isNavOpen && (
-        <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 sm:hidden"
-          onClick={() => setNavOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Sidebar Navigation: Mobile Slide-In Drawer (<640px) | Tablet Icon Rail (640-1024px) | Desktop Full Sidebar (1024px+) */}
-      <aside
-        className={`${
-          isNavOpen
-            ? 'fixed inset-y-0 left-0 z-50 w-64 flex shadow-2xl'
-            : 'hidden'
-        } sm:static sm:z-auto sm:flex sm:w-16 lg:w-60 bg-slate-900 text-slate-300 flex-col shrink-0 border-r border-slate-800 transition-all duration-200`}
-      >
-        <div className="p-4 sm:p-3 lg:p-5 border-b border-slate-800 flex items-center justify-between sm:justify-center lg:justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-tag shadow-xs shrink-0">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div className="min-w-0 sm:hidden lg:block">
-              <span className="text-card-heading text-white block truncate">Super Admin Portal</span>
-              <span className="text-caption text-slate-400 font-medium block truncate">
-                {currentUser.name ? toTitleCase(currentUser.name) : currentUser.email}
-              </span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setNavOpen(false)}
-            aria-label="Close navigation drawer"
-            className="sm:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Navigation Tabs */}
-        <nav className="p-2.5 sm:p-2 lg:p-3 space-y-1 text-caption flex-1 overflow-y-auto">
-          <button
-            id="nav-btn-overview"
-            title="Overview"
-            onClick={() => handleSelectTab('overview')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
-              activeTab === 'overview'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-            }`}
-          >
-            <TrendingUp className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Overview</span>
-          </button>
-
-          <button
-            id="nav-btn-org"
-            title="Organization Structure"
-            onClick={() => handleSelectTab('org')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
-              activeTab === 'org'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-            }`}
-          >
-            <Building2 className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Organization Structure</span>
-          </button>
-
-          <button
-            id="nav-btn-headcount"
-            title="Headcount Management"
-            onClick={() => handleSelectTab('headcount')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
-              activeTab === 'headcount'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-            }`}
-          >
-            <Users className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Headcount Management</span>
-          </button>
-
-          <button
-            id="nav-btn-workflow-tracker"
-            title="Workflow Tracker"
-            onClick={() => handleSelectTab('workflow_tracker')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
-              activeTab === 'workflow_tracker'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-            }`}
-          >
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Workflow Tracker</span>
-          </button>
-
-          <button
-            id="nav-btn-data-import"
-            title="Data Import"
-            onClick={() => handleSelectTab('data_import')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
-              activeTab === 'data_import'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-            }`}
-          >
-            <Upload className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Data Import</span>
-          </button>
-
-          <button
-            id="nav-btn-staff"
-            title="Staff & User Management"
-            onClick={() => handleSelectTab('staff')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
-              activeTab === 'staff'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-            }`}
-          >
-            <Users className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Staff &amp; User Management</span>
-          </button>
-
-          <button
-            id="nav-btn-overrides"
-            title="User Permissions"
-            onClick={() => handleSelectTab('overrides')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
-              activeTab === 'overrides'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-            }`}
-          >
-            <ShieldCheck className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">User Permissions</span>
-          </button>
-
-          <button
-            id="nav-btn-records"
-            title="Company Record Browser"
-            onClick={() => handleSelectTab('records')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
-              activeTab === 'records'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-            }`}
-          >
-            <Search className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Company Record Browser</span>
-          </button>
-
-          <button
-            id="nav-btn-audit"
-            title="Audit Trail Logs"
-            onClick={() => handleSelectTab('audit')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
-              activeTab === 'audit'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-            }`}
-          >
-            <History className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Audit Trail Logs</span>
-          </button>
-
-          <button
-            id="nav-btn-form-builder"
-            title="Form Builder"
-            onClick={() => handleSelectTab('form_builder')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
-              activeTab === 'form_builder'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-            }`}
-          >
-            <Sliders className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Form Builder</span>
-          </button>
-
-          <button
-            id="nav-btn-settings"
-            title="Organization Settings"
-            onClick={() => handleSelectTab('settings')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer ${
-              activeTab === 'settings'
-                ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-            }`}
-          >
-            <Settings className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Organization Settings</span>
-          </button>
-        </nav>
-
-        {/* User Session & Sign Out */}
-        <div className="p-2.5 sm:p-2 lg:p-3 border-t border-slate-800 space-y-2">
-          <div className="px-2 py-1 text-caption sm:hidden lg:block">
-            <span className="text-caption text-slate-400 block">Logged in as</span>
-            <span className="font-semibold text-white truncate block">{currentUser.name ? toTitleCase(currentUser.name) : currentUser.email}</span>
-          </div>
-          <button
-            id="super-admin-signout-btn"
-            title="Sign Out"
-            onClick={onSignOut}
-            className="w-full flex items-center justify-center gap-2 px-3 sm:px-0 lg:px-3 py-2 rounded-xl text-caption font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5 shrink-0" />
-            <span className="sm:hidden lg:inline">Sign Out</span>
-          </button>
-        </div>
-      </aside>
+    <div id="super-admin-dashboard-container" className="min-h-screen bg-slate-50 flex flex-col sm:flex-row antialiased text-slate-800 overflow-x-hidden">
+      {/* Shared Portal Sidebar */}
+      <PortalSidebar
+        brand={{
+          icon: <ShieldCheck className="w-3.5 h-3.5" />,
+          title: 'Super Admin Portal',
+          subtitle: currentUser.name ? toTitleCase(currentUser.name) : currentUser.email,
+        }}
+        items={sidebarItems}
+        isOpen={isNavOpen}
+        onClose={() => setNavOpen(false)}
+        onSignOut={onSignOut}
+        signOutBtnId="super-admin-signout-btn"
+        signOutLabel="Sign Out"
+        userContext={{
+          name: currentUser.name ? toTitleCase(currentUser.name) : currentUser.email,
+        }}
+      />
 
       {/* Main Content Workspace */}
-      <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
-        {/* Global Notification */}
-        {notification && (
-          <div
-            id="super-admin-notification-banner"
-            className={`mb-6 p-4 rounded-xl text-caption font-medium flex items-center gap-3 border ${
-              notification.type === 'success'
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : 'bg-rose-50 border-rose-200 text-rose-800'
-            }`}
-          >
-            {notification.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            ) : (
-              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-            )}
-            <span>{notification.text}</span>
-          </div>
-        )}
+      <main className="flex-1 min-w-0 overflow-y-auto bg-slate-50">
+        <PageContainer width={activeTab === 'settings' || activeTab === 'form_builder' ? 'form' : 'full'}>
+          {/* Global Notification */}
+          {notification && (
+            <div
+              id="super-admin-notification-banner"
+              className={`mb-6 p-4 rounded-xl text-caption font-medium flex items-center gap-3 border ${
+                notification.type === 'success'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  : 'bg-rose-50 border-rose-200 text-rose-800'
+              }`}
+            >
+              {notification.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              )}
+              <span>{notification.text}</span>
+            </div>
+          )}
 
-        {/* Tab 1: Overview */}
-        {activeTab === 'overview' && (
-          <OverviewMetricsView
-            metrics={metrics}
-            loading={loading}
-            onRefresh={loadOverviewData}
-            onNavigateToHeadcount={() => setActiveTab('headcount')}
-          />
-        )}
+          {/* Tab 1: Overview */}
+          {activeTab === 'overview' && (
+            <OverviewMetricsView
+              metrics={metrics}
+              loading={loading}
+              onRefresh={loadOverviewData}
+              onNavigateToHeadcount={() => setActiveTab('headcount')}
+            />
+          )}
 
-        {/* Tab 2: Organization Structure */}
-        {activeTab === 'org' && (
-          <OrganizationStructureView
-            org={org}
-            loading={loading}
-            onRefresh={loadOrgData}
-            setNotification={setNotification}
-          />
-        )}
+          {/* Tab 2: Organization Structure */}
+          {activeTab === 'org' && (
+            <OrganizationStructureView
+              org={org}
+              loading={loading}
+              onRefresh={loadOrgData}
+              setNotification={setNotification}
+            />
+          )}
 
-        {/* Tab 2b: Headcount Management */}
-        {activeTab === 'headcount' && <HeadcountManagementView />}
+          {/* Tab 2b: Headcount Management */}
+          {activeTab === 'headcount' && <HeadcountManagementView />}
 
-        {/* Tab 2c: Workflow Tracker */}
-        {activeTab === 'workflow_tracker' && <WorkflowTrackerView role="super_admin" />}
+          {/* Tab 2c: Workflow Tracker */}
+          {activeTab === 'workflow_tracker' && <WorkflowTrackerView role="super_admin" />}
 
-        {/* Tab 2d: Data Import */}
-        {activeTab === 'data_import' && <DataImportView onDataImported={loadOrgData} />}
+          {/* Tab 2d: Data Import */}
+          {activeTab === 'data_import' && <DataImportView onDataImported={loadOrgData} />}
 
-        {/* Tab 3: Staff Management */}
-        {activeTab === 'staff' && (
-          <StaffManagementView
-            staff={staff}
-            org={org}
-            loading={loading}
-            onReloadStaff={loadStaffData}
-            setNotification={setNotification}
-          />
-        )}
+          {/* Tab 3: Staff Management */}
+          {activeTab === 'staff' && (
+            <StaffManagementView
+              staff={staff}
+              org={org}
+              loading={loading}
+              onReloadStaff={loadStaffData}
+              setNotification={setNotification}
+            />
+          )}
 
-        {/* Tab 4: User Permissions */}
-        {activeTab === 'overrides' && (
-          <UserPermissionsView
-            staff={staff}
-            loading={loading}
-            setNotification={setNotification}
-          />
-        )}
+          {/* Tab 4: User Permissions */}
+          {activeTab === 'overrides' && (
+            <UserPermissionsView
+              staff={staff}
+              loading={loading}
+              setNotification={setNotification}
+            />
+          )}
 
-        {/* Tab 5: Record Browser */}
-        {activeTab === 'records' && (
-          <RecordBrowserView
-            org={org}
-            setNotification={setNotification}
-          />
-        )}
+          {/* Tab 5: Record Browser */}
+          {activeTab === 'records' && (
+            <RecordBrowserView
+              org={org}
+              setNotification={setNotification}
+            />
+          )}
 
-        {/* Tab 6: Audit Log */}
-        {activeTab === 'audit' && (
-          <AuditLogView setNotification={setNotification} />
-        )}
+          {/* Tab 6: Audit Log */}
+          {activeTab === 'audit' && (
+            <AuditLogView setNotification={setNotification} />
+          )}
 
-        {/* Tab 7: Dynamic Form Builder */}
-        {activeTab === 'form_builder' && (
-          <div className="max-w-5xl">
+          {/* Tab 7: Dynamic Form Builder */}
+          {activeTab === 'form_builder' && (
             <FormBuilderModule />
-          </div>
-        )}
+          )}
 
-        {/* Tab 8: Organization Settings & Retention */}
-        {activeTab === 'settings' && (
-          <OrganizationSettingsView
-            settings={settings}
-            setSettings={setSettings}
-            setNotification={setNotification}
-            onSettingsSaved={loadSettingsData}
-          />
-        )}
+          {/* Tab 8: Organization Settings & Retention */}
+          {activeTab === 'settings' && (
+            <OrganizationSettingsView
+              settings={settings}
+              setSettings={setSettings}
+              setNotification={setNotification}
+              onSettingsSaved={loadSettingsData}
+            />
+          )}
+        </PageContainer>
       </main>
     </div>
   );

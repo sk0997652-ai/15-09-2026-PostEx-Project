@@ -447,11 +447,14 @@ export const LanguageSelector: React.FC<{ className?: string }> = ({ className =
   const { lang, setLang } = useI18n();
 
   return (
-    <div className={`inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-tag ${className}`}>
+    <div
+      dir="ltr"
+      className={`inline-flex items-center p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-tag shrink-0 ${className}`}
+    >
       <button
         type="button"
         onClick={() => setLang('en')}
-        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+        className={`inline-flex items-center justify-center min-h-[28px] px-2.5 py-0.5 rounded-md transition-all cursor-pointer text-tag font-semibold leading-none ${
           lang === 'en'
             ? 'bg-white text-indigo-700 shadow-xs font-bold'
             : 'text-slate-600 hover:text-slate-900'
@@ -462,7 +465,7 @@ export const LanguageSelector: React.FC<{ className?: string }> = ({ className =
       <button
         type="button"
         onClick={() => setLang('ur')}
-        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+        className={`inline-flex items-center justify-center min-h-[28px] px-2.5 py-0.5 rounded-md transition-all cursor-pointer font-urdu leading-none ${
           lang === 'ur'
             ? 'bg-white text-indigo-700 shadow-xs font-bold'
             : 'text-slate-600 hover:text-slate-900'

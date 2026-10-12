@@ -402,7 +402,7 @@ export function RbacTestingPanel() {
                       <AlertTriangle className="w-5 h-5 text-rose-600" />
                     )}
                     <div>
-                      <span className="text-table-header uppercase tracking-wider block">
+                      <span className="text-table-header font-semibold block">
                         Self-Test Outcome: {passedCount === totalCount ? 'All 10 Tests Passed' : `${passedCount}/${totalCount} Passed`}
                       </span>
                       <span className="text-caption opacity-80">
@@ -410,7 +410,7 @@ export function RbacTestingPanel() {
                       </span>
                     </div>
                   </div>
-                  <span className="text-body font-mono font-bold">
+                  <span className="text-body tabular-nums font-bold">
                     {passedCount} / {totalCount}
                   </span>
                 </div>
@@ -432,7 +432,7 @@ export function RbacTestingPanel() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-caption font-bold text-slate-900">{res.name}</span>
-                            <span className="px-2 py-0.5 rounded-xs bg-slate-100 text-slate-700 text-tag font-mono">
+                            <span className="px-2 py-0.5 rounded-xs bg-slate-100 text-slate-700 text-tag">
                               {res.role}
                             </span>
                           </div>
@@ -442,11 +442,11 @@ export function RbacTestingPanel() {
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                        <span className="text-tag font-mono uppercase px-2 py-1 rounded-lg bg-slate-100 text-slate-600">
+                        <span className="text-tag uppercase px-2 py-1 rounded-lg bg-slate-100 text-slate-600">
                           Expect: {res.expected}
                         </span>
                         <span
-                          className={`text-tag font-mono uppercase px-2 py-1 rounded-lg ${
+                          className={`text-tag uppercase px-2 py-1 rounded-lg ${
                             res.status === 'passed'
                               ? 'bg-emerald-100 text-emerald-800'
                               : 'bg-rose-100 text-rose-800'

@@ -36,6 +36,7 @@ export interface PerformanceScorecardRow {
   flag: string;
   flag_variant: 'neutral' | 'success' | 'warning' | 'error';
   flag_color: string;
+  item_breakdown?: Record<string, { provided: number; total: number; on_time: number; overdue: number }>;
 }
 
 export interface GetHrPerformanceResponse {

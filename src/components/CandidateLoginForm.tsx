@@ -15,13 +15,18 @@ import {
   getCandidateSession,
   clearCandidateSession,
   CandidateSession,
+  CandidateSessionState,
 } from '../lib/candidateAuth';
 import { CandidatePortal } from './candidate/CandidatePortal';
 import { I18nProvider, LanguageSelector } from '../lib/i18n';
 import { useBranding } from '../lib/branding';
 import { Button, Input } from './ui';
 
-const CandidateLoginFormInner: React.FC = () => {
+interface CandidateLoginFormProps {
+  onCandidateLoginSuccess?: (session: CandidateSessionState) => void;
+}
+
+const CandidateLoginFormInner: React.FC<CandidateLoginFormProps> = ({ onCandidateLoginSuccess }) => {
   const { companyName, logoUrl, loginTagline } = useBranding();
 
   // Step 1: Candidate Verification Inputs
@@ -51,8 +56,11 @@ const CandidateLoginFormInner: React.FC = () => {
     const existing = getCandidateSession();
     if (existing) {
       setSession(existing);
+      if (onCandidateLoginSuccess) {
+        onCandidateLoginSuccess(existing);
+      }
     }
-  }, []);
+  }, [onCandidateLoginSuccess]);
 
   // 5-minute OTP countdown timer
   useEffect(() => {
@@ -132,6 +140,9 @@ const CandidateLoginFormInner: React.FC = () => {
       if (res.session) {
         setSession(res.session);
         setSuccessMessage('Authentication successful. Welcome to your onboarding dashboard.');
+        if (onCandidateLoginSuccess) {
+          onCandidateLoginSuccess(res.session);
+        }
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -195,8 +206,8 @@ const CandidateLoginFormInner: React.FC = () => {
         )}
 
         {testOtpNotice && (
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 text-amber-900 text-caption rounded-lg flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 text-amber-900 text-caption rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold">Test Mode (SMS Stub):</span>
               <code className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded font-mono font-bold text-body tracking-wider">
                 {testOtpNotice}
@@ -207,7 +218,7 @@ const CandidateLoginFormInner: React.FC = () => {
               size="small"
               variant="secondary"
               onClick={() => setOtp(testOtpNotice)}
-              className="text-amber-900 border-amber-300 hover:bg-amber-100"
+              className="text-amber-900 border-amber-300 hover:bg-amber-100 self-start sm:self-auto shrink-0"
             >
               Fill Code
             </Button>
@@ -218,7 +229,7 @@ const CandidateLoginFormInner: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-caption font-semibold text-slate-700">6-Digit OTP</label>
-              <div className="flex items-center gap-1 text-caption font-mono text-slate-500">
+              <div className="flex items-center gap-1 text-caption text-slate-500 tabular-nums">
                 <Clock className="w-3.5 h-3.5" />
                 <span className={isExpired ? 'text-rose-600 font-bold' : ''}>
                   {minutes}:{seconds.toString().padStart(2, '0')}
@@ -361,10 +372,12 @@ const CandidateLoginFormInner: React.FC = () => {
   );
 };
 
-export const CandidateLoginForm: React.FC = () => {
+export const CandidateLoginForm: React.FC<CandidateLoginFormProps> = ({ onCandidateLoginSuccess }) => {
   return (
-    <I18nProvider>
-      <CandidateLoginFormInner />
-    </I18nProvider>
+    <div data-portal="candidate" className="w-full">
+      <I18nProvider>
+        <CandidateLoginFormInner onCandidateLoginSuccess={onCandidateLoginSuccess} />
+      </I18nProvider>
+    </div>
   );
 };

@@ -51,7 +51,7 @@ import {
   ReassignModal,
   OverrideDecisionModal,
 } from './zonal';
-import { Button } from './ui';
+import { Button, PageContainer, PortalSidebar, PortalSidebarItem } from './ui';
 import { toTitleCase } from '../lib/formatText';
 
 interface ZonalHrDashboardProps {
@@ -510,347 +510,261 @@ export function ZonalHrDashboard({
     setNavOpen(false);
   };
 
+  const sidebarItems: PortalSidebarItem[] = [
+    {
+      id: 'zonal-tab-overview',
+      label: 'Zone Overview',
+      title: 'Zone Overview',
+      icon: <Layers className="w-3.5 h-3.5" />,
+      active: activeTab === 'overview',
+      onSelect: () => handleSelectTab('overview'),
+    },
+    {
+      id: 'zonal-tab-headcount',
+      label: 'Headcount Management',
+      title: 'Headcount Management',
+      icon: <Users className="w-3.5 h-3.5" />,
+      active: activeTab === 'headcount',
+      onSelect: () => handleSelectTab('headcount'),
+    },
+    {
+      id: 'zonal-tab-workflow-tracker',
+      label: 'Workflow Tracker',
+      title: 'Workflow Tracker',
+      icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+      active: activeTab === 'workflow_tracker',
+      onSelect: () => handleSelectTab('workflow_tracker'),
+    },
+    {
+      id: 'zonal-tab-data-import',
+      label: 'Data Import',
+      title: 'Data Import',
+      icon: <Upload className="w-3.5 h-3.5" />,
+      active: activeTab === 'data_import',
+      onSelect: () => handleSelectTab('data_import'),
+    },
+    {
+      id: 'zonal-tab-enrolled-roster',
+      label: 'Enrolled Employees',
+      title: 'Enrolled Employees',
+      icon: <UserCheck className="w-3.5 h-3.5" />,
+      active: activeTab === 'enrolled_roster',
+      onSelect: () => handleSelectTab('enrolled_roster'),
+    },
+    {
+      id: 'zonal-tab-staff',
+      label: 'Zone Staff Management',
+      title: 'Zone Staff Management',
+      icon: <Users className="w-3.5 h-3.5" />,
+      active: activeTab === 'staff',
+      onSelect: () => handleSelectTab('staff'),
+      badge:
+        staffList.length > 0 ? (
+          <span className="px-1.5 py-0.5 rounded-full text-tag bg-slate-800 text-indigo-300">
+            {staffList.length}
+          </span>
+        ) : undefined,
+    },
+    {
+      id: 'zonal-tab-applications',
+      label: 'Applications Pipeline',
+      title: 'Applications Pipeline',
+      icon: <FileText className="w-3.5 h-3.5" />,
+      active: activeTab === 'applications',
+      onSelect: () => handleSelectTab('applications'),
+      badge:
+        metrics?.pendingApplications !== undefined ? (
+          <span className="px-1.5 py-0.5 rounded-full text-tag bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            {metrics.pendingApplications}
+          </span>
+        ) : undefined,
+    },
+    {
+      id: 'zonal-tab-reports',
+      label: 'Zone Analytics & SLA',
+      title: 'Zone Analytics & SLA',
+      icon: <BarChart3 className="w-3.5 h-3.5" />,
+      active: activeTab === 'reports',
+      onSelect: () => handleSelectTab('reports'),
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col sm:flex-row overflow-x-hidden">
-      {/* Mobile Slide-In Drawer Backdrop (<640px) */}
-      {isNavOpen && (
-        <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 sm:hidden"
-          onClick={() => setNavOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Dedicated Zonal HR Sidebar Navigation */}
-      <aside
-        className={`${
-          isNavOpen
-            ? 'fixed inset-y-0 left-0 z-50 w-64 flex shadow-2xl'
-            : 'hidden'
-        } sm:static sm:z-auto sm:flex sm:w-16 lg:w-60 bg-slate-900 text-white flex-shrink-0 flex-col border-r border-slate-800 transition-all duration-200`}
-      >
-        {/* Zonal Header / Scope Identity */}
-        <div className="p-4 sm:p-3 lg:p-5 border-b border-slate-800">
-          <div className="flex items-center justify-between sm:justify-center lg:justify-between">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-400/40 flex items-center justify-center text-indigo-400 shrink-0">
-                <MapPin className="w-4 h-4" />
-              </div>
-              <div className="min-w-0 sm:hidden lg:block">
-                <div className="text-caption font-semibold text-indigo-400">Zonal Operations</div>
-                <div className="text-card-heading text-white truncate">{zoneDisplayName}</div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setNavOpen(false)}
-              aria-label="Close navigation drawer"
-              className="sm:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+      {/* Shared Portal Sidebar */}
+      <PortalSidebar
+        brand={{
+          icon: <MapPin className="w-3.5 h-3.5" />,
+          title: 'Zonal Operations',
+          subtitle: zoneDisplayName,
+        }}
+        headerExtra={
+          <div className="text-caption text-slate-400 flex items-center gap-1.5 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700/60 mt-1">
+            <Shield className="w-3 h-3 text-indigo-400 shrink-0" />
+            <span className="text-tag">Zone-Scoped Access</span>
           </div>
-          <div className="mt-3 text-caption text-slate-400 sm:hidden lg:flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700/60 flex">
-            <Shield className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-            <span>Zone-Scoped Access</span>
-          </div>
-        </div>
-
-        {/* Sidebar Menu Items */}
-        <nav className="flex-1 p-2.5 sm:p-2 lg:p-3 space-y-1 overflow-y-auto">
-          <button
-            id="zonal-tab-overview"
-            title="Zone Overview"
-            onClick={() => handleSelectTab('overview')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'overview'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <Layers className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Zone Overview</span>
-          </button>
-
-          <button
-            id="zonal-tab-headcount"
-            title="Headcount Management"
-            onClick={() => handleSelectTab('headcount')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'headcount'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <Users className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Headcount Management</span>
-          </button>
-
-          <button
-            id="zonal-tab-workflow-tracker"
-            title="Workflow Tracker"
-            onClick={() => handleSelectTab('workflow_tracker')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'workflow_tracker'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Workflow Tracker</span>
-          </button>
-
-          <button
-            id="zonal-tab-data-import"
-            title="Data Import"
-            onClick={() => handleSelectTab('data_import')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'data_import'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <Upload className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Data Import</span>
-          </button>
-
-          <button
-            id="zonal-tab-enrolled-roster"
-            title="Enrolled Employees"
-            onClick={() => handleSelectTab('enrolled_roster')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'enrolled_roster'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <UserCheck className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Enrolled Employees</span>
-          </button>
-
-          <button
-            id="zonal-tab-staff"
-            title="Zone Staff Management"
-            onClick={() => handleSelectTab('staff')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'staff'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <Users className="w-4 h-4 shrink-0" />
-            <span className="flex-1 text-left sm:hidden lg:inline truncate">Zone Staff Management</span>
-            {staffList.length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-tag bg-slate-800 text-indigo-300 font-mono sm:hidden lg:inline">
-                {staffList.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            id="zonal-tab-applications"
-            title="Applications Pipeline"
-            onClick={() => handleSelectTab('applications')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'applications'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <FileText className="w-4 h-4 shrink-0" />
-            <span className="flex-1 text-left sm:hidden lg:inline truncate">Applications Pipeline</span>
-            {metrics?.pendingApplications !== undefined && (
-              <span className="px-1.5 py-0.5 rounded-full text-tag bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono sm:hidden lg:inline">
-                {metrics.pendingApplications}
-              </span>
-            )}
-          </button>
-
-          <button
-            id="zonal-tab-reports"
-            title="Zone Analytics & SLA"
-            onClick={() => handleSelectTab('reports')}
-            className={`w-full flex items-center sm:justify-center lg:justify-start gap-3 px-3 sm:px-0 lg:px-3 py-2.5 rounded-lg text-caption font-semibold transition-all cursor-pointer ${
-              activeTab === 'reports'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4 shrink-0" />
-            <span className="sm:hidden lg:inline truncate">Zone Analytics &amp; SLA</span>
-          </button>
-        </nav>
-
-        {/* User Badge & Sign Out */}
-        <div className="p-2.5 sm:p-2 lg:p-3 border-t border-slate-800 bg-slate-900/90">
-          <div className="flex items-center justify-between mb-2 sm:hidden lg:flex">
-            <div className="flex flex-col min-w-0">
-              <span className="text-caption font-bold text-slate-200 truncate">{toTitleCase(currentUser.name || 'Zonal HR Manager')}</span>
-              <span className="text-caption text-slate-400 truncate">{currentUser.email}</span>
-            </div>
-            <span className="px-1.5 py-0.5 text-tag uppercase rounded bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 shrink-0">
-              Zonal HR
-            </span>
-          </div>
-          <button
-            id="zonal-signout-btn"
-            title="Sign Out"
-            onClick={onSignOut}
-            className="w-full flex items-center justify-center gap-2 px-3 sm:px-0 lg:px-3 py-2 rounded-lg bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-700/50 text-caption font-semibold transition-colors cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5 shrink-0" />
-            <span className="sm:hidden lg:inline">Sign Out</span>
-          </button>
-        </div>
-      </aside>
+        }
+        items={sidebarItems}
+        isOpen={isNavOpen}
+        onClose={() => setNavOpen(false)}
+        onSignOut={onSignOut}
+        signOutBtnId="zonal-signout-btn"
+        signOutLabel="Sign Out"
+        userContext={{
+          name: toTitleCase(currentUser.name || 'Zonal HR Manager'),
+          email: currentUser.email,
+        }}
+      />
 
       {/* Main Content Workspace */}
-      <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
-        {/* Banner Alert for Messages */}
-        {error && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-caption flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
-              <span>{error}</span>
+      <main className="flex-1 min-w-0 overflow-y-auto bg-slate-50">
+        <PageContainer width="full">
+          {/* Banner Alert for Messages */}
+          {error && (
+            <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-caption flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    loadDashboardData();
+                  }}
+                  className="px-2.5 py-1 text-caption font-semibold bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-md cursor-pointer transition-colors"
+                >
+                  Retry
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setError(null)}
+                  className="text-rose-500 hover:text-rose-800 font-bold ml-2 cursor-pointer"
+                >
+                  &times;
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+          )}
+
+          {successMessage && (
+            <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-caption flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                <span>{successMessage}</span>
+              </div>
               <button
-                type="button"
-                onClick={() => {
-                  setError(null);
-                  loadDashboardData();
-                }}
-                className="px-2.5 py-1 text-xs font-semibold bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-md cursor-pointer transition-colors"
-              >
-                Retry
-              </button>
-              <button
-                type="button"
-                onClick={() => setError(null)}
-                className="text-rose-500 hover:text-rose-800 font-bold ml-2 cursor-pointer"
+                onClick={() => setSuccessMessage(null)}
+                className="text-emerald-500 hover:text-emerald-800 font-bold ml-4 cursor-pointer"
               >
                 &times;
               </button>
             </div>
-          </div>
-        )}
+          )}
 
-        {successMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-caption flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-              <span>{successMessage}</span>
-            </div>
-            <button
-              onClick={() => setSuccessMessage(null)}
-              className="text-emerald-500 hover:text-emerald-800 font-bold ml-4 cursor-pointer"
-            >
-              &times;
-            </button>
-          </div>
-        )}
+          {/* TAB 1: ZONE OVERVIEW */}
+          {activeTab === 'overview' && (
+            <ZoneOverviewView
+              metrics={metrics}
+              zoneInfo={zoneInfo}
+              zoneBranches={zoneBranches}
+              staffList={staffList}
+              loading={loading}
+              onRefresh={loadDashboardData}
+              onNavigateToStaff={() => setActiveTab('staff')}
+              onNavigateToHeadcount={() => setActiveTab('headcount')}
+              onOpenAddStaff={() => {
+                setActiveTab('staff');
+                setShowAddStaffModal(true);
+              }}
+            />
+          )}
 
-        {/* TAB 1: ZONE OVERVIEW */}
-        {activeTab === 'overview' && (
-          <ZoneOverviewView
-            metrics={metrics}
-            zoneInfo={zoneInfo}
-            zoneBranches={zoneBranches}
-            staffList={staffList}
-            loading={loading}
-            onRefresh={loadDashboardData}
-            onNavigateToStaff={() => setActiveTab('staff')}
-            onNavigateToHeadcount={() => setActiveTab('headcount')}
-            onOpenAddStaff={() => {
-              setActiveTab('staff');
-              setShowAddStaffModal(true);
-            }}
-          />
-        )}
+          {/* TAB 1B: HEADCOUNT MANAGEMENT */}
+          {activeTab === 'headcount' && <HeadcountManagementView />}
 
-        {/* TAB 1B: HEADCOUNT MANAGEMENT */}
-        {activeTab === 'headcount' && <HeadcountManagementView />}
+          {/* TAB 1C: WORKFLOW TRACKER */}
+          {activeTab === 'workflow_tracker' && (
+            <WorkflowTrackerView role="zonal_hr" zoneName={zoneDisplayName} />
+          )}
 
-        {/* TAB 1C: WORKFLOW TRACKER */}
-        {activeTab === 'workflow_tracker' && (
-          <WorkflowTrackerView role="zonal_hr" zoneName={zoneDisplayName} />
-        )}
+          {/* TAB 1D: DATA IMPORT */}
+          {activeTab === 'data_import' && <DataImportView />}
 
-        {/* TAB 1D: DATA IMPORT */}
-        {activeTab === 'data_import' && <DataImportView />}
+          {/* TAB 1E: ENROLLED EMPLOYEES & EXIT LIFECYCLE */}
+          {activeTab === 'enrolled_roster' && (
+            <EnrolledRosterView
+              enrolledEmployees={[]}
+              loading={loading}
+              zoneName={zoneDisplayName}
+              onRefresh={loadDashboardData}
+              onOpenPdfDossier={() => {}}
+              role="zonal_hr"
+              actorName={currentUser.name || 'Zonal HR'}
+            />
+          )}
 
-        {/* TAB 1E: ENROLLED EMPLOYEES & EXIT LIFECYCLE */}
-        {activeTab === 'enrolled_roster' && (
-          <EnrolledRosterView
-            enrolledEmployees={[]}
-            loading={loading}
-            zoneName={zoneDisplayName}
-            onRefresh={loadDashboardData}
-            onOpenPdfDossier={() => {}}
-            role="zonal_hr"
-            actorName={currentUser.name || 'Zonal HR'}
-          />
-        )}
+          {/* TAB 2: ZONE STAFF MANAGEMENT */}
+          {activeTab === 'staff' && (
+            <ZoneStaffView
+              staffList={staffList}
+              zoneBranches={zoneBranches}
+              zoneName={zoneDisplayName}
+              onOpenAddStaff={() => setShowAddStaffModal(true)}
+              onOpenEditStaff={handleOpenEditStaff}
+              onToggleStaffStatus={handleToggleStaffStatus}
+              onRegeneratePassword={handleRegeneratePassword}
+            />
+          )}
 
-        {/* TAB 2: ZONE STAFF MANAGEMENT */}
-        {activeTab === 'staff' && (
-          <ZoneStaffView
-            staffList={staffList}
-            zoneBranches={zoneBranches}
-            zoneName={zoneDisplayName}
-            onOpenAddStaff={() => setShowAddStaffModal(true)}
-            onOpenEditStaff={handleOpenEditStaff}
-            onToggleStaffStatus={handleToggleStaffStatus}
-            onRegeneratePassword={handleRegeneratePassword}
-          />
-        )}
+          {/* TAB 3: APPLICATIONS PIPELINE & REASSIGNMENT */}
+          {activeTab === 'applications' && (
+            <ApplicationsPipelineView
+              applications={applications}
+              loadingApps={loadingApps}
+              zoneName={zoneDisplayName}
+              appSearchQuery={appSearchQuery}
+              onSearchQueryChange={setAppSearchQuery}
+              onSearchSubmit={handleSearchSubmit}
+              appStatusFilter={appStatusFilter}
+              onStatusFilterChange={setAppStatusFilter}
+              appPage={appPage}
+              appTotalPages={appTotalPages}
+              appTotalCount={appTotalCount}
+              onPageChange={loadApplications}
+              onRefresh={() => loadApplications(appPage)}
+              onOpenReassign={(app) => {
+                setReassignModal({
+                  isOpen: true,
+                  application: app,
+                  targetHrId: centralHrList[0]?.id || '',
+                  reason: '',
+                  submitting: false,
+                });
+              }}
+              onOpenOverride={(app) => {
+                setOverrideModal({
+                  isOpen: true,
+                  application: app,
+                  decision: 'approved',
+                  reason: '',
+                  submitting: false,
+                });
+              }}
+            />
+          )}
 
-        {/* TAB 3: APPLICATIONS PIPELINE & REASSIGNMENT */}
-        {activeTab === 'applications' && (
-          <ApplicationsPipelineView
-            applications={applications}
-            loadingApps={loadingApps}
-            zoneName={zoneDisplayName}
-            appSearchQuery={appSearchQuery}
-            onSearchQueryChange={setAppSearchQuery}
-            onSearchSubmit={handleSearchSubmit}
-            appStatusFilter={appStatusFilter}
-            onStatusFilterChange={setAppStatusFilter}
-            appPage={appPage}
-            appTotalPages={appTotalPages}
-            appTotalCount={appTotalCount}
-            onPageChange={loadApplications}
-            onRefresh={() => loadApplications(appPage)}
-            onOpenReassign={(app) => {
-              setReassignModal({
-                isOpen: true,
-                application: app,
-                targetHrId: centralHrList[0]?.id || '',
-                reason: '',
-                submitting: false,
-              });
-            }}
-            onOpenOverride={(app) => {
-              setOverrideModal({
-                isOpen: true,
-                application: app,
-                decision: 'approved',
-                reason: '',
-                submitting: false,
-              });
-            }}
-          />
-        )}
-
-        {/* TAB 4: ZONE ANALYTICS & SLA REPORTS */}
-        {activeTab === 'reports' && (
-          <ZoneAnalyticsView
-            metrics={metrics}
-            zoneBranches={zoneBranches}
-            staffList={staffList}
-            zoneName={zoneDisplayName}
-          />
-        )}
+          {/* TAB 4: ZONE ANALYTICS & SLA REPORTS */}
+          {activeTab === 'reports' && (
+            <ZoneAnalyticsView
+              metrics={metrics}
+              zoneBranches={zoneBranches}
+              staffList={staffList}
+              zoneName={zoneDisplayName}
+            />
+          )}
+        </PageContainer>
       </main>
 
       {/* MODAL 1: ADD ZONE STAFF */}

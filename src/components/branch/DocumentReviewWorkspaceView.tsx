@@ -64,7 +64,7 @@ export function DocumentReviewWorkspaceView({
   onForwardToCentral,
 }: DocumentReviewWorkspaceViewProps) {
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto w-full">
+    <div className="space-y-6 w-full">
       {/* Top back button */}
       <div>
         <Button
@@ -105,8 +105,8 @@ export function DocumentReviewWorkspaceView({
                   <p className="text-caption text-slate-500 mt-0.5">
                     Mobile: {appDetail.candidate?.mobile}
                   </p>
-                  <p className="text-caption text-slate-600 font-mono mt-0.5">
-                    CNIC: {appDetail.candidate?.masked_cnic || 'N/A'} &bull; Branch:{' '}
+                  <p className="text-caption text-slate-600 mt-0.5">
+                    CNIC: <span className="font-mono">{appDetail.candidate?.masked_cnic || 'N/A'}</span> &bull; Branch:{' '}
                     <span className="font-semibold text-slate-800">{currentUser.branch_name}</span>
                   </p>
                 </div>
@@ -127,7 +127,7 @@ export function DocumentReviewWorkspaceView({
                   <FileCheck className="w-4 h-4 text-indigo-600" />
                   Verification Clearance Progress
                 </span>
-                <span className="font-mono font-bold text-slate-900">
+                <span className="font-bold text-slate-900">
                   {appDetail.verifiedDocs} of {appDetail.totalDocs} Documents Cleared (
                   {appDetail.totalDocs > 0 ? Math.round((appDetail.verifiedDocs / appDetail.totalDocs) * 100) : 0}%)
                 </span>
@@ -402,7 +402,7 @@ export function DocumentReviewWorkspaceView({
                     </div>
                     <div>
                       <span className="font-semibold text-slate-500">Signed At: </span>
-                      <span className="font-mono text-slate-800">
+                      <span className="text-slate-800">
                         {new Date(appDetail.digitalSignature.signedAt).toLocaleString()}
                       </span>
                     </div>

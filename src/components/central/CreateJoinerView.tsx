@@ -111,7 +111,7 @@ export function CreateJoinerView({
                 {createdJoinerResult.joining_id}
               </span>
             </div>
-            <div className="text-caption text-emerald-900 space-y-1 bg-white/70 p-3 rounded-xl border border-emerald-100 font-mono">
+            <div className="text-caption text-emerald-900 space-y-1 bg-white/70 p-3 rounded-xl border border-emerald-100">
               <p><strong>Candidate:</strong> {toTitleCase(createdJoinerResult.candidate_name)}</p>
               <p><strong>Assigned Joining ID:</strong> {createdJoinerResult.joining_id}</p>
               <p>
@@ -120,7 +120,7 @@ export function CreateJoinerView({
                   {createdJoinerResult.track === 'non_executive' ? 'Non-Executive Track' : 'Executive Track'}
                 </span>
               </p>
-              <p><strong>SMS Notification:</strong> Dispatched to {createdJoinerResult.mobile}</p>
+              <p><strong>SMS Notification:</strong> Dispatched to <span className="font-mono">{createdJoinerResult.mobile}</span></p>
               {createdJoinerResult.email && <p><strong>Email Notification:</strong> Dispatched to {createdJoinerResult.email}</p>}
             </div>
             <div className="flex items-center gap-3 pt-2">
@@ -252,9 +252,9 @@ export function CreateJoinerView({
                   <p className="text-caption text-amber-800 mt-1">
                     A candidate record with this CNIC already exists:
                   </p>
-                  <div className="mt-2 text-caption bg-white/80 p-2.5 rounded-lg border border-amber-200 text-amber-900 font-mono space-y-0.5">
+                  <div className="mt-2 text-caption bg-white/80 p-2.5 rounded-lg border border-amber-200 text-amber-900 space-y-0.5">
                     <p><strong>Name:</strong> {toTitleCase(duplicateWarning.candidate?.full_name || '')}</p>
-                    <p><strong>Joining ID:</strong> {duplicateWarning.candidate?.joining_id}</p>
+                    <p><strong>Joining ID:</strong> <span className="font-mono">{duplicateWarning.candidate?.joining_id}</span></p>
                     <p><strong>Zone/Branch:</strong> {formatEntityName(duplicateWarning.candidate?.zone_name)} / {formatEntityName(duplicateWarning.candidate?.branch_name)}</p>
                     <p><strong>Registered:</strong> {duplicateWarning.candidate?.created_at ? new Date(duplicateWarning.candidate.created_at).toLocaleDateString() : 'N/A'}</p>
                   </div>

@@ -27,6 +27,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  KpiGrid,
+  KpiCard,
 } from '../ui';
 import {
   FillRateStatusBadge,
@@ -226,26 +228,26 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
                       {z.zone_code || 'NO-CODE'} {z.region ? `· ${z.region}` : ''}
                     </div>
                   </TableCell>
-                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Branches" className="md:text-right font-mono text-body text-slate-700">
+                  <TableCell hideOnTablet mobileRole="field" mobileLabel="Branches" className="md:text-right text-body text-slate-700">
                     {z.branches_count}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Rider (Appr / Act / Vac)" className="md:text-right font-mono text-body">
+                  <TableCell mobileRole="field" mobileLabel="Rider (Appr / Act / Vac)" className="md:text-right text-body">
                     <span className="text-slate-700">{z.rider.approved}</span> /{' '}
                     <span className="font-bold text-sky-700">{z.rider.active}</span> /{' '}
                     <span className="text-amber-700">{z.rider.vacancy}</span>
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="In-House (Appr / Act / Vac)" className="md:text-right font-mono text-body">
+                  <TableCell mobileRole="field" mobileLabel="In-House (Appr / Act / Vac)" className="md:text-right text-body">
                     <span className="text-slate-700">{z.in_house.approved}</span> /{' '}
                     <span className="font-bold text-emerald-700">{z.in_house.active}</span> /{' '}
                     <span className="text-amber-700">{z.in_house.vacancy}</span>
                   </TableCell>
-                  <TableCell hideOnTablet hideOnMobile className="text-right font-mono text-body font-semibold text-slate-900">
+                  <TableCell hideOnTablet hideOnMobile className="text-right text-body font-semibold text-slate-900">
                     {z.total.approved}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Total Active" className="md:text-right font-mono text-body font-bold text-indigo-700">
+                  <TableCell mobileRole="field" mobileLabel="Total Active" className="md:text-right text-body font-bold text-indigo-700">
                     {z.total.active}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Total Vacancy" className="md:text-right font-mono text-body font-bold text-amber-700">
+                  <TableCell mobileRole="field" mobileLabel="Total Vacancy" className="md:text-right text-body font-bold text-amber-700">
                     {z.total.vacancy}
                   </TableCell>
                   <TableCell mobileRole="status">
@@ -328,13 +330,13 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
                   <TableCell mobileRole="field" mobileLabel="Category">
                     <EmploymentCategoryBadge category={d.employment_category} />
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right font-mono text-body font-semibold">
+                  <TableCell mobileRole="field" mobileLabel="Approved" className="md:text-right text-body font-semibold">
                     {d.approved}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right font-mono text-body font-bold text-indigo-700">
+                  <TableCell mobileRole="field" mobileLabel="Active" className="md:text-right text-body font-bold text-indigo-700">
                     {d.active}
                   </TableCell>
-                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right font-mono text-body font-bold text-amber-700">
+                  <TableCell mobileRole="field" mobileLabel="Vacancy" className="md:text-right text-body font-bold text-amber-700">
                     {d.vacancy}
                   </TableCell>
                   <TableCell mobileRole="status">
@@ -360,63 +362,32 @@ export const OverviewMetricsView: React.FC<OverviewMetricsViewProps> = ({
       </Card>
 
       {/* Secondary Operational Pipeline Strip (2-col on mobile, 4-col on desktop) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-table-header uppercase text-slate-500">
-              Total Candidates
-            </span>
-            <span className="text-kpi-number text-slate-900 font-mono tabular-nums block mt-0.5">
-              {metrics?.totalCandidates ?? 0}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
-            <Users className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-table-header uppercase text-slate-500">
-              Pending Review
-            </span>
-            <span className="text-kpi-number text-amber-600 font-mono tabular-nums block mt-0.5">
-              {metrics?.pendingApplications ?? 0}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-            <Clock className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-table-header uppercase text-slate-500">
-              Approved Applications
-            </span>
-            <span className="text-kpi-number text-emerald-600 font-mono tabular-nums block mt-0.5">
-              {metrics?.approvedApplications ?? 0}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <FileCheck className="w-4 h-4" />
-          </div>
-        </Card>
-
-        <Card className="p-4 flex items-center justify-between">
-          <div>
-            <span className="text-table-header uppercase text-slate-500">
-              Active Staff Accounts
-            </span>
-            <span className="text-kpi-number text-indigo-700 font-mono tabular-nums block mt-0.5">
-              {metrics?.totalStaff ?? 0}
-            </span>
-          </div>
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <UserCheck className="w-4 h-4" />
-          </div>
-        </Card>
-      </div>
+      <KpiGrid columns={4}>
+        <KpiCard
+          label="Total Candidates"
+          value={metrics?.totalCandidates ?? 0}
+          icon={<Users className="w-4 h-4" />}
+          tone="default"
+        />
+        <KpiCard
+          label="Pending Review"
+          value={metrics?.pendingApplications ?? 0}
+          icon={<Clock className="w-4 h-4" />}
+          tone="warning"
+        />
+        <KpiCard
+          label="Approved Applications"
+          value={metrics?.approvedApplications ?? 0}
+          icon={<FileCheck className="w-4 h-4" />}
+          tone="success"
+        />
+        <KpiCard
+          label="Active Staff Accounts"
+          value={metrics?.totalStaff ?? 0}
+          icon={<UserCheck className="w-4 h-4" />}
+          tone="primary"
+        />
+      </KpiGrid>
 
       {/* Row Click Detail Modal with Full Historical Chart */}
       <OverviewRowDetailModal

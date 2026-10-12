@@ -21,9 +21,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`mb-7 pb-5 border-b border-slate-200/90 ${className}`}>
+    <div className={`mb-4 pb-3 border-b border-slate-200/90 ${className}`}>
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav aria-label="Breadcrumb" className="mb-2.5">
+        <nav aria-label="Breadcrumb" className="mb-1.5">
           <ol className="flex items-center gap-1.5 text-caption text-slate-500">
             {breadcrumbs.map((crumb, idx) => (
               <li key={idx} className="flex items-center gap-1.5">
@@ -47,9 +47,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         </nav>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center flex-wrap gap-2.5">
+          <div className="flex items-center flex-wrap gap-2">
             <h1 className="text-page-title text-slate-900">
               {title}
             </h1>
@@ -61,13 +61,13 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             {badge}
           </div>
           {description && (
-            <p className="text-caption text-slate-500 mt-1.5 max-w-3xl">
+            <p className="text-caption text-slate-500 mt-1 max-w-3xl">
               {description}
             </p>
           )}
         </div>
 
-        {actions && <div className="flex items-center gap-2.5 shrink-0">{actions}</div>}
+        {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
       </div>
     </div>
   );

@@ -541,13 +541,13 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
 
             {/* Template Status / Preview Panel */}
             {loadingTemplate ? (
-              <div className="p-8 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
+              <div className="p-8 text-center text-slate-400 text-caption flex items-center justify-center gap-2">
                 <RefreshCw className="w-4 h-4 animate-spin text-indigo-600" />
                 <span>Loading active ECF template status...</span>
               </div>
             ) : ecfTemplate ? (
               <div className="p-4.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-caption">
                   <div>
                     <span className="text-slate-400 font-medium block">File Name</span>
                     <span className="font-semibold text-slate-900 break-all font-mono">
@@ -586,10 +586,10 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                           <FileText className="w-5 h-5" />
                         </div>
                         <div>
-                          <span className="font-semibold text-xs text-slate-900 block">
+                          <span className="font-semibold text-caption text-slate-900 block">
                             PDF Letterhead / Background Active
                           </span>
-                          <span className="text-[11px] text-slate-500">
+                          <span className="text-body text-slate-500">
                             Embedded as full-page background for all generated Employee Clearance Forms.
                           </span>
                         </div>
@@ -599,7 +599,7 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                           href={ecfSignedUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-caption font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
                         >
                           <span>Open PDF</span>
                           <ExternalLink className="w-3.5 h-3.5" />
@@ -609,7 +609,7 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                   ) : (
                     <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-2 shadow-2xs">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                        <span className="text-caption font-semibold text-slate-500">
                           Header Image Banner Preview
                         </span>
                         {ecfSignedUrl && (
@@ -617,7 +617,7 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                             href={ecfSignedUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-800 font-medium"
+                            className="inline-flex items-center gap-1 text-body text-indigo-600 hover:text-indigo-800 font-medium"
                           >
                             <span>Full Image</span>
                             <ExternalLink className="w-3 h-3" />
@@ -632,10 +632,10 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                             className="max-h-32 max-w-full object-contain"
                           />
                         ) : (
-                          <span className="text-xs text-slate-400">Loading preview...</span>
+                          <span className="text-caption text-slate-400">Loading preview...</span>
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-body text-slate-500">
                         Rendered centered at the top of page 1 with height scaled up to 80 points.
                       </p>
                     </div>
@@ -647,8 +647,8 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                 <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
                   <FileText className="w-5 h-5" />
                 </div>
-                <div className="text-xs font-semibold text-slate-700">No Custom ECF Template Active</div>
-                <p className="text-[11px] text-slate-500 max-w-md mx-auto">
+                <div className="text-card-heading font-semibold text-slate-700">No Custom ECF Template Active</div>
+                <p className="text-body text-slate-500 max-w-md mx-auto">
                   When no custom template is uploaded, generated Employee Clearance Forms automatically render a clean PostEx typography header. Upload a PNG, JPG, or PDF file to customize the document letterhead.
                 </p>
               </div>
@@ -769,14 +769,14 @@ export const OrganizationSettingsView: React.FC<OrganizationSettingsViewProps> =
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 Execution Result:
               </span>
-              <span className="text-caption font-mono text-slate-400">
+              <span className="text-caption text-slate-400">
                 Cutoff: {new Date(retentionResult.cutoffDate).toLocaleDateString()}
               </span>
             </div>
             <p className="text-slate-600 text-caption">
               {retentionResult.message}
             </p>
-            <div className="flex items-center gap-4 text-caption text-slate-500 pt-1 font-mono">
+            <div className="flex items-center gap-4 text-caption text-slate-500 pt-1">
               <span>
                 Archived: <strong className="text-indigo-600">{retentionResult.countArchived}</strong>
               </span>

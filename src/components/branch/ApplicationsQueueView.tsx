@@ -77,7 +77,7 @@ export function ApplicationsQueueView({
   }, [applications, docStatusFilter]);
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 max-w-6xl mx-auto w-full">
+    <div className="space-y-4 w-full">
       <PageHeader
         title={activeTabTitle}
         description="Physical verification queue for candidate credentials and digital attestation."

@@ -165,7 +165,7 @@ export const VerificationStampSeal: React.FC<VerificationStampSealProps> = ({
 
             {/* Bottom Verified Label */}
             <span
-              className={`text-caption font-bold uppercase ${config.accentColor} absolute bottom-1 px-1 font-mono`}
+              className={`text-caption font-bold uppercase ${config.accentColor} absolute bottom-1 px-1`}
             >
               VERIFIED
             </span>
@@ -199,7 +199,7 @@ export const VerificationStampSeal: React.FC<VerificationStampSealProps> = ({
               </span>
             )}
             {timestamp && (
-              <span className="text-tag font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+              <span className="text-tag text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
                 {new Date(timestamp).toLocaleDateString(undefined, {
                   month: 'short',
                   day: 'numeric',

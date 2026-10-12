@@ -43,7 +43,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
 
     const borderFocusClasses = error
       ? 'border-rose-300 focus:border-rose-600 focus:ring-rose-600'
-      : 'border-slate-200 focus:border-indigo-600 focus:ring-indigo-600';
+      : 'border-slate-300 focus:border-indigo-600 focus:ring-indigo-600';
 
     const normalizedSearch = searchQuery.trim().toLowerCase();
 
@@ -74,7 +74,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     }, [children, options, searchable, normalizedSearch, value]);
 
     return (
-      <div className="w-full space-y-1.5">
+      <div className="w-full space-y-1">
         {label && (
           <label htmlFor={selectId} className="block text-body font-medium text-slate-900">
             {label}
@@ -82,14 +82,14 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
         )}
         {searchable && !disabled && (
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={searchPlaceholder}
               aria-label={searchPlaceholder}
-              className="w-full h-8 pl-8 pr-7 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors"
+              className="w-full h-6 pl-7 pr-6 text-caption text-slate-700 bg-slate-50 border border-slate-300 rounded-[6px] focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors"
             />
             {searchQuery && (
               <button
@@ -98,7 +98,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 title="Clear search"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3" />
               </button>
             )}
           </div>
@@ -109,7 +109,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             id={selectId}
             disabled={disabled}
             value={value}
-            className={`w-full h-10 pl-4 pr-10 py-2.5 text-body text-slate-900 bg-white border ${borderFocusClasses} rounded-lg shadow-xs focus:outline-none focus:ring-2 transition-colors appearance-none cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed ${className}`}
+            className={`w-full h-7 sm:h-7 min-h-[40px] sm:min-h-0 pl-2.5 pr-8 py-1 text-field text-slate-900 bg-white border ${borderFocusClasses} rounded-[6px] shadow-xs focus:outline-none focus:ring-2 transition-colors appearance-none cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed ${className}`}
             {...props}
           >
             {filteredOptions
@@ -120,8 +120,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
                 ))
               : filteredChildren}
           </select>
-          <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
-            <ChevronDown className="w-4 h-4" />
+          <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
+            <ChevronDown className="w-3.5 h-3.5" />
           </div>
         </div>
         {error ? (

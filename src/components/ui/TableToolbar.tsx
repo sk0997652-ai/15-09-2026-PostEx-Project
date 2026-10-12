@@ -144,14 +144,14 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
 
   return (
     <div
-      className={`rounded-2xl bg-white border border-slate-200/90 p-3.5 shadow-xs space-y-3 ${className}`}
+      className={`rounded-[6px] bg-white border border-slate-200/90 p-2.5 shadow-xs space-y-2 ${className}`}
       data-testid="table-toolbar"
     >
       {/* Top Row: Search Input + Dropdown Filters + Date Range + Actions */}
-      <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5">
+      <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2">
         {onSearchChange && (
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <div className="relative flex-1 min-w-[180px]">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               id={searchInputId}
               type="text"
@@ -164,20 +164,20 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                 }
               }}
               placeholder={searchPlaceholder}
-              className="w-full h-9 pl-9 pr-3.5 text-body text-slate-900 bg-slate-50/70 hover:bg-white focus:bg-white rounded-full border border-slate-200/90 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
+              className="w-full h-7 sm:h-7 min-h-[40px] sm:min-h-0 pl-8 pr-2.5 text-field text-slate-900 bg-slate-50/70 hover:bg-white focus:bg-white rounded-[6px] border border-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all"
             />
           </div>
         )}
 
         {/* Configurable Dropdown Filters */}
         {filters.map((f, idx) => (
-          <div key={f.id || idx} className={`w-full sm:w-auto ${f.className || 'sm:min-w-[160px]'}`}>
+          <div key={f.id || idx} className={`w-full sm:w-auto ${f.className || 'sm:min-w-[140px]'}`}>
             <select
               id={f.id}
               aria-label={f.label || 'Filter'}
               value={f.value}
               onChange={(e) => f.onChange(e.target.value)}
-              className="w-full h-9 px-3 text-caption font-medium text-slate-700 bg-white rounded-xl border border-slate-200/90 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 cursor-pointer transition-colors"
+              className="w-full h-7 sm:h-7 min-h-[40px] sm:min-h-0 px-2.5 text-field-sm font-medium text-slate-700 bg-white rounded-[6px] border border-slate-300 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 cursor-pointer transition-colors"
             >
               {f.options.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -190,28 +190,28 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
 
         {/* Optional Date Range Filter */}
         {dateRange && (
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5 w-full sm:w-auto">
             <div className="relative flex items-center flex-1 sm:flex-initial">
-              <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+              <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2 pointer-events-none" />
               <input
                 id={dateRange.fromId || 'toolbar-date-from'}
                 type="date"
                 aria-label="From date"
                 value={dateRange.from}
                 onChange={(e) => dateRange.onFromChange(e.target.value)}
-                className="w-full sm:w-36 h-9 pl-8 pr-2.5 text-caption font-medium text-slate-700 bg-white rounded-xl border border-slate-200/90 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600"
+                className="w-full sm:w-32 h-7 sm:h-7 min-h-[40px] sm:min-h-0 pl-7 pr-2 text-field-sm font-medium text-slate-700 bg-white rounded-[6px] border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600"
               />
             </div>
             <span className="text-caption text-slate-400 font-medium">to</span>
             <div className="relative flex items-center flex-1 sm:flex-initial">
-              <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+              <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2 pointer-events-none" />
               <input
                 id={dateRange.toId || 'toolbar-date-to'}
                 type="date"
                 aria-label="To date"
                 value={dateRange.to}
                 onChange={(e) => dateRange.onToChange(e.target.value)}
-                className="w-full sm:w-36 h-9 pl-8 pr-2.5 text-caption font-medium text-slate-700 bg-white rounded-xl border border-slate-200/90 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600"
+                className="w-full sm:w-32 h-7 sm:h-7 min-h-[40px] sm:min-h-0 pl-7 pr-2 text-field-sm font-medium text-slate-700 bg-white rounded-[6px] border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600"
               />
             </div>
           </div>
@@ -234,7 +234,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
           </select>
         )}
 
-        {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
+        {actions && <div className="flex items-center gap-1.5 shrink-0">{actions}</div>}
 
         {hasActiveFilters && onReset && (
           <Button
@@ -254,7 +254,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
       {/* Bottom Row: Horizontally-scrollable Status Filter Pills */}
       {statusPills.length > 0 && onStatusChange && (
         <div
-          className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-0.5 border-t border-slate-100"
+          className="flex items-center gap-1 overflow-x-auto pb-0.5 pt-0.5 border-t border-slate-100"
           role="tablist"
           aria-label="Status filters"
         >
@@ -272,7 +272,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                 aria-selected={isActive}
                 data-testid={`status-pill-${pill.value || 'all'}`}
                 onClick={() => onStatusChange(pill.value)}
-                className={`rounded-full px-3 py-1 text-tag inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all duration-150 cursor-pointer select-none ${
+                className={`rounded-full px-2 py-0.5 text-tag inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all duration-150 cursor-pointer select-none ${
                   isActive
                     ? 'bg-indigo-600 text-white border border-indigo-600 shadow-xs'
                     : getInactivePillClasses(variant)
@@ -286,7 +286,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
                 <span>{pill.label}</span>
                 {typeof pill.count === 'number' && (
                   <span
-                    className={`ml-0.5 px-1.5 py-0.2 rounded-full text-tag font-mono ${
+                    className={`ml-0.5 px-1 py-0.2 rounded-full text-tag ${
                       isActive ? 'bg-indigo-700 text-indigo-100' : 'bg-black/5 text-current'
                     }`}
                   >

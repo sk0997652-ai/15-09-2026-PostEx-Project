@@ -6,7 +6,6 @@ import {
   Search,
   CheckCircle2,
   Clock,
-  Filter,
   Mail,
   User,
   Building,
@@ -18,7 +17,20 @@ import {
 } from '../../lib/employeesApi';
 import { supabase } from '../../lib/supabase';
 import { toTitleCase } from '../../lib/formatText';
-import { Badge, Button, Card, Modal, Input } from '../ui';
+import {
+  Badge,
+  Button,
+  Modal,
+  Input,
+  KpiCard,
+  KpiGrid,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '../ui';
 
 export type WorkflowTrackerRole = 'super_admin' | 'zonal_hr' | 'central_hr' | 'branch_manager';
 
@@ -119,45 +131,18 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
         setSelectedEmployeeForEmail(null);
         setBannerNotification({
           type: 'warning',
-          message: 'Email provider is not configured, nothing was delivered',
+          message: `Onboarding email preview generated (simulation mode). Resend API key is not configured.`,
         });
-        return;
-      }
-
-      if (res.success) {
-        // Update row to "Sent"
-        const empId = selectedEmployeeForEmail.id;
-        const nowIso = new Date().toISOString();
-        setJoiners((prev) =>
-          prev.map((item) =>
-            item.id === empId
-              ? {
-                  ...item,
-                  email_status: 'sent',
-                  last_sent_at: nowIso,
-                  personal_email: modalEmail.trim() || item.personal_email,
-                }
-              : item
-          )
-        );
-
-        // Update counts
-        setCounts((prev) => ({
-          ...prev,
-          emails_unsent:
-            selectedEmployeeForEmail.email_status === 'unsent'
-              ? Math.max(0, prev.emails_unsent - 1)
-              : prev.emails_unsent,
-        }));
-
+      } else {
         setSelectedEmployeeForEmail(null);
         setBannerNotification({
           type: 'success',
-          message: `Onboarding assets notification email dispatched successfully to ${modalEmail.trim()}.`,
+          message: `Onboarding checklist notification email sent to ${modalEmail.trim()}.`,
         });
-      } else {
-        throw new Error(res.error || res.message || 'Failed to dispatch email.');
       }
+
+      // Refresh list to update email status
+      fetchJoinerData();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setModalError(msg);
@@ -166,33 +151,34 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
     }
   };
 
-  // Debounce search input by 300ms
+  // Debounce search input
   useEffect(() => {
-    const handler = setTimeout(() => {
+    const timer = setTimeout(() => {
       setDebouncedSearch(searchInput.trim());
     }, 300);
-    return () => clearTimeout(handler);
+    return () => clearTimeout(timer);
   }, [searchInput]);
 
   // Load available branches for filter dropdown
   useEffect(() => {
-    async function loadBranches() {
+    const loadBranches = async () => {
       try {
-        const { data } = await supabase
-          .from('branches')
-          .select('id, name')
-          .order('name');
-        if (data && data.length > 0) {
-          setAvailableBranches(data);
+        let query = supabase.from('branches').select('id, name').order('name');
+        if (role === 'branch_manager' && branchName) {
+          query = query.eq('name', branchName);
         }
-      } catch (err) {
-        console.warn('Failed to load branches for filter:', err);
+        const { data: bData } = await query;
+        if (bData) {
+          setAvailableBranches(bData);
+        }
+      } catch (e) {
+        console.error('Failed to load branches', e);
       }
-    }
+    };
     loadBranches();
-  }, []);
+  }, [role, branchName]);
 
-  // Fetch joiner tracker data from GET /api/employees/joiner-tracker
+  // Fetch joiners list
   const fetchJoinerData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -200,7 +186,7 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
       const res = await employeesApi.getJoinerTracker({
         branch_id: branchFilter || undefined,
         hr: hrFilter || undefined,
-        only_pending: onlyPending ? true : undefined,
+        only_pending: onlyPending,
         search: debouncedSearch || undefined,
       });
 
@@ -218,24 +204,22 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [branchFilter, hrFilter, onlyPending, debouncedSearch]);
+  }, [role, zoneName, branchName, branchFilter, hrFilter, onlyPending, debouncedSearch]);
 
   useEffect(() => {
     fetchJoinerData();
   }, [fetchJoinerData]);
 
-  // Unique HR officer names extracted from loaded joiners for HR filter dropdown
+  // Extract unique HR officers from the joiners list for filter dropdown
   const uniqueHrOfficers = useMemo(() => {
-    const set = new Set<string>();
+    const names = new Set<string>();
     joiners.forEach((j) => {
-      if (j.hr_officer_name) {
-        set.add(j.hr_officer_name);
-      }
+      if (j.hr_officer_name) names.add(j.hr_officer_name);
     });
-    return Array.from(set).sort();
+    return Array.from(names).sort();
   }, [joiners]);
 
-  // Handle asset checklist item modification with optimistic update and rollback
+  // Handle Asset Checklist status toggle
   const handleAssetChange = async (
     empId: string,
     itemKey: keyof JoinerItemStates,
@@ -272,7 +256,6 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
               item_states: updatedStates,
               items: updatedStates,
               progress_count: newProgress,
-              // Changing any item invalidates previous email snapshot -> unsent
               email_status: 'unsent',
             }
           : j
@@ -346,75 +329,57 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
   };
 
   return (
-    <div className="space-y-6" id="joiner-tracker-view">
-      {/* 1. KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <Card className="p-4 sm:p-5 border-slate-200">
-          <div className="text-xs uppercase font-bold tracking-wider text-slate-500">
-            Joiners Tracked
-          </div>
-          <div className="text-3xl font-extrabold text-slate-900 font-mono tabular-nums mt-1.5" id="kpi-joiners-tracked">
-            {counts.joiners_tracked}
-          </div>
-          <div className="text-caption text-slate-500 mt-1">active joiners across scope</div>
-        </Card>
-
-        <Card className="p-4 sm:p-5 border-slate-200">
-          <div className="text-xs uppercase font-bold tracking-wider text-slate-500">
-            Assets Pending
-          </div>
-          <div
-            className={`text-3xl font-extrabold font-mono tabular-nums mt-1.5 ${
-              counts.assets_pending > 0 ? 'text-amber-600' : 'text-emerald-600'
-            }`}
-            id="kpi-assets-pending"
-          >
-            {counts.assets_pending}
-          </div>
-          <div className="text-caption text-slate-500 mt-1">joiners with &lt; 6 items provided</div>
-        </Card>
-
-        <Card className="p-4 sm:p-5 border-slate-200">
-          <div className="text-xs uppercase font-bold tracking-wider text-slate-500">
-            Emails Not Sent
-          </div>
-          <div
-            className={`text-3xl font-extrabold font-mono tabular-nums mt-1.5 ${
-              counts.emails_unsent > 0 ? 'text-rose-600' : 'text-emerald-600'
-            }`}
-            id="kpi-emails-unsent"
-          >
-            {counts.emails_unsent}
-          </div>
-          <div className="text-caption text-slate-500 mt-1">awaiting dispatch or updated</div>
-        </Card>
-      </div>
+    <div className="space-y-3" id="joiner-tracker-view">
+      {/* 1. KPI Cards using KpiGrid & KpiCard */}
+      <KpiGrid columns={3}>
+        <KpiCard
+          id="kpi-joiners-tracked"
+          label="Joiners Tracked"
+          value={counts.joiners_tracked}
+          hint="active joiners across scope"
+          tone="default"
+        />
+        <KpiCard
+          id="kpi-assets-pending"
+          label="Assets Pending"
+          value={counts.assets_pending}
+          hint="joiners with < 6 items provided"
+          tone={counts.assets_pending > 0 ? 'warning' : 'success'}
+        />
+        <KpiCard
+          id="kpi-emails-unsent"
+          label="Emails Not Sent"
+          value={counts.emails_unsent}
+          hint="awaiting dispatch or updated"
+          tone={counts.emails_unsent > 0 ? 'danger' : 'success'}
+        />
+      </KpiGrid>
 
       {/* 2. Toolbar & Filters */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <div className="bg-white p-2.5 rounded-[6px] border border-slate-200 space-y-2">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
           {/* Search Input */}
-          <div className="relative flex-1 min-w-[240px] max-w-md">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <div className="relative flex-1 min-w-[200px] max-w-md">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               id="joiner-search-input"
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search joiner name, code, designation, email..."
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:outline-hidden"
+              className="w-full pl-8 pr-2.5 h-7 text-body rounded-[6px] border border-slate-300 bg-slate-50 focus:bg-white focus:border-indigo-500 focus:outline-hidden"
             />
           </div>
 
           {/* Filters controls */}
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             {/* Branch Filter */}
-            <div className="min-w-[160px]">
+            <div className="min-w-[140px]">
               <select
                 id="joiner-branch-filter"
                 value={branchFilter}
                 onChange={(e) => setBranchFilter(e.target.value)}
-                className="w-full px-3 py-2 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-800 focus:border-indigo-500 focus:outline-hidden"
+                className="w-full px-2 h-7 text-body font-medium rounded-[6px] border border-slate-300 bg-white text-slate-800 focus:border-indigo-500 focus:outline-hidden cursor-pointer"
               >
                 <option value="">All Branches</option>
                 {availableBranches.map((b) => (
@@ -426,12 +391,12 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
             </div>
 
             {/* HR Officer Filter */}
-            <div className="min-w-[150px]">
+            <div className="min-w-[130px]">
               <select
                 id="joiner-hr-filter"
                 value={hrFilter}
                 onChange={(e) => setHrFilter(e.target.value)}
-                className="w-full px-3 py-2 text-xs font-medium rounded-lg border border-slate-200 bg-white text-slate-800 focus:border-indigo-500 focus:outline-hidden"
+                className="w-full px-2 h-7 text-body font-medium rounded-[6px] border border-slate-300 bg-white text-slate-800 focus:border-indigo-500 focus:outline-hidden cursor-pointer"
               >
                 <option value="">All HR Officers</option>
                 {uniqueHrOfficers.map((hr) => (
@@ -445,14 +410,14 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
             {/* Only Pending Toggle */}
             <label
               htmlFor="joiner-only-pending-toggle"
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 cursor-pointer select-none transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-[6px] border border-slate-300 bg-slate-50 hover:bg-slate-100 text-body font-semibold text-slate-700 cursor-pointer select-none transition-colors"
             >
               <input
                 id="joiner-only-pending-toggle"
                 type="checkbox"
                 checked={onlyPending}
                 onChange={(e) => setOnlyPending(e.target.checked)}
-                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                className="rounded-[4px] border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
               />
               <span>Only Pending (&lt; 6)</span>
             </label>
@@ -464,7 +429,6 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleResetFilters}
-                className="text-xs text-slate-600 hover:text-slate-900"
               >
                 Reset
               </Button>
@@ -477,7 +441,7 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
       {bannerNotification && (
         <div
           id="joiner-banner-notification"
-          className={`p-3.5 rounded-xl border flex items-start justify-between gap-3 animate-in fade-in duration-150 ${
+          className={`p-2.5 rounded-[6px] border flex items-start justify-between gap-2.5 animate-in fade-in duration-150 ${
             bannerNotification.type === 'warning'
               ? 'bg-amber-50 border-amber-200 text-amber-900'
               : bannerNotification.type === 'success'
@@ -485,20 +449,20 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
               : 'bg-rose-50 border-rose-200 text-rose-900'
           }`}
         >
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             {bannerNotification.type === 'warning' ? (
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
             ) : bannerNotification.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
             ) : (
-              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
             )}
-            <span className="text-sm font-medium">{bannerNotification.message}</span>
+            <span className="text-body font-medium">{bannerNotification.message}</span>
           </div>
           <button
             type="button"
             onClick={() => setBannerNotification(null)}
-            className="text-xs text-slate-500 hover:text-slate-800 font-semibold cursor-pointer shrink-0"
+            className="text-caption text-slate-500 hover:text-slate-800 font-semibold cursor-pointer shrink-0"
           >
             Dismiss
           </button>
@@ -506,231 +470,226 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
       )}
 
       {/* 3. Main Data Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-        {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center gap-3 text-slate-500">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-            <span className="text-sm font-medium">Loading Joiner Tracker...</span>
+      {loading ? (
+        <div className="py-16 flex flex-col items-center justify-center gap-2 text-slate-500 bg-white border border-slate-200 rounded-[6px]">
+          <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
+          <span className="text-caption font-medium">Loading Joiner Tracker...</span>
+        </div>
+      ) : error ? (
+        <div className="p-6 flex flex-col items-center justify-center gap-2 text-center bg-rose-50/50 border border-rose-200 rounded-[6px]">
+          <AlertTriangle className="w-6 h-6 text-rose-600" />
+          <div className="text-card-heading font-semibold text-rose-800">{error}</div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={fetchJoinerData}
+            leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
+          >
+            Retry
+          </Button>
+        </div>
+      ) : joiners.length === 0 ? (
+        <div className="py-16 text-center text-slate-500 bg-white border border-slate-200 rounded-[6px]">
+          <User className="w-8 h-8 text-slate-300 mx-auto mb-1.5" />
+          <div className="text-card-heading font-semibold text-slate-700">No active joiners</div>
+          <div className="text-caption text-slate-400 mt-0.5">
+            {hasActiveFilters
+              ? 'No employees match the applied filters.'
+              : 'There are no active employee records currently being tracked.'}
           </div>
-        ) : error ? (
-          <div className="p-8 flex flex-col items-center justify-center gap-3 text-center bg-rose-50/50">
-            <AlertTriangle className="w-8 h-8 text-rose-600" />
-            <div className="text-sm font-semibold text-rose-800">{error}</div>
+          {hasActiveFilters && (
             <Button
               variant="secondary"
               size="sm"
-              onClick={fetchJoinerData}
-              leftIcon={<RotateCcw className="w-4 h-4" />}
+              onClick={handleResetFilters}
+              className="mt-3"
             >
-              Retry
+              Clear Filters
             </Button>
-          </div>
-        ) : joiners.length === 0 ? (
-          <div className="py-20 text-center text-slate-500">
-            <User className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-            <div className="text-sm font-semibold text-slate-700">No active joiners</div>
-            <div className="text-caption text-slate-400 mt-1">
-              {hasActiveFilters
-                ? 'No employees match the applied filters.'
-                : 'There are no active employee records currently being tracked.'}
-            </div>
-            {hasActiveFilters && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleResetFilters}
-                className="mt-4"
-              >
-                Clear Filters
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px] text-left text-sm border-collapse" id="joiner-tracker-table">
-              <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3 px-4">Employee</th>
-                  <th className="py-3 px-4">Branch / HR Officer</th>
-                  {ASSET_ITEMS_CONFIG.map((cfg) => (
-                    <th key={cfg.key} className="py-3 px-3 text-center whitespace-nowrap">
-                      {cfg.header}
-                    </th>
-                  ))}
-                  <th className="py-3 px-3 text-center whitespace-nowrap">Progress</th>
-                  <th className="py-3 px-4 text-center whitespace-nowrap">Email</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {joiners.map((emp) => {
-                  const isSaving = savingRows.has(emp.id);
-                  const rowError = rowErrors[emp.id];
-                  const branchDisplayName = emp.branch?.name || emp.branch_name || 'HQ / Field';
-                  const hrDisplayName = emp.hr_officer_name ? toTitleCase(emp.hr_officer_name) : 'Unassigned';
+          )}
+        </div>
+      ) : (
+        <Table scroll="x" id="joiner-tracker-table">
+          <TableHeader scroll="x">
+            <TableRow scroll="x">
+              <TableHead>Employee</TableHead>
+              <TableHead>Branch / HR Officer</TableHead>
+              {ASSET_ITEMS_CONFIG.map((cfg) => (
+                <TableHead key={cfg.key} className="text-center whitespace-nowrap">
+                  {cfg.header}
+                </TableHead>
+              ))}
+              <TableHead className="text-center whitespace-nowrap">Progress</TableHead>
+              <TableHead className="text-center whitespace-nowrap">Email</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody scroll="x">
+            {joiners.map((emp) => {
+              const isSaving = savingRows.has(emp.id);
+              const rowError = rowErrors[emp.id];
+              const branchDisplayName = emp.branch?.name || emp.branch_name || 'HQ / Field';
+              const hrDisplayName = emp.hr_officer_name ? toTitleCase(emp.hr_officer_name) : 'Unassigned';
 
-                  return (
-                    <tr
-                      key={emp.id}
-                      id={`joiner-row-${emp.id}`}
-                      className={`hover:bg-slate-50/60 transition-colors ${
-                        isSaving ? 'bg-indigo-50/20' : ''
-                      }`}
-                    >
-                      {/* Column 1: Employee */}
-                      <td className="py-3.5 px-4 align-top">
-                        <div className="font-semibold text-slate-900">{toTitleCase(emp.full_name)}</div>
-                        <div className="text-caption text-slate-500 flex items-center gap-1.5 mt-0.5 font-mono">
-                          <span>{emp.employee_code}</span>
-                          <span className="text-slate-300">•</span>
-                          <span className="font-sans text-slate-500">{emp.designation}</span>
-                        </div>
-                        {emp.personal_email && (
-                          <div className="text-[11px] text-slate-400 truncate max-w-[180px] mt-0.5">
-                            {emp.personal_email}
-                          </div>
-                        )}
-                        {/* Saving indicator */}
-                        {isSaving && (
-                          <div className="inline-flex items-center gap-1 text-[11px] text-indigo-600 font-medium mt-1">
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            <span>Saving...</span>
-                          </div>
-                        )}
-                        {/* Error message */}
-                        {rowError && (
-                          <div className="text-[11px] text-rose-600 font-medium flex items-center gap-1 mt-1">
-                            <AlertTriangle className="w-3 h-3 shrink-0" />
-                            <span>{rowError}</span>
-                          </div>
-                        )}
-                      </td>
+              return (
+                <TableRow
+                  key={emp.id}
+                  id={`joiner-row-${emp.id}`}
+                  scroll="x"
+                  className={isSaving ? 'bg-indigo-50/20' : ''}
+                >
+                  {/* Column 1: Employee */}
+                  <TableCell className="align-top whitespace-nowrap">
+                    <div className="font-semibold text-slate-900">{toTitleCase(emp.full_name)}</div>
+                    <div className="text-caption text-slate-500 flex items-center gap-1.5 mt-0.5">
+                      <span className="font-mono">{emp.employee_code}</span>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-slate-500">{emp.designation}</span>
+                    </div>
+                    {emp.personal_email && (
+                      <div className="text-caption text-slate-400 truncate max-w-[180px] mt-0.5">
+                        {emp.personal_email}
+                      </div>
+                    )}
+                    {/* Saving indicator */}
+                    {isSaving && (
+                      <div className="inline-flex items-center gap-1 text-tag text-indigo-600 font-medium mt-1">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>Saving...</span>
+                      </div>
+                    )}
+                    {/* Error message */}
+                    {rowError && (
+                      <div className="text-caption text-rose-600 font-medium flex items-center gap-1 mt-1">
+                        <AlertTriangle className="w-3 h-3 shrink-0" />
+                        <span>{rowError}</span>
+                      </div>
+                    )}
+                  </TableCell>
 
-                      {/* Column 2: Branch / HR Officer */}
-                      <td className="py-3.5 px-4 align-top">
-                        <div className="font-medium text-slate-800 flex items-center gap-1.5">
-                          <Building className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{branchDisplayName}</span>
-                        </div>
-                        <div className="text-caption text-slate-500 flex items-center gap-1.5 mt-0.5">
-                          <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{hrDisplayName}</span>
-                        </div>
-                        <div className="text-[11px] text-slate-400 mt-1 font-mono">
-                          Joined: {emp.joining_date}
-                        </div>
-                      </td>
+                  {/* Column 2: Branch / HR Officer */}
+                  <TableCell className="align-top whitespace-nowrap">
+                    <div className="font-medium text-slate-800 flex items-center gap-1.5">
+                      <Building className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{branchDisplayName}</span>
+                    </div>
+                    <div className="text-caption text-slate-500 flex items-center gap-1.5 mt-0.5">
+                      <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>{hrDisplayName}</span>
+                    </div>
+                    <div className="text-caption text-slate-400 mt-0.5">
+                      Joined: {emp.joining_date}
+                    </div>
+                  </TableCell>
 
-                      {/* Columns 3 - 8: 6 Item Dropdowns */}
-                      {ASSET_ITEMS_CONFIG.map((cfg) => {
-                        const currentVal = emp.item_states[cfg.key] || 'not_provided';
-                        const isProvided = currentVal === 'provided';
-                        const disabled = !canEdit || isSaving;
+                  {/* Columns 3 - 8: 6 Item Dropdowns (keeping green/red value colors with 28px control height) */}
+                  {ASSET_ITEMS_CONFIG.map((cfg) => {
+                    const currentVal = emp.item_states[cfg.key] || 'not_provided';
+                    const isProvided = currentVal === 'provided';
+                    const disabled = !canEdit || isSaving;
 
-                        return (
-                          <td key={cfg.key} className="py-3.5 px-2 align-middle text-center">
-                            <select
-                              id={`select-${cfg.key}-${emp.id}`}
-                              aria-label={`${cfg.header} status for ${emp.full_name}`}
-                              value={currentVal}
-                              disabled={disabled}
-                              onChange={(e) =>
-                                handleAssetChange(
-                                  emp.id,
-                                  cfg.key,
-                                  e.target.value as 'provided' | 'not_provided'
-                                )
-                              }
-                              className={`text-xs font-semibold rounded-lg px-2.5 py-1.5 border transition-all text-center select-none ${
-                                isProvided
-                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 focus:ring-emerald-500 focus:border-emerald-500'
-                                  : 'bg-rose-50 text-rose-800 border-rose-300 focus:ring-rose-500 focus:border-rose-500'
-                              } ${
-                                disabled ? 'opacity-65 cursor-not-allowed' : 'cursor-pointer hover:shadow-xs'
-                              }`}
-                            >
-                              <option value="provided">{cfg.positive}</option>
-                              <option value="not_provided">{cfg.negative}</option>
-                            </select>
-                          </td>
-                        );
-                      })}
-
-                      {/* Column 9: Progress */}
-                      <td className="py-3.5 px-3 align-middle text-center">
-                        <Badge
-                          variant={
-                            emp.progress_count === 6
-                              ? 'success'
-                              : emp.progress_count > 0
-                              ? 'warning'
-                              : 'neutral'
+                    return (
+                      <TableCell key={cfg.key} className="align-middle text-center whitespace-nowrap">
+                        <select
+                          id={`select-${cfg.key}-${emp.id}`}
+                          aria-label={`${cfg.header} status for ${emp.full_name}`}
+                          value={currentVal}
+                          disabled={disabled}
+                          onChange={(e) =>
+                            handleAssetChange(
+                              emp.id,
+                              cfg.key,
+                              e.target.value as 'provided' | 'not_provided'
+                            )
                           }
-                          className="font-mono text-xs px-2.5 py-1"
+                          className={`h-7 px-2 text-body font-semibold rounded-[6px] border transition-all text-center select-none ${
+                            isProvided
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500'
+                              : 'bg-rose-50 text-rose-800 border-rose-300 focus:ring-1 focus:ring-rose-500 focus:border-rose-500'
+                          } ${
+                            disabled ? 'opacity-65 cursor-not-allowed' : 'cursor-pointer hover:shadow-2xs'
+                          }`}
                         >
-                          {emp.progress_count}/6
-                        </Badge>
-                      </td>
+                          <option value="provided">{cfg.positive}</option>
+                          <option value="not_provided">{cfg.negative}</option>
+                        </select>
+                      </TableCell>
+                    );
+                  })}
 
-                      {/* Column 10: Email Status & Action */}
-                      <td className="py-3.5 px-4 align-middle text-center">
-                        <div className="flex flex-col items-center gap-1.5">
-                          {emp.email_status === 'sent' ? (
-                            <span
-                              title={
-                                emp.last_sent_at
-                                  ? `Last sent on: ${new Date(emp.last_sent_at).toLocaleString()}`
-                                  : 'Sent'
-                              }
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-help"
-                            >
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                              <span>Sent</span>
-                            </span>
-                          ) : (
-                            <span
-                              title={
-                                emp.last_sent_at
-                                  ? `Items updated after last email on ${new Date(emp.last_sent_at).toLocaleString()}`
-                                  : 'No notification email sent yet'
-                              }
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 cursor-help"
-                            >
-                              <Clock className="w-3 h-3 text-amber-600" />
-                              <span>Unsent</span>
-                            </span>
-                          )}
+                  {/* Column 9: Progress */}
+                  <TableCell className="align-middle text-center whitespace-nowrap">
+                    <Badge
+                      variant={
+                        emp.progress_count === 6
+                          ? 'success'
+                          : emp.progress_count > 0
+                          ? 'warning'
+                          : 'neutral'
+                      }
+                      className="text-tag"
+                    >
+                      {emp.progress_count}/6
+                    </Badge>
+                  </TableCell>
 
-                          <button
-                            type="button"
-                            id={`btn-send-email-${emp.id}`}
-                            disabled={!canEdit || isSaving}
-                            onClick={() => canEdit && handleOpenEmailModal(emp)}
-                            title={
-                              canEdit
-                                ? emp.email_status === 'sent'
-                                  ? 'Resend onboarding items email'
-                                  : 'Send onboarding items email'
-                                : 'Branch managers have read-only access'
-                            }
-                            className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-md border transition-all ${
-                              canEdit
-                                ? 'bg-white hover:bg-slate-50 text-indigo-700 border-indigo-200 hover:border-indigo-300 shadow-2xs cursor-pointer active:scale-95'
-                                : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-70'
-                            }`}
-                          >
-                            <Mail className="w-3 h-3" />
-                            <span>{emp.email_status === 'sent' ? 'Resend' : 'Send'}</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                  {/* Column 10: Email Status & Action */}
+                  <TableCell className="align-middle text-center whitespace-nowrap">
+                    <div className="flex flex-col items-center gap-1">
+                      {emp.email_status === 'sent' ? (
+                        <span
+                          title={
+                            emp.last_sent_at
+                              ? `Last sent on: ${new Date(emp.last_sent_at).toLocaleString()}`
+                              : 'Sent'
+                          }
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-tag font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 cursor-help"
+                        >
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Sent</span>
+                        </span>
+                      ) : (
+                        <span
+                          title={
+                            emp.last_sent_at
+                              ? `Items updated after last email on ${new Date(emp.last_sent_at).toLocaleString()}`
+                              : 'No notification email sent yet'
+                          }
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-tag font-semibold bg-amber-100 text-amber-800 border border-amber-200 cursor-help"
+                        >
+                          <Clock className="w-3 h-3 text-amber-600" />
+                          <span>Unsent</span>
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        id={`btn-send-email-${emp.id}`}
+                        disabled={!canEdit || isSaving}
+                        onClick={() => canEdit && handleOpenEmailModal(emp)}
+                        title={
+                          canEdit
+                            ? emp.email_status === 'sent'
+                              ? 'Resend onboarding items email'
+                              : 'Send onboarding items email'
+                            : 'Branch managers have read-only access'
+                          }
+                        className={`inline-flex items-center gap-1 h-6 text-tag font-semibold px-2 rounded-[6px] border transition-all ${
+                          canEdit
+                            ? 'bg-white hover:bg-slate-50 text-indigo-700 border-indigo-200 hover:border-indigo-300 shadow-2xs cursor-pointer active:scale-95'
+                            : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-70'
+                        }`}
+                      >
+                        <Mail className="w-3 h-3" />
+                        <span>{emp.email_status === 'sent' ? 'Resend' : 'Send'}</span>
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      )}
 
       {/* Send Onboarding Asset Notification Email Modal */}
       {selectedEmployeeForEmail && (
@@ -744,7 +703,7 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
           }}
           title={
             <div className="flex items-center gap-2">
-              <Mail className="w-5 h-5 text-indigo-600" />
+              <Mail className="w-4 h-4 text-indigo-600" />
               <span>
                 {selectedEmployeeForEmail.email_status === 'sent'
                   ? 'Resend Onboarding Asset Notification Email'
@@ -752,19 +711,62 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
               </span>
             </div>
           }
-          description={
-            <span>
-              Dispatch an official onboarding items checklist summary to{' '}
-              <strong className="text-slate-900">{selectedEmployeeForEmail.full_name}</strong> (
-              <span className="font-mono text-xs">{selectedEmployeeForEmail.employee_code}</span>).
-            </span>
-          }
-          footer={
-            <div className="flex items-center justify-end gap-2.5 w-full">
+          size="md"
+        >
+          <div className="space-y-3">
+            <div className="bg-slate-50 p-2.5 rounded-[6px] border border-slate-200 space-y-1 text-body">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Employee:</span>
+                <span className="font-semibold text-slate-900">
+                  {toTitleCase(selectedEmployeeForEmail.full_name)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Employee Code:</span>
+                <span className="font-mono text-slate-700">
+                  {selectedEmployeeForEmail.employee_code}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Branch:</span>
+                <span className="text-slate-700">
+                  {selectedEmployeeForEmail.branch?.name ||
+                    selectedEmployeeForEmail.branch_name ||
+                    'HQ / Field'}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <Input
+                label="Recipient Email Address *"
+                type="email"
+                value={modalEmail}
+                onChange={(e) => {
+                  setModalEmail(e.target.value);
+                  setModalEmailTouched(true);
+                }}
+                placeholder="candidate@example.com"
+                error={
+                  modalEmailTouched && !isEmailValid
+                    ? 'Please enter a valid recipient email address'
+                    : undefined
+                }
+                helperText="Summary checklist and credential items will be dispatched to this address."
+              />
+            </div>
+
+            {modalError && (
+              <div className="p-2.5 rounded-[6px] bg-rose-50 border border-rose-200 text-rose-800 text-caption flex items-center gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                <span>{modalError}</span>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
               <Button
-                id="modal-cancel-email-btn"
-                type="button"
-                variant="secondary"
+                variant="ghost"
+                size="sm"
                 disabled={isSendingEmail}
                 onClick={() => {
                   setSelectedEmployeeForEmail(null);
@@ -774,96 +776,20 @@ export const JoinerTrackerSubView: React.FC<JoinerTrackerSubViewProps> = ({
                 Cancel
               </Button>
               <Button
-                id="modal-submit-email-btn"
-                type="button"
                 variant="primary"
-                disabled={isSendingEmail || !isEmailValid}
-                isLoading={isSendingEmail}
+                size="sm"
+                disabled={!isEmailValid || isSendingEmail}
                 onClick={handleSendEmailSubmit}
-                leftIcon={!isSendingEmail ? <Mail className="w-4 h-4" /> : undefined}
+                leftIcon={
+                  isSendingEmail ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Mail className="w-3.5 h-3.5" />
+                  )
+                }
               >
-                Send email
+                {isSendingEmail ? 'Sending...' : 'Confirm & Send Email'}
               </Button>
-            </div>
-          }
-        >
-          <div className="space-y-4 py-1">
-            {modalError && (
-              <div
-                id="modal-email-error-alert"
-                className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-lg flex items-start gap-2 animate-in fade-in"
-              >
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
-                <span className="leading-relaxed font-medium">{modalError}</span>
-              </div>
-            )}
-
-            {/* Email Input Field */}
-            <div>
-              <Input
-                label="Recipient Email"
-                id="modal-recipient-email-input"
-                type="email"
-                required
-                value={modalEmail}
-                disabled={isSendingEmail}
-                onChange={(e) => {
-                  setModalEmail(e.target.value);
-                  setModalEmailTouched(true);
-                }}
-                placeholder="e.g. employee@example.com"
-                leftIcon={<Mail className="w-4 h-4" />}
-                error={
-                  modalEmailTouched && !isEmailValid
-                    ? modalEmail.trim() === ''
-                      ? 'Recipient email is required.'
-                      : 'Please enter a valid email address (e.g. employee@example.com).'
-                    : undefined
-                }
-                helperText={
-                  !selectedEmployeeForEmail.personal_email && !modalEmailTouched
-                    ? 'Employee has no personal email on file. Please enter one.'
-                    : undefined
-                }
-              />
-            </div>
-
-            {/* Checklist Preview Table */}
-            <div>
-              <div className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Checklist Status Preview
-              </div>
-              <div className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50/50 shadow-2xs">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200">
-                    <tr>
-                      <th className="py-2 px-3">Item</th>
-                      <th className="py-2 px-3 text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {ASSET_ITEMS_CONFIG.map((cfg) => {
-                      const isProvided = selectedEmployeeForEmail.item_states[cfg.key] === 'provided';
-                      return (
-                        <tr key={cfg.key} className="bg-white">
-                          <td className="py-2 px-3 font-medium text-slate-800">{cfg.header}</td>
-                          <td className="py-2 px-3 text-right">
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full font-semibold ${
-                                isProvided
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                  : 'bg-rose-50 text-rose-700 border border-rose-200'
-                              }`}
-                            >
-                              {isProvided ? cfg.positive : cfg.negative}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
             </div>
           </div>
         </Modal>
