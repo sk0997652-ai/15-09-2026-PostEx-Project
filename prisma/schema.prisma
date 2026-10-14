@@ -1,0 +1,107 @@
+// Prisma Schema for PostEx Employee Onboarding Module
+// ==============================================================================
+// RULES COMPLIANCE:
+// 1. Additive only: models map strictly to `onboarding_*` database tables and enums.
+// 2. NO new Employee model is created (handled via single adapter function).
+// 3. NO migrations will touch, alter, or drop any existing tables.
+// ==============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OnboardingStage {
+  Invited
+  Draft
+  BM_Review
+  HR_Review
+  Need_Correction
+  Joining_Tasks
+  Onboarded
+  Rejected
+
+  @@map("onboarding_stage")
+}
+
+enum OnboardingReviewerRole {
+  BM
+  HR
+
+  @@map("onboarding_reviewer_role")
+}
+
+enum OnboardingActorRole {
+  candidate
+  branch_manager
+  central_hr
+  system
+
+  @@map("onboarding_actor_role")
+}
+
+model OnboardingCandidate {
+  id               String                 @id @default(uuid())
+  emp_id           String                 @unique // Format: PX-EMP-<number>
+  full_name        String
+  cnic             String                 // Format: XXXXX-XXXXXXX-X
+  mobile           String
+  email            String?
+  designation_id   String                 // References existing designations(id)
+  branch_id        String                 // References existing branches(id)
+  stage            OnboardingStage        @default(Invited)
+  returned_by      OnboardingReviewerRole?
+  rejected_by      OnboardingReviewerRole?
+  return_reason    String?
+  reject_reason    String?
+  invited_at       DateTime               @default(now())
+  stage_entered_at DateTime               @default(now())
+  completed_at     DateTime?
+  employee_id      String?                // References existing employees(id) when Onboarded
+  reminders_count  Int                    @default(0)
+  last_reminded_at DateTime?
+  created_at       DateTime               @default(now())
+  updated_at       DateTime               @updatedAt
+
+  timeline_events  OnboardingTimelineEvent[]
+  reminder_logs    OnboardingReminderLog[]
+
+  @@index([stage])
+  @@index([branch_id])
+  @@index([cnic])
+  @@index([stage_entered_at])
+  @@map("onboarding_candidates")
+}
+
+model OnboardingTimelineEvent {
+  id           String              @id @default(uuid())
+  candidate_id String
+  candidate    OnboardingCandidate @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+  step_number  Int                 // 1: Profile Created, 2: Joining Form Submitted, 3: BM Review, 4: HR Review, 5: Joining Tasks, 6: Added to Employee List
+  step_name    String
+  status       String              // completed | current | returned | rejected | pending
+  details      String?
+  actor_name   String?
+  actor_role   String?
+  created_at   DateTime            @default(now())
+
+  @@index([candidate_id, step_number])
+  @@map("onboarding_timeline_events")
+}
+
+model OnboardingReminderLog {
+  id           String              @id @default(uuid())
+  candidate_id String
+  candidate    OnboardingCandidate @relation(fields: [candidate_id], references: [id], onDelete: Cascade)
+  channel      String              @default("SYSTEM")
+  message      String
+  reminded_by  String              @default("HR Automated Workflow")
+  created_at   DateTime            @default(now())
+
+  @@index([candidate_id])
+  @@map("onboarding_reminder_logs")
+}

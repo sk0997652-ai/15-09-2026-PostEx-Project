@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Building2,
   Users,
@@ -12,6 +12,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   X,
+  Bell,
+  HelpCircle,
+  Upload,
 } from 'lucide-react';
 import {
   DashboardMetrics,
@@ -22,6 +25,7 @@ import {
 } from '../lib/superAdminApi';
 import { FormBuilderModule } from './admin/FormBuilderModule';
 import { OverviewMetricsView } from './admin/OverviewMetricsView';
+import { EmployeeListView } from './admin/EmployeeListView';
 import { OrganizationStructureView } from './admin/OrganizationStructureView';
 import { StaffManagementView } from './admin/StaffManagementView';
 import { UserPermissionsView } from './admin/UserPermissionsView';
@@ -32,7 +36,6 @@ import { HeadcountManagementView } from './common/HeadcountManagementView';
 import { WorkflowTrackerView } from './common/WorkflowTrackerView';
 import { DataImportView } from './common/DataImportView';
 import { Badge, Button, PageContainer, PortalSidebar, PortalSidebarItem } from './ui';
-import { Upload } from 'lucide-react';
 import { toTitleCase } from '../lib/formatText';
 
 export interface SuperAdminDashboardProps {
@@ -44,6 +47,7 @@ export interface SuperAdminDashboardProps {
 
 export type AdminTab =
   | 'overview'
+  | 'employees'
   | 'org'
   | 'headcount'
   | 'workflow_tracker'
@@ -71,6 +75,30 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const [settings, setSettings] = useState<OrgSettings | null>(null);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
+  const [workflowInitialView, setWorkflowInitialView] = useState<'j' | 'e' | 's' | 't'>('j');
+  const [topBarSearch, setTopBarSearch] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Global Ctrl+K / Cmd+K handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleTopBarSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (topBarSearch.trim()) {
+      setEmployeeSearchQuery(topBarSearch.trim());
+      setActiveTab('employees');
+    }
+  };
 
   // Auto-clear notifications after 6s
   useEffect(() => {
@@ -160,6 +188,14 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       icon: <TrendingUp className="w-3.5 h-3.5" />,
       active: activeTab === 'overview',
       onSelect: () => handleSelectTab('overview'),
+    },
+    {
+      id: 'nav-btn-employees',
+      label: 'Employee List',
+      title: 'Employee List',
+      icon: <Users className="w-3.5 h-3.5" />,
+      active: activeTab === 'employees',
+      onSelect: () => handleSelectTab('employees'),
     },
     {
       id: 'nav-btn-org',
@@ -264,7 +300,65 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       />
 
       {/* Main Content Workspace */}
-      <main className="flex-1 min-w-0 overflow-y-auto bg-slate-50">
+      <main className="flex-1 min-w-0 overflow-y-auto bg-slate-50 flex flex-col">
+        {/* Top Bar for Super Admin Portal */}
+        <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4 sticky top-0 z-20 shadow-2xs">
+          {/* Top Search Input (Ctrl+K shortcut) */}
+          <form onSubmit={handleTopBarSearchSubmit} className="flex-1 max-w-md relative">
+            <div className="relative flex items-center">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search portal, name, CNIC... (Ctrl+K)"
+                value={topBarSearch}
+                onChange={(e) => setTopBarSearch(e.target.value)}
+                className="w-full h-8 pl-9 pr-14 text-caption rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all text-slate-800"
+              />
+              <kbd className="absolute right-2 px-1.5 py-0.5 text-tag font-semibold text-slate-400 bg-slate-200/80 rounded border border-slate-300 pointer-events-none">
+                ⌘K
+              </kbd>
+            </div>
+          </form>
+
+          {/* Right Header Icons: Bell, Help, Sign Out */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              title="Notifications"
+              onClick={() => setNotification({ type: 'success', text: 'No new notifications.' })}
+              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            >
+              <Bell className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Help & Support"
+              onClick={() =>
+                setNotification({
+                  type: 'success',
+                  text: 'PostEx Super Admin Support: support@postex.pk | +92 42 111-767-839',
+                })
+              }
+              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              title="Sign Out"
+              onClick={() => {
+                setNotification({ type: 'success', text: 'Signing out...' });
+                setTimeout(() => onSignOut(), 400);
+              }}
+              className="px-2.5 py-1 text-caption font-semibold text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-rose-200 flex items-center gap-1.5"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
+          </div>
+        </header>
+
         <PageContainer width={activeTab === 'settings' || activeTab === 'form_builder' ? 'form' : 'full'}>
           {/* Global Notification */}
           {notification && (
@@ -295,6 +389,18 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             />
           )}
 
+          {/* Tab 1b: Employee List (100% exact copy of employee-list-reference.html) */}
+          {activeTab === 'employees' && (
+            <EmployeeListView
+              initialSearch={employeeSearchQuery}
+              currentUser={currentUser}
+              onOpenExitTracker={() => {
+                setWorkflowInitialView('e');
+                setActiveTab('workflow_tracker');
+              }}
+            />
+          )}
+
           {/* Tab 2: Organization Structure */}
           {activeTab === 'org' && (
             <OrganizationStructureView
@@ -309,7 +415,13 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           {activeTab === 'headcount' && <HeadcountManagementView />}
 
           {/* Tab 2c: Workflow Tracker */}
-          {activeTab === 'workflow_tracker' && <WorkflowTrackerView role="super_admin" />}
+          {activeTab === 'workflow_tracker' && (
+            <WorkflowTrackerView
+              role="super_admin"
+              initialView={workflowInitialView}
+              currentUser={currentUser}
+            />
+          )}
 
           {/* Tab 2d: Data Import */}
           {activeTab === 'data_import' && <DataImportView onDataImported={loadOrgData} />}

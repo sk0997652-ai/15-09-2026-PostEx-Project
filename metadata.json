@@ -1,6 +1,5 @@
 {
-  "name": "PostEx HR Onboarding Portal",
-  "description": "Production-grade HR onboarding portal for PostEx with Supabase backend and React frontend.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "name": "PostEx Employee Onboarding Portal",
+  "description": "Production HR onboarding pipeline management for PostEx courier company with multi-stage verification, SLA tracking, and branch performance metrics.",
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

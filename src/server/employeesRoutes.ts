@@ -14,7 +14,48 @@
 import { Router } from 'express';
 import { SupabaseClient } from '@supabase/supabase-js';
 import nodemailer from 'nodemailer';
+import multer from 'multer';
+import crypto from 'crypto';
 import { sendEmail } from './notificationService';
+
+const ENCRYPTION_SECRET = process.env.ENCRYPTION_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || 'postex-secure-employee-asset-secret-key-2026';
+
+function encryptPassword(plainText: string): string {
+  if (!plainText) return '';
+  const key = crypto.createHash('sha256').update(ENCRYPTION_SECRET).digest();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  let encrypted = cipher.update(plainText, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  const tag = cipher.getAuthTag().toString('hex');
+  return `${iv.toString('hex')}:${tag}:${encrypted}`;
+}
+
+function decryptPassword(payload: string): string {
+  if (!payload || !payload.includes(':')) return payload;
+  try {
+    const [ivHex, tagHex, encryptedText] = payload.split(':');
+    const key = crypto.createHash('sha256').update(ENCRYPTION_SECRET).digest();
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(ivHex, 'hex'));
+    decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch {
+    return payload;
+  }
+}
+
+const assetImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files (JPEG, PNG, WEBP, GIF) are allowed.'));
+    }
+    cb(null, true);
+  },
+});
 
 export interface EmployeeStaffContext {
   id: string;
@@ -1352,7 +1393,263 @@ export function createEmployeesRouter(supabaseAdmin: SupabaseClient) {
     }
   });
 
+  // --------------------------------------------------------------------------
+  // POST /api/employees/asset-image/upload
+  // Real multipart upload for optional asset images (max 5MB, image/* only).
+  // --------------------------------------------------------------------------
+  router.post('/asset-image/upload', requireStaffAccess, (req: any, res: any, next: any) => {
+    assetImageUpload.single('image')(req, res, (err: any) => {
+      if (err) {
+        return res.status(400).json({ success: false, error: err.message || 'File upload failed.' });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ success: false, error: 'No image file was provided for upload.' });
+      }
+
+      const ext = (file.originalname.split('.').pop() || 'png').toLowerCase();
+      const storagePath = `asset-images/asset-${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
+
+      // Upload to candidate-documents bucket
+      const { error: uploadErr } = await supabaseAdmin.storage
+        .from('candidate-documents')
+        .upload(storagePath, file.buffer, {
+          contentType: file.mimetype,
+          upsert: true,
+        });
+
+      let publicUrl = '';
+      if (!uploadErr) {
+        const { data: urlData } = supabaseAdmin.storage
+          .from('candidate-documents')
+          .getPublicUrl(storagePath);
+        publicUrl = urlData?.publicUrl || '';
+      }
+
+      const finalUrl = publicUrl || `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+
+      return res.json({
+        success: true,
+        name: file.originalname,
+        storage_path: storagePath,
+        url: finalUrl,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ success: false, error: msg });
+    }
+  });
+
+  // --------------------------------------------------------------------------
+  // GET /api/employees/:id/assets
+  // Returns asset credentials and statuses for an employee (with decrypted passwords).
+  // Passwords are never logged and never exposed in list endpoints.
+  // --------------------------------------------------------------------------
+  router.get('/:id/assets', requireStaffAccess, async (req: any, res: any) => {
+    try {
+      const { id } = req.params;
+
+      const { data: emp, error: empErr } = await supabaseAdmin
+        .from('employees')
+        .select(`
+          id,
+          employee_id,
+          full_name,
+          timetrax_username,
+          timetrax_password,
+          postex_username,
+          postex_password,
+          machine_enrollment,
+          id_card,
+          documents_dispatch,
+          machine_enrollment_image,
+          id_card_image,
+          documents_dispatch_image
+        `)
+        .eq('id', id)
+        .maybeSingle();
+
+      if (empErr) {
+        return res.status(500).json({ success: false, error: empErr.message });
+      }
+      if (!emp) {
+        return res.status(404).json({ success: false, error: 'Employee not found.' });
+      }
+
+      // Fetch multiple emails from child table
+      const { data: emailRows } = await supabaseAdmin
+        .from('employee_emails')
+        .select('email, sort_order')
+        .eq('employee_id', id)
+        .order('sort_order', { ascending: true });
+
+      const emails = (emailRows || []).map((r: any) => r.email);
+
+      const parseImg = (val: any) => {
+        if (!val) return null;
+        if (typeof val === 'object') return val;
+        try { return JSON.parse(val); } catch { return { url: val, name: 'Attachment' }; }
+      };
+
+      return res.json({
+        success: true,
+        assets: {
+          timetrax_username: emp.timetrax_username || '',
+          timetrax_password: decryptPassword(emp.timetrax_password || ''),
+          postex_username: emp.postex_username || '',
+          postex_password: decryptPassword(emp.postex_password || ''),
+          machine_enrollment: emp.machine_enrollment || 'Not Enrolled',
+          id_card: emp.id_card || 'Not Provided',
+          documents_dispatch: emp.documents_dispatch || 'Not Dispatched',
+          machine_enrollment_image: parseImg(emp.machine_enrollment_image),
+          id_card_image: parseImg(emp.id_card_image),
+          documents_dispatch_image: parseImg(emp.documents_dispatch_image),
+          emails: emails.length > 0 ? emails : [''],
+        },
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ success: false, error: msg });
+    }
+  });
+
+  // --------------------------------------------------------------------------
+  // PUT /api/employees/:id/assets
+  // Saves assets popup details: TimeTrax, PostEx logins, multiple emails,
+  // Machine Enrollment, ID Card, and Documents sent to Head Office with optional attachments.
+  // --------------------------------------------------------------------------
+  router.put('/:id/assets', requireStaffAccess, async (req: any, res: any) => {
+    try {
+      const user: EmployeeStaffContext = req.staffUser;
+      const { id } = req.params;
+      const body = req.body || {};
+
+      const {
+        timetrax_username,
+        timetrax_password,
+        postex_username,
+        postex_password,
+        machine_enrollment,
+        id_card,
+        documents_dispatch,
+        machine_enrollment_image,
+        id_card_image,
+        documents_dispatch_image,
+        emails,
+      } = body;
+
+      // 1. Validation: TimeTrax & PostEx Username + Password are required
+      const ttUser = String(timetrax_username || '').trim();
+      const ttPw = String(timetrax_password || '').trim();
+      const pxUser = String(postex_username || '').trim();
+      const pxPw = String(postex_password || '').trim();
+
+      if (!ttUser || !ttPw || !pxUser || !pxPw) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please complete the highlighted fields: TimeTrax Username, TimeTrax Password, PostEx Username, and PostEx Password are required.',
+        });
+      }
+
+      // 2. Validation: Emails optional; any non-empty email must be valid
+      const EMAIL_REGEX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+      const rawEmails = Array.isArray(emails) ? emails : [];
+      const cleanEmails: string[] = [];
+
+      for (const em of rawEmails) {
+        const trimmed = String(em || '').trim();
+        if (trimmed) {
+          if (!EMAIL_REGEX.test(trimmed)) {
+            return res.status(400).json({
+              success: false,
+              error: `Invalid email address format: "${trimmed}".`,
+            });
+          }
+          cleanEmails.push(trimmed);
+        }
+      }
+
+      // 3. Status dropdowns (Enums with exact values, defaults used if invalid)
+      const validMachine = ['Enrolled', 'Not Enrolled'];
+      const validIdCard = ['Provided', 'Not Provided'];
+      const validDocs = ['Dispatched', 'Not Dispatched'];
+
+      const finalMachine = validMachine.includes(machine_enrollment) ? machine_enrollment : 'Not Enrolled';
+      const finalIdCard = validIdCard.includes(id_card) ? id_card : 'Not Provided';
+      const finalDocs = validDocs.includes(documents_dispatch) ? documents_dispatch : 'Not Dispatched';
+
+      // 4. Encrypt passwords before persisting
+      const encryptedTtPw = encryptPassword(ttPw);
+      const encryptedPxPw = encryptPassword(pxPw);
+
+      const updatePayload: Record<string, any> = {
+        timetrax_username: ttUser,
+        timetrax_password: encryptedTtPw,
+        postex_username: pxUser,
+        postex_password: encryptedPxPw,
+        machine_enrollment: finalMachine,
+        id_card: finalIdCard,
+        documents_dispatch: finalDocs,
+        machine_enrollment_image: machine_enrollment_image ? JSON.stringify(machine_enrollment_image) : null,
+        id_card_image: id_card_image ? JSON.stringify(id_card_image) : null,
+        documents_dispatch_image: documents_dispatch_image ? JSON.stringify(documents_dispatch_image) : null,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error: updateErr } = await supabaseAdmin
+        .from('employees')
+        .update(updatePayload)
+        .eq('id', id);
+
+      if (updateErr) {
+        return res.status(500).json({ success: false, error: updateErr.message });
+      }
+
+      // 5. Sync child table for multiple emails
+      await supabaseAdmin.from('employee_emails').delete().eq('employee_id', id);
+      if (cleanEmails.length > 0) {
+        const emailInserts = cleanEmails.map((email: string, idx: number) => ({
+          employee_id: id,
+          email,
+          sort_order: idx,
+        }));
+        await supabaseAdmin.from('employee_emails').insert(emailInserts);
+      }
+
+      // 6. Audit logging (passwords strictly omitted / never logged)
+      await supabaseAdmin.from('audit_logs').insert({
+        actor_id: user.id !== '00000000-0000-0000-0000-000000000001' ? user.id : null,
+        actor_type: 'staff',
+        action: 'update_employee_assets',
+        entity_type: 'employee',
+        entity_id: id,
+        metadata: {
+          timetrax_username: ttUser,
+          postex_username: pxUser,
+          machine_enrollment: finalMachine,
+          id_card: finalIdCard,
+          documents_dispatch: finalDocs,
+          email_count: cleanEmails.length,
+          actor_name: user.name,
+        },
+      });
+
+      return res.json({
+        success: true,
+        message: 'Employee assets saved and updated successfully.',
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return res.status(500).json({ success: false, error: msg });
+    }
+  });
+
   return router;
 }
+
 
 

@@ -61,6 +61,7 @@ export interface WorkflowTrackerViewProps {
   zoneName?: string;
   branchName?: string;
   assignedBranches?: string[];
+  initialView?: 'j' | 'e' | 's' | 't';
   currentUser?: {
     id?: string;
     email?: string;
@@ -142,6 +143,7 @@ export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
   zoneName,
   branchName,
   assignedBranches,
+  initialView,
   currentUser,
 }) => {
   const [store, updateStore] = useHrPortalStore();
@@ -161,7 +163,13 @@ export const WorkflowTrackerView: React.FC<WorkflowTrackerViewProps> = ({
     );
   }, [store.branches]);
 
-  const [wview, setWview] = useState<'j' | 'e' | 's' | 't'>('j');
+  const [wview, setWview] = useState<'j' | 'e' | 's' | 't'>(initialView || 'j');
+
+  useEffect(() => {
+    if (initialView) {
+      setWview(initialView);
+    }
+  }, [initialView]);
   const [q, setQ] = useState('');
   const [fs, setFs] = useState('');
   const [exitQ, setExitQ] = useState('');
